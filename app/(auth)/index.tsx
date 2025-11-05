@@ -1,7 +1,8 @@
 import { login } from '@/api/Auth';
+import { getAccessToken } from '@/api/Storage';
 import debug, { DebugLoginButton } from '@/state/debug';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Button, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 export default function AuthScreen() {
     const [email, setEmail] = useState('');
@@ -10,6 +11,17 @@ export default function AuthScreen() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
+    useEffect(() => {
+        getAccessToken().then((accessToken) => {
+            if (accessToken) {
+                router.replace('/(home)');
+            } else {
+                setError('No access token found');
+            }
+        }).catch((error) => {
+            setError('An unexpected error occurred');
+        });
+    }, []);
 
     const handleLogin = async () => {
         setLoading(true);

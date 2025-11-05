@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { API_URL } from './ApiBase';
-import { getAccessToken } from './Storage';
+import { getAccessToken, getRefreshToken, storeAccessToken } from './Storage';
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -22,4 +22,25 @@ apiClient.interceptors.request.use(async (config) => {
         config.headers.Authorization = `Bearer ${accessToken}`;
     }
     return config;
+});
+
+
+
+// 2. Response Interceptor: Handle 401 errors and refresh the token
+apiClient.interceptors.response.use(async (response) => {
+    if (response.status === 401) {
+        const refreshToken = await getRefreshToken();
+        if (refreshToken) {
+            const response = await apiClient.post('/auth/refresh/', { refresh: refreshToken });
+            if (response.status === 200) {
+                await storeAccessToken(response.data.access);
+                return response;
+            } else {
+                return response;
+            }
+        } else {
+            return response;
+        }
+    }
+    return response;
 });

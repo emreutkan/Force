@@ -18,3 +18,12 @@ export const createWorkout = async (request: CreateWorkoutRequest): Promise<Crea
         return error.message || 'An unknown error occurred';
     }
 }
+
+export const getActiveWorkout = async (): Promise<CreateWorkoutResponse | any> => {
+    try {
+        const response = await apiClient.get('/workout/active/');
+        return response.data;
+    } catch (error: any) {
+        return error.message || 'An unknown error occurred';
+    }
+}
