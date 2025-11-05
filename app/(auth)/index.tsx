@@ -96,6 +96,10 @@ export default function AuthScreen() {
                 <TouchableOpacity style={{ marginTop: 20 }}>
                     <Text style={styles.linkText}>Forgot Password?</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity style={{ marginTop: 20 }} onPress={() => router.push('/(auth)/register')}>
+                    <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
+                </TouchableOpacity>
             </KeyboardAvoidingView>
         </View>
     );
