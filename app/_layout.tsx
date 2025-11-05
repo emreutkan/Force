@@ -14,12 +14,15 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        {/* Add this line to hide the header for the home group */}
-        <Stack.Screen name="(home)" options={{ headerShown: false }} />
+      <Stack screenOptions={{ 
+          headerShown: false,
+          contentStyle: { backgroundColor: '#1C1C1E' }
+      }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(home)" />
+        <Stack.Screen name="(account)" />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
     </ThemeProvider>
   );
 }

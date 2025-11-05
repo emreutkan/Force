@@ -8,3 +8,10 @@ export interface CreateWorkoutResponse {
     created_at: string;
     updated_at: string;
 }
+
+export interface getAccountResponse {
+    id: number;
+    email: string;
+    is_verified: boolean;
+    created_at: string;
+}
