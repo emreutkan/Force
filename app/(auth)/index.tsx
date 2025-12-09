@@ -1,6 +1,7 @@
 import { login } from '@/api/Auth';
 import { getAccessToken } from '@/api/Storage';
 import debug, { DebugLoginButton } from '@/state/debug';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -9,7 +10,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function AuthScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -29,7 +29,6 @@ export default function AuthScreen() {
         }
 
         setLoading(true);
-        // setError(''); // Removing local error state usage for alert
         try {
             const result = await login(email, password);
             if (typeof result === 'object' && result.access && result.refresh) {
@@ -42,6 +41,10 @@ export default function AuthScreen() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSocialLogin = (provider: string) => {
+        Alert.alert(`${provider} Login`, "This feature is coming soon!");
     };
 
     return (
@@ -57,12 +60,11 @@ export default function AuthScreen() {
                     <Text style={styles.subtitle}>Sign in to access your workouts</Text>
                 </View>
                 
-                {/* iOS Grouped Input Style */}
                 <View style={styles.inputGroup}>
                     <TextInput 
                         style={styles.inputTop} 
                         placeholder="Email" 
-                        placeholderTextColor="#C7C7CC"
+                        placeholderTextColor="#8E8E93"
                         value={email} 
                         onChangeText={setEmail}
                         autoCapitalize="none"
@@ -72,7 +74,7 @@ export default function AuthScreen() {
                     <TextInput 
                         style={styles.inputBottom} 
                         placeholder="Password" 
-                        placeholderTextColor="#C7C7CC"
+                        placeholderTextColor="#8E8E93"
                         value={password} 
                         onChangeText={setPassword} 
                         secureTextEntry
@@ -81,7 +83,7 @@ export default function AuthScreen() {
 
                 <View style={styles.buttonContainer}>
                     {loading ? (
-                        <ActivityIndicator size="large" color="#007AFF" />
+                        <ActivityIndicator size="large" color="#0A84FF" />
                     ) : (
                         <TouchableOpacity 
                             style={styles.loginButton} 
@@ -92,14 +94,43 @@ export default function AuthScreen() {
                         </TouchableOpacity>
                     )}
                 </View>
-                
-                <TouchableOpacity style={{ marginTop: 20 }}>
-                    <Text style={styles.linkText}>Forgot Password?</Text>
-                </TouchableOpacity>
 
-                <TouchableOpacity style={{ marginTop: 20 }} onPress={() => router.push('/(auth)/register')}>
-                    <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
-                </TouchableOpacity>
+                {/* Divider */}
+                <View style={styles.dividerContainer}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>Or continue with</Text>
+                    <View style={styles.dividerLine} />
+                </View>
+
+                {/* Social Buttons */}
+                <View style={styles.socialContainer}>
+                    <TouchableOpacity 
+                        style={styles.socialButton} 
+                        onPress={() => handleSocialLogin('Apple')}
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="logo-apple" size={24} color="#FFFFFF" />
+                        <Text style={styles.socialButtonText}>Apple</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={styles.socialButton} 
+                        onPress={() => handleSocialLogin('Google')}
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="logo-google" size={24} color="#FFFFFF" />
+                        <Text style={styles.socialButtonText}>Google</Text>
+                    </TouchableOpacity>
+                </View>
+                
+                <View style={styles.footer}>
+                    <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
+                        <Text style={styles.linkText}>Don't have an account? <Text style={styles.linkBold}>Sign Up</Text></Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={{ marginTop: 16 }}>
+                        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                    </TouchableOpacity>
+                </View>
             </KeyboardAvoidingView>
         </View>
     );
@@ -108,60 +139,62 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#1C1C1E', // Dark Background
+        backgroundColor: '#000000',
     },
     content: {
         flex: 1,
         justifyContent: 'center',
-        padding: 20,
+        padding: 24,
     },
     header: {
         marginBottom: 32,
         alignItems: 'center',
     },
     title: {
-        fontSize: 34,
-        fontWeight: 'bold',
+        fontSize: 32,
+        fontWeight: '700',
         color: '#FFFFFF',
         marginBottom: 8,
     },
     subtitle: {
-        fontSize: 17,
+        fontSize: 16,
         color: '#8E8E93',
         textAlign: 'center',
     },
     inputGroup: {
-        backgroundColor: '#2C2C2E', // Dark Card
+        backgroundColor: '#1C1C1E',
         borderRadius: 12,
         overflow: 'hidden',
         marginBottom: 24,
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
     },
     inputTop: {
-        height: 50,
+        height: 56,
         paddingHorizontal: 16,
         fontSize: 17,
         color: '#FFFFFF',
-        backgroundColor: '#2C2C2E',
+        backgroundColor: '#1C1C1E',
     },
     inputBottom: {
-        height: 50,
+        height: 56,
         paddingHorizontal: 16,
         fontSize: 17,
         color: '#FFFFFF',
-        backgroundColor: '#2C2C2E',
+        backgroundColor: '#1C1C1E',
     },
     separator: {
         height: StyleSheet.hairlineWidth,
-        backgroundColor: '#3C3C43', // Dark Separator
+        backgroundColor: '#3C3C43',
         marginLeft: 16,
     },
     buttonContainer: {
-        marginTop: 8,
+        marginBottom: 24,
     },
     loginButton: {
-        backgroundColor: '#007AFF', // iOS Blue
+        backgroundColor: '#0A84FF',
         borderRadius: 12,
-        height: 50,
+        height: 56,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -170,15 +203,56 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: '600',
     },
-    error: {
-        color: '#FF3B30', // iOS Red
-        textAlign: 'center',
-        marginBottom: 20,
-        fontSize: 15,
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    dividerLine: {
+        flex: 1,
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: '#3C3C43',
+    },
+    dividerText: {
+        color: '#8E8E93',
+        fontSize: 13,
+        marginHorizontal: 16,
+    },
+    socialContainer: {
+        flexDirection: 'row',
+        gap: 16,
+        marginBottom: 32,
+    },
+    socialButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#1C1C1E',
+        height: 50,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
+        gap: 8,
+    },
+    socialButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    footer: {
+        alignItems: 'center',
     },
     linkText: {
-        color: '#007AFF',
-        textAlign: 'center',
-        fontSize: 17,
+        color: '#8E8E93',
+        fontSize: 15,
+    },
+    linkBold: {
+        color: '#0A84FF',
+        fontWeight: '600',
+    },
+    forgotPasswordText: {
+        color: '#0A84FF',
+        fontSize: 15,
     }
 });

@@ -20,7 +20,7 @@ export default function Workouts() {
         return (
             <TouchableOpacity 
                 style={styles.card} 
-                onPress={() => router.push(`/workout/${item.id}`)}
+                onPress={() => router.push(`/(workouts)/${item.id}`)}
                 activeOpacity={0.8}
             >
                 <View style={styles.cardHeader}>
@@ -40,10 +40,9 @@ export default function Workouts() {
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={24} color="#0A84FF" />
-                    <Text style={styles.backText}>Back</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>My Workouts</Text>
-                <View style={{ width: 60 }} />
+                <View style={{ width: 40 }} />
             </View>
 
             <FlatList
@@ -65,7 +64,7 @@ export default function Workouts() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#1C1C1E', // Dark Background
+        backgroundColor: '#000000', // Black Background
     },
     header: {
         flexDirection: 'row',
@@ -78,7 +77,7 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        width: 60,
+        width: 40,
     },
     backText: {
         color: '#0A84FF',
@@ -94,12 +93,12 @@ const styles = StyleSheet.create({
         paddingTop: 0,
     },
     card: {
-        backgroundColor: '#2C2C2E',
+        backgroundColor: '#1C1C1E', // Keep cards slightly lighter than black background
         borderRadius: 16,
         padding: 16,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: '#3C3C43',
+        borderColor: '#2C2C2E',
     },
     cardHeader: {
         flexDirection: 'row',

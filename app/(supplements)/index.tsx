@@ -62,14 +62,14 @@ export default function SupplementsScreen() {
             </View>
             <View style={styles.cardContent}>
                 <View style={styles.infoRow}>
-                    <Ionicons name="medical" size={16} color="#666" />
+                    <Ionicons name="medical" size={16} color="#8E8E93" />
                     <Text style={styles.infoText}>
                         {item.dosage} {item.supplement_details.dosage_unit}
                     </Text>
                 </View>
                 {item.time_of_day && (
                     <View style={styles.infoRow}>
-                        <Ionicons name="time" size={16} color="#666" />
+                        <Ionicons name="time" size={16} color="#8E8E93" />
                         <Text style={styles.infoText}>{item.time_of_day}</Text>
                     </View>
                 )}
@@ -83,15 +83,10 @@ export default function SupplementsScreen() {
             
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#000" />
+                    <Ionicons name="chevron-back" size={24} color="#0A84FF" />
                 </TouchableOpacity>
                 <Text style={styles.title}>My Stack</Text>
-                <TouchableOpacity 
-                    style={styles.addButton}
-                    onPress={() => setIsAddModalVisible(true)}
-                >
-                    <Ionicons name="add" size={24} color="#007AFF" />
-                </TouchableOpacity>
+                <View style={{ width: 40 }} />
             </View>
 
             <FlatList
@@ -101,12 +96,21 @@ export default function SupplementsScreen() {
                 contentContainerStyle={styles.listContent}
                 ListEmptyComponent={
                     <View style={styles.emptyState}>
-                        <Ionicons name="nutrition-outline" size={64} color="#CCC" />
+                        <Ionicons name="nutrition-outline" size={64} color="#8E8E93" />
                         <Text style={styles.emptyText}>No supplements added yet</Text>
                         <Text style={styles.emptySubtext}>Add supplements to track your intake</Text>
                     </View>
                 }
             />
+
+            <View style={[styles.fabContainer, { bottom: insets.bottom + 20 }]}>
+                <TouchableOpacity 
+                    style={styles.fabButton}
+                    onPress={() => setIsAddModalVisible(true)}
+                >
+                    <Ionicons name="add" size={32} color="#FFFFFF" />
+                </TouchableOpacity>
+            </View>
 
             <Modal
                 visible={isAddModalVisible}
@@ -156,6 +160,7 @@ export default function SupplementsScreen() {
                                     onChangeText={setDosage}
                                     keyboardType="numeric"
                                     placeholder="Enter amount"
+                                    placeholderTextColor="#8E8E93"
                                 />
 
                                 <Text style={styles.label}>Frequency</Text>
@@ -185,6 +190,7 @@ export default function SupplementsScreen() {
                                     value={timeOfDay}
                                     onChangeText={setTimeOfDay}
                                     placeholder="e.g. Morning, With meals"
+                                    placeholderTextColor="#8E8E93"
                                 />
 
                                 <TouchableOpacity 
@@ -205,41 +211,40 @@ export default function SupplementsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F2F2F7',
+        backgroundColor: '#000000',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        paddingVertical: 12,
-        backgroundColor: '#fff',
+        paddingBottom: 12,
+        backgroundColor: '#000000',
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E5EA',
+        borderBottomColor: '#2C2C2E',
     },
     backButton: {
-        padding: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
+        minWidth: 40,
+        justifyContent: 'flex-start',
     },
     title: {
         fontSize: 17,
         fontWeight: '600',
-    },
-    addButton: {
-        padding: 4,
+        color: '#FFFFFF',
     },
     listContent: {
         padding: 16,
+        paddingBottom: 100, // Extra padding for FAB
     },
     card: {
-        backgroundColor: '#fff',
+        backgroundColor: '#1C1C1E',
         borderRadius: 12,
         padding: 16,
         marginBottom: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
     },
     cardHeader: {
         flexDirection: 'row',
@@ -250,17 +255,17 @@ const styles = StyleSheet.create({
     cardTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#000',
+        color: '#FFFFFF',
     },
     badge: {
-        backgroundColor: '#E6F4FE',
+        backgroundColor: 'rgba(10, 132, 255, 0.1)',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 12,
     },
     badgeText: {
         fontSize: 12,
-        color: '#007AFF',
+        color: '#0A84FF',
         fontWeight: '500',
         textTransform: 'capitalize',
     },
@@ -275,7 +280,7 @@ const styles = StyleSheet.create({
     },
     infoText: {
         fontSize: 14,
-        color: '#666',
+        color: '#8E8E93',
     },
     emptyState: {
         alignItems: 'center',
@@ -285,34 +290,55 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#000',
+        color: '#FFFFFF',
         marginTop: 16,
     },
     emptySubtext: {
         fontSize: 14,
-        color: '#666',
+        color: '#8E8E93',
         marginTop: 4,
+    },
+    fabContainer: {
+        position: 'absolute',
+        right: 20,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4.65,
+        elevation: 8,
+    },
+    fabButton: {
+        backgroundColor: '#1C1C1E',
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
     },
     modalContainer: {
         flex: 1,
-        backgroundColor: '#F2F2F7',
+        backgroundColor: '#000000',
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 16,
-        backgroundColor: '#fff',
+        backgroundColor: '#1C1C1E',
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E5EA',
+        borderBottomColor: '#2C2C2E',
     },
     modalTitle: {
         fontSize: 17,
         fontWeight: '600',
+        color: '#FFFFFF',
     },
     closeButton: {
         fontSize: 17,
-        color: '#007AFF',
+        color: '#0A84FF',
+        fontWeight: '600',
     },
     modalContent: {
         padding: 16,
@@ -320,25 +346,28 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#666',
+        color: '#8E8E93',
         textTransform: 'uppercase',
         marginBottom: 8,
         marginLeft: 4,
     },
     optionItem: {
-        backgroundColor: '#fff',
+        backgroundColor: '#1C1C1E',
         padding: 16,
         marginBottom: 1,
         borderRadius: 0,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#2C2C2E',
     },
     optionTitle: {
         fontSize: 16,
         fontWeight: '500',
+        color: '#FFFFFF',
         marginBottom: 4,
     },
     optionSubtitle: {
         fontSize: 13,
-        color: '#666',
+        color: '#8E8E93',
     },
     selectedHeader: {
         flexDirection: 'row',
@@ -349,24 +378,28 @@ const styles = StyleSheet.create({
     selectedTitle: {
         fontSize: 24,
         fontWeight: '700',
+        color: '#FFFFFF',
     },
     changeButton: {
         fontSize: 15,
-        color: '#007AFF',
+        color: '#0A84FF',
     },
     label: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#666',
+        color: '#8E8E93',
         marginBottom: 8,
         marginLeft: 4,
     },
     input: {
-        backgroundColor: '#fff',
+        backgroundColor: '#1C1C1E',
         padding: 12,
         borderRadius: 10,
         marginBottom: 20,
         fontSize: 16,
+        color: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
     },
     pillContainer: {
         flexDirection: 'row',
@@ -377,21 +410,24 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 20,
-        backgroundColor: '#E5E5EA',
+        backgroundColor: '#1C1C1E',
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
     },
     pillActive: {
-        backgroundColor: '#007AFF',
+        backgroundColor: '#0A84FF',
+        borderColor: '#0A84FF',
     },
     pillText: {
         fontSize: 15,
         fontWeight: '500',
-        color: '#000',
+        color: '#FFFFFF',
     },
     pillTextActive: {
-        color: '#fff',
+        color: '#FFFFFF',
     },
     saveButton: {
-        backgroundColor: '#007AFF',
+        backgroundColor: '#0A84FF',
         padding: 16,
         borderRadius: 12,
         alignItems: 'center',
@@ -400,7 +436,6 @@ const styles = StyleSheet.create({
     saveButtonText: {
         fontSize: 17,
         fontWeight: '600',
-        color: '#fff',
+        color: '#FFFFFF',
     },
 });
-

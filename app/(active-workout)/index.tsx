@@ -1,21 +1,19 @@
 import { getActiveWorkout } from '@/api/Workout';
-import { Ionicons } from '@expo/vector-icons';
+import WorkoutDetailView from '@/components/WorkoutDetailView';
 import { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ActiveWorkoutScreen() {
-    const insets = useSafeAreaInsets();
     const [activeWorkout, setActiveWorkout] = useState<any>(null);
     const [elapsedTime, setElapsedTime] = useState('00:00:00');
     const [isModalVisible, setIsModalVisible] = useState(false);
+
     useEffect(() => {
         getActiveWorkout().then((workout) => {
             setActiveWorkout(workout);
             console.log("Active Workout:", workout);
         });
     }, []);
-
 
     useEffect(() => {
         let interval: any;
@@ -71,79 +69,23 @@ export default function ActiveWorkoutScreen() {
         );
     }
 
-    if (!activeWorkout) {
-        return (
-            <View style={[styles.container, { paddingTop: insets.top }]}>
-                <Text style={styles.text}>Loading...</Text>
-            </View>
-        );
-    }
-
     return (
-        <View style={[styles.container, { paddingTop: insets.top, marginBottom: insets.bottom - 32 }]}>
-            <View style={styles.WorkoutHeader}>
-            <Text style={styles.WorkoutTitle}>{activeWorkout.title}</Text>
-            <Text style={styles.WorkoutDuration}>{elapsedTime}</Text>
-            </View>
-            <Text style={styles.text}>{activeWorkout.notes}</Text>
-            
-            <TouchableOpacity onPress={() => setIsModalVisible(true)}
-            style={{...styles.addExerciseButtonContainer, bottom: insets.bottom + 20}} >
-                <Ionicons name="add" size={24} color="white" />
-            </TouchableOpacity>
+        <>
+            <WorkoutDetailView 
+                workout={activeWorkout} 
+                elapsedTime={elapsedTime} 
+                isActive={true} 
+                onAddExercise={() => setIsModalVisible(true)} 
+            />
             {renderAddExerciseModal()}
-        </View>
+        </>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        marginHorizontal: 16,
-
-    },
-    text: {
-        color: '#FFFFFF',
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
-    WorkoutHeader: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderBottomWidth: 1,
-        borderTopWidth: 1,
-        borderLeftWidth: 1,
-        borderRightWidth: 1,
-        borderColor: 'gray',
-        borderRadius: 26,
-    },
-    WorkoutTitle: {
-        color: '#FFFFFF',
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
-    WorkoutDuration: {
-        color: 'orange',
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
-    addExerciseButtonContainer: {
-        position: 'absolute',
-        left: 0,
-        
-        right: 0,
-        backgroundColor: 'orange',
-        padding: 10,
-        borderRadius: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     modalContainer: {
         flex: 1,
-        backgroundColor: '#1C1C1E',
+        backgroundColor: '#000000', // Black background
         paddingHorizontal: 8,
         paddingVertical: 6,
     },
@@ -152,7 +94,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 16,
-        backgroundColor: '#1C1C1E',
+        backgroundColor: '#1C1C1E', // Keep header slightly lighter for contrast or make black? User said "all will also have black backgrounds". I'll keep header slightly distinct or make it black with border. Let's make it black with border to match detail view.
         borderBottomWidth: 1,
         borderBottomColor: '#2C2C2E',
     },
@@ -163,12 +105,15 @@ const styles = StyleSheet.create({
     },
     closeButton: {
         fontSize: 17,
-        color: '#007AFF',
+        color: '#0A84FF',
         fontWeight: 'bold',
     },
     modalContent: {
         padding: 16,
-        color: '#FFFFFF',
+        backgroundColor: '#000000',
     },
+    text: {
+        color: '#FFFFFF',
+        fontSize: 16,
+    }
 });
-

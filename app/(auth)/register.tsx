@@ -31,14 +31,9 @@ export default function RegisterScreen() {
 
         setLoading(true);
         try {
-            // Note: Backend might not use 'name' yet, but we send it as requested.
-            // We need to update api/Auth.ts to accept name if we want to send it.
-            // For now, calling existing register(email, password). 
-            // TODO: Update api/Auth.ts to include name.
             const result = await register(email, password);
             
             if (typeof result === 'object' && result.access && result.refresh) {
-                // Successful registration + login
                 await fetchUser();
                 router.replace('/(home)');
             } else {
@@ -51,6 +46,10 @@ export default function RegisterScreen() {
         }
     };
 
+    const handleSocialLogin = (provider: string) => {
+        Alert.alert(`${provider} Sign Up`, "This feature is coming soon!");
+    };
+
     return (
         <View style={styles.container}>
             <KeyboardAvoidingView 
@@ -58,12 +57,14 @@ export default function RegisterScreen() {
                 style={[styles.content, { paddingTop: insets.top }]}
             >
                 <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Ionicons name="chevron-back" size={24} color="#0A84FF" />
+                    </TouchableOpacity>
                     <Text style={styles.title}>Create Account</Text>
                     <Text style={styles.subtitle}>Sign up to start tracking your workouts</Text>
                 </View>
                 
                 <View style={styles.inputGroup}>
-                    {/* Name Input */}
                     <TextInput 
                         style={styles.inputTop} 
                         placeholder="Full Name" 
@@ -74,7 +75,6 @@ export default function RegisterScreen() {
                     />
                     <View style={styles.separator} />
                     
-                    {/* Email Input */}
                     <TextInput 
                         style={styles.inputMiddle} 
                         placeholder="Email" 
@@ -86,7 +86,6 @@ export default function RegisterScreen() {
                     />
                     <View style={styles.separator} />
                     
-                    {/* Password Input */}
                     <View style={styles.passwordContainer}>
                         <TextInput 
                             style={styles.passwordInput} 
@@ -109,7 +108,6 @@ export default function RegisterScreen() {
                     </View>
                     <View style={styles.separator} />
 
-                    {/* Confirm Password Input */}
                     <TextInput 
                         style={styles.inputBottom} 
                         placeholder="Confirm Password" 
@@ -133,10 +131,40 @@ export default function RegisterScreen() {
                         </TouchableOpacity>
                     )}
                 </View>
+
+                 {/* Divider */}
+                 <View style={styles.dividerContainer}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>Or sign up with</Text>
+                    <View style={styles.dividerLine} />
+                </View>
+
+                {/* Social Buttons */}
+                <View style={styles.socialContainer}>
+                    <TouchableOpacity 
+                        style={styles.socialButton} 
+                        onPress={() => handleSocialLogin('Apple')}
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="logo-apple" size={24} color="#FFFFFF" />
+                        <Text style={styles.socialButtonText}>Apple</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={styles.socialButton} 
+                        onPress={() => handleSocialLogin('Google')}
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="logo-google" size={24} color="#FFFFFF" />
+                        <Text style={styles.socialButtonText}>Google</Text>
+                    </TouchableOpacity>
+                </View>
                 
-                <TouchableOpacity style={{ marginTop: 24 }} onPress={() => router.back()}>
-                    <Text style={styles.linkText}>Already have an account? Log In</Text>
-                </TouchableOpacity>
+                <View style={styles.footer}>
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <Text style={styles.linkText}>Already have an account? <Text style={styles.linkBold}>Log In</Text></Text>
+                    </TouchableOpacity>
+                </View>
             </KeyboardAvoidingView>
         </View>
     );
@@ -145,85 +173,96 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#1C1C1E', // Dark Background
+        backgroundColor: '#000000',
     },
     content: {
         flex: 1,
         justifyContent: 'center',
-        padding: 20,
+        padding: 24,
     },
     header: {
         marginBottom: 32,
         alignItems: 'center',
+        position: 'relative',
+    },
+    backButton: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        zIndex: 10,
     },
     title: {
-        fontSize: 34,
-        fontWeight: 'bold',
+        fontSize: 32,
+        fontWeight: '700',
         color: '#FFFFFF',
         marginBottom: 8,
+        textAlign: 'center',
+        marginTop: 10, // Space for back button if needed, or visual balance
     },
     subtitle: {
-        fontSize: 17,
+        fontSize: 16,
         color: '#8E8E93',
         textAlign: 'center',
     },
     inputGroup: {
-        backgroundColor: '#2C2C2E', // Dark Card
+        backgroundColor: '#1C1C1E',
         borderRadius: 12,
         overflow: 'hidden',
         marginBottom: 24,
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
     },
     inputTop: {
-        height: 50,
+        height: 56,
         paddingHorizontal: 16,
         fontSize: 17,
         color: '#FFFFFF',
-        backgroundColor: '#2C2C2E',
+        backgroundColor: '#1C1C1E',
     },
     inputMiddle: {
-        height: 50,
+        height: 56,
         paddingHorizontal: 16,
         fontSize: 17,
         color: '#FFFFFF',
-        backgroundColor: '#2C2C2E',
+        backgroundColor: '#1C1C1E',
     },
     inputBottom: {
-        height: 50,
+        height: 56,
         paddingHorizontal: 16,
         fontSize: 17,
         color: '#FFFFFF',
-        backgroundColor: '#2C2C2E',
+        backgroundColor: '#1C1C1E',
     },
     passwordContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#2C2C2E',
-        height: 50,
+        backgroundColor: '#1C1C1E',
+        height: 56,
     },
     passwordInput: {
         flex: 1,
-        height: 50,
+        height: 56,
         paddingHorizontal: 16,
         fontSize: 17,
         color: '#FFFFFF',
     },
     eyeIcon: {
         paddingHorizontal: 16,
-        height: 50,
+        height: 56,
         justifyContent: 'center',
     },
     separator: {
         height: StyleSheet.hairlineWidth,
-        backgroundColor: '#3C3C43', // Dark Separator
+        backgroundColor: '#3C3C43',
         marginLeft: 16,
     },
     buttonContainer: {
-        marginTop: 8,
+        marginBottom: 24,
     },
     registerButton: {
-        backgroundColor: '#0A84FF', // iOS Blue
+        backgroundColor: '#0A84FF',
         borderRadius: 12,
-        height: 50,
+        height: 56,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -232,13 +271,52 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: '600',
     },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    dividerLine: {
+        flex: 1,
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: '#3C3C43',
+    },
+    dividerText: {
+        color: '#8E8E93',
+        fontSize: 13,
+        marginHorizontal: 16,
+    },
+    socialContainer: {
+        flexDirection: 'row',
+        gap: 16,
+        marginBottom: 32,
+    },
+    socialButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#1C1C1E',
+        height: 50,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
+        gap: 8,
+    },
+    socialButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    footer: {
+        alignItems: 'center',
+    },
     linkText: {
+        color: '#8E8E93',
+        fontSize: 15,
+    },
+    linkBold: {
         color: '#0A84FF',
-        textAlign: 'center',
-        fontSize: 17,
+        fontWeight: '600',
     }
 });
-
-
-
-

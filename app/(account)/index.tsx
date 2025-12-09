@@ -97,7 +97,7 @@ export default function AccountScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#1C1C1E', // Dark Background
+        backgroundColor: '#000000', // Black Background
     },
     header: {
         flexDirection: 'row',
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 8,
         height: 44, 
-        backgroundColor: '#1C1C1E', 
+        backgroundColor: '#000000', 
     },
     backButton: {
         flexDirection: 'row',
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: '#2C2C2E', 
+        backgroundColor: '#1C1C1E', 
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 16,
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     section: {
-        backgroundColor: '#2C2C2E', // Dark Card
+        backgroundColor: '#1C1C1E', // Dark Card
         borderRadius: 10,
         marginHorizontal: 16,
         overflow: 'hidden',
@@ -204,4 +204,3 @@ const styles = StyleSheet.create({
         fontSize: 13,
     }
 });
-
