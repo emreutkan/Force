@@ -1,6 +1,5 @@
-import { clearTokens } from '@/api/Storage';
 import { createWorkout, getActiveWorkout } from '@/api/Workout';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -10,6 +9,7 @@ export default function Home() {
     const [modalVisible, setModalVisible] = useState(false);
     const [workoutTitle, setWorkoutTitle] = useState('');
     const [activeWorkout, setActiveWorkout] = useState<any>(null);
+    const [elapsedTime, setElapsedTime] = useState('00:00:00');
     const insets = useSafeAreaInsets();
 
     useEffect(() => {
@@ -18,6 +18,35 @@ export default function Home() {
             console.log("Active Workout:", workout);
         });
     }, []);
+
+    useEffect(() => {
+        let interval: any;
+        
+        if (activeWorkout?.created_at) {
+            const startTime = new Date(activeWorkout.created_at).getTime();
+            
+            const updateTimer = () => {
+                const now = new Date().getTime();
+                const diff = Math.max(0, now - startTime);
+                
+                const seconds = Math.floor((diff / 1000) % 60);
+                const minutes = Math.floor((diff / (1000 * 60)) % 60);
+                const hours = Math.floor((diff / (1000 * 60 * 60)));
+                
+                const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                setElapsedTime(formattedTime);
+            };
+
+            updateTimer(); // Initial call
+            interval = setInterval(updateTimer, 1000);
+        } else {
+            setElapsedTime('00:00:00');
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [activeWorkout]);
 
     useEffect(() => {
         if (modalVisible) {
@@ -77,10 +106,6 @@ export default function Home() {
         }
     }
 
-    const logout = () => {
-        clearTokens();
-        router.replace('/(auth)');
-    };
 
     const renderActiveWorkout = () => {
         if (!activeWorkout) return null;
@@ -96,7 +121,10 @@ export default function Home() {
                         <View style={styles.liveDot} />
                         <Text style={styles.liveText}>IN PROGRESS</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                    <View style={styles.timerContainer}>
+                        <Text style={styles.timerText}>{elapsedTime}</Text>
+                        <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                    </View>
                 </View>
                 <Text style={styles.cardTitle} numberOfLines={1}>
                     {activeWorkout.title}
@@ -106,7 +134,7 @@ export default function Home() {
         );
     }
 
-        const renderAddWorkoutButton = () => {
+    const renderAddWorkoutButton = () => {
         return (
             <View style={[styles.fabContainer, { bottom: insets.bottom + 20 }]}>
                 <TouchableOpacity 
@@ -122,9 +150,26 @@ export default function Home() {
 
     const renderWorkoutsButton = () => {
         return (
-            <View style={styles.workoutsButtonContainer}>
-            <TouchableOpacity onPress={() => router.push('/(workouts)')}>
-                <Ionicons name="list" size={32} color="#000" />
+            <View style={[styles.workoutsButtonContainer, { bottom: insets.bottom + 20 }]}>
+            <TouchableOpacity onPress={() => router.push('/(workouts)')}
+                                    style={styles.fabButton} 
+
+                >
+                <Ionicons name="reader-outline" size={32} color="#FFFFFF" />
+            </TouchableOpacity>
+            </View>
+        );
+    }
+
+    
+    const renderSupplementsButton = () => {
+        return (
+            <View style={[styles.SupplementsButtonContainer, { bottom: insets.bottom + 20 }]}>
+            <TouchableOpacity onPress={() => router.push('/(supplements)')}
+                                    style={styles.fabButton} 
+
+                >
+                <MaterialIcons name="medication" size={32} color="#FFFFFF" />
             </TouchableOpacity>
             </View>
         );
@@ -143,6 +188,7 @@ export default function Home() {
             {renderHeader()}
             {renderActiveWorkout()}
             {renderWorkoutsButton()}
+            {renderSupplementsButton()}
             {renderAddWorkoutButton()}
 
             {/* 3. Render Modal conditionally based on state */}
@@ -313,6 +359,17 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         letterSpacing: 0.5,
     },
+    timerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    timerText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
+        fontVariant: ['tabular-nums'],
+    },
     cardTitle: {
         color: '#FFFFFF',
         fontSize: 22,
@@ -355,11 +412,16 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: 'bold',
     },
-    workoutsButtonContainer: {
-        position: 'absolute',
-        left: 20,
-        bottom: 20,
-    },
+        workoutsButtonContainer: {
+            position: 'absolute',
+            left: 20,
+            
+        },
+        SupplementsButtonContainer: {
+            position: 'absolute',
+            left: 90,
+            
+        },
     workoutsButton: {
         backgroundColor: '#1C1C1E',
         width: 60,

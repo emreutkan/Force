@@ -1,7 +1,7 @@
 import apiClient from './APIClient';
 // Don't use the full URL here if apiClient has a baseURL
 // import { CREATE_WORKOUT_URL } from './ApiBase'; 
-import { CreateWorkoutRequest, CreateWorkoutResponse, GetWorkoutsResponse } from './types';
+import { CreateWorkoutRequest, CreateWorkoutResponse, GetWorkoutsResponse, Workout } from './types';
 
 export const createWorkout = async (request: CreateWorkoutRequest): Promise<CreateWorkoutResponse | any> => {
     try {
@@ -36,3 +36,12 @@ export const getWorkouts = async (): Promise<GetWorkoutsResponse | any> => {
         return error.message || 'An unknown error occurred';
     }
 }
+
+export const getWorkout = async (workoutID: number): Promise<Workout | any> => {
+    try {
+        const response = await apiClient.get(`/workout/list/${workoutID}/`);
+        return response.data;
+    } catch (error: any) {
+            return error.message || 'An unknown error occurred';
+        }
+    }

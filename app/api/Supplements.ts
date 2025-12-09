@@ -1,4 +1,4 @@
-import apiClient from './APIClient';
+import apiClient from "@/api/APIClient";
 
 export interface Supplement {
     id: number;
@@ -23,6 +23,13 @@ export interface CreateUserSupplementRequest {
     dosage: number;
     frequency: string;
     time_of_day?: string;
+}
+
+export interface LogUserSupplementRequest {
+    id: number;
+    date: string;
+    time: string;
+    dosage: number;
 }
 
 export const getSupplements = async (): Promise<Supplement[]> => {
@@ -55,3 +62,21 @@ export const addUserSupplement = async (data: CreateUserSupplementRequest): Prom
     }
 }
 
+
+export const logUserSupplement = async (data: LogUserSupplementRequest): Promise<UserSupplement | null> => {
+    try {
+        const response = await apiClient.post('/supplements/user/log/add', data);
+        return response.data;
+    } catch (error: any) {
+        console.error('Error logging user supplement:', error);
+        return null;
+    }
+}
+
+export const deleteLogUserSupplement = async (id: number): Promise<void> => {
+    try {
+        await apiClient.delete(`/supplements/user/log/delete/${id}`);
+    } catch (error: any) {
+        console.error('Error deleting user supplement log:', error);
+    }
+}

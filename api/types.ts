@@ -7,6 +7,10 @@ export interface CreateWorkoutResponse {
     title: string;
     created_at: string;
     updated_at: string;
+    duration: number;
+    intensity: "low" | "medium" | "high" | "Low" | "Medium" | "High";
+    notes?: string;
+    is_done: boolean;
 }
 
 export interface getAccountResponse {

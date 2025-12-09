@@ -1,6 +1,6 @@
-import { addUserSupplement, getSupplements, getUserSupplements, Supplement, UserSupplement } from '@/app/api/Supplements';
+import { addUserSupplement, getSupplements, getUserSupplements, Supplement, UserSupplement } from '@/api/Supplements';
 import { Ionicons } from '@expo/vector-icons';
-import { router, Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

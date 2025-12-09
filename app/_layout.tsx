@@ -21,6 +21,10 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(home)" />
         <Stack.Screen name="(account)" />
+        <Stack.Screen name="(add-exercise)" />
+        <Stack.Screen name="(active-workout)" />
+        <Stack.Screen name="(workouts)" />
+        <Stack.Screen name="(supplements)" />
       </Stack>
       <StatusBar style="light" />
     </ThemeProvider>
