@@ -73,7 +73,12 @@ apiClient.interceptors.response.use(
                     
                     if (response.status === 200) {
                         const newAccessToken = response.data.access;
+                        const newRefreshToken = response.data.refresh; // Capture new refresh token if rotated
+
                         await storeAccessToken(newAccessToken);
+                        if (newRefreshToken) {
+                            await storeRefreshToken(newRefreshToken); // Save the new refresh token
+                        }
                         
                         // Update the header of the original request
                         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
