@@ -2,7 +2,7 @@ import { createWorkout, getActiveWorkout } from '@/api/Workout';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function Home() {
     // 1. State lives here, at the top level
@@ -271,11 +271,18 @@ const styles = StyleSheet.create({
         backgroundColor: '#1C1C1E', // Dark card
         borderRadius: 16,
         padding: 20,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 10,
+        ...Platform.select({
+            web: {
+                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.3)',
+            },
+            default: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 10,
+            }
+        }),
         borderWidth: 1,
         borderColor: '#2C2C2E',
     },
@@ -349,11 +356,18 @@ const styles = StyleSheet.create({
         marginVertical: 12, // Push content down
         borderWidth: 1,
         borderColor: '#2C2C2E', // Subtle border for definition
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 5,
+        ...Platform.select({
+            web: {
+                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
+            },
+            default: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 5,
+            }
+        }),
     },
     cardHeader: {
         flexDirection: 'row',
@@ -408,11 +422,18 @@ const styles = StyleSheet.create({
     fabContainer: {
         position: 'absolute',
         right: 20,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4.65,
-        elevation: 8,
+        ...Platform.select({
+            web: {
+                boxShadow: '0px 4px 5px rgba(0, 0, 0, 0.3)',
+            },
+            default: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4.65,
+                elevation: 8,
+            }
+        }),
     },
     fabButton: {
         backgroundColor: '#1C1C1E', // iOS System Gray 6 (Dark)

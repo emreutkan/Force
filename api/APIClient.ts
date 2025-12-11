@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { API_URL, REFRESH_URL } from './ApiBase';
-import { clearTokens, getAccessToken, getRefreshToken, storeAccessToken } from './Storage';
+import { getAccessToken, getRefreshToken, storeAccessToken } from './Storage';
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -8,8 +8,6 @@ const apiClient = axios.create({
         'Content-Type': 'application/json',
     },
     timeout: 10000,
-
-    withCredentials: true,
 });
 
 export default apiClient;
@@ -68,8 +66,6 @@ apiClient.interceptors.response.use(
 
             try {
                 const refreshToken = await getRefreshToken();
-                console.log("Retrieved refresh token for refresh flow:", refreshToken ? "Exists" : "Null");
-
                 if (refreshToken) {
                     // Call the refresh endpoint
                     // We use axios directly to avoid infinite loops with the interceptor
@@ -97,10 +93,7 @@ apiClient.interceptors.response.use(
                 console.log("Refresh token expired or invalid");
                 isRefreshing = false;
                 processQueue(refreshError, null);
-                
-                // Clear tokens to force re-login
-                await clearTokens();
-                
+                // Optional: clearTokens(); 
                 return Promise.reject(refreshError);
             }
         }

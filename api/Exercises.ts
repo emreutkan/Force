@@ -49,3 +49,27 @@ export const addSetToExercise = async (workoutExerciseId: number, data: AddSetRe
         return error.message || 'An unknown error occurred';
     }
 }
+
+export const deleteSet = async (setId: number) => {
+    try {
+        const response = await apiClient.delete(`/workout/set/${setId}/delete/`);
+        return response.status === 204;
+    } catch (error: any) {
+        return false;
+    }
+}
+
+export interface UpdateSetRequest {
+    reps?: number;
+    weight?: number;
+    reps_in_reserve?: number;
+}
+
+export const updateSet = async (setId: number, data: UpdateSetRequest) => {
+    try {
+        const response = await apiClient.patch(`/workout/set/${setId}/update/`, data);
+        return response.data;
+    } catch (error: any) {
+        return error.message || 'An unknown error occurred';
+    }
+}

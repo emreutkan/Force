@@ -1,8 +1,8 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -25,7 +25,7 @@ export default function RootLayout() {
           <Stack.Screen name="(account)" />
           <Stack.Screen 
               name="(add-exercise)" 
-  
+   
           />
           
           <Stack.Screen name="(active-workout)" />

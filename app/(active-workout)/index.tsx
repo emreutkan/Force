@@ -1,9 +1,9 @@
-import { addExerciseToWorkout, addSetToExercise, getExercises, removeExerciseFromWorkout } from '@/api/Exercises';
+import { addExerciseToWorkout, getExercises, addSetToExercise, deleteSet, updateSet, removeExerciseFromWorkout } from '@/api/Exercises';
 import { getActiveWorkout } from '@/api/Workout';
 import WorkoutDetailView from '@/components/WorkoutDetailView';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function ActiveWorkoutScreen() {
     const [activeWorkout, setActiveWorkout] = useState<any>(null);
@@ -63,43 +63,76 @@ export default function ActiveWorkoutScreen() {
         }
     };
 
-    const handleAddSet = async (workoutExerciseId: number, setData: any) => {
+    const handleRemoveExercise = async (exerciseId: number) => {
+        if (!activeWorkout?.id) return;
         try {
-            await addSetToExercise(workoutExerciseId, setData);
+            await removeExerciseFromWorkout(activeWorkout.id, exerciseId);
+            // Refresh active workout to show remaining exercises
+            const updatedWorkout = await getActiveWorkout();
+            setActiveWorkout(updatedWorkout);
+        } catch (error) {
+            console.error("Failed to remove exercise:", error);
+            alert("Failed to remove exercise");
+        }
+    };
+
+    const handleAddSet = async (workoutExerciseId: number, set: { weight: number, reps: number, reps_in_reserve?: number }) => {
+        try {
+            await addSetToExercise(workoutExerciseId, set);
             // Refresh workout
             const updatedWorkout = await getActiveWorkout();
             setActiveWorkout(updatedWorkout);
         } catch (error) {
             console.error("Failed to add set:", error);
-            Alert.alert("Error", "Failed to add set");
+            alert("Failed to add set");
         }
     };
 
-    const handleRemoveExercise = async (exerciseId: number) => {
-        if (!activeWorkout?.id) return;
+    const handleUpdateSet = async (setId: number, field: string, value: string) => {
+        // Optimistic update locally first
+        const updatedWorkout = { ...activeWorkout };
+        let setFound = false;
+        
+        // Find and update the set in the local state
+        updatedWorkout.exercises.forEach((ex: any) => {
+            const setIndex = ex.sets.findIndex((s: any) => s.id === setId);
+            if (setIndex !== -1) {
+                ex.sets[setIndex][field] = value;
+                setFound = true;
+            }
+        });
 
-        Alert.alert(
-            "Remove Exercise",
-            "Are you sure you want to remove this exercise?",
-            [
-                { text: "Cancel", style: "cancel" },
-                { 
-                    text: "Remove", 
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            await removeExerciseFromWorkout(activeWorkout.id, exerciseId);
-                            // Refresh active workout
-                            const updatedWorkout = await getActiveWorkout();
-                            setActiveWorkout(updatedWorkout);
-                        } catch (error) {
-                            console.error("Failed to remove exercise:", error);
-                            alert("Failed to remove exercise");
-                        }
-                    }
-                }
-            ]
-        );
+        if (setFound) {
+            setActiveWorkout(updatedWorkout);
+        }
+
+        // Debounce actual API call? For now, let's just send it.
+        // Convert to number for number fields
+        const numericValue = parseFloat(value);
+        if (isNaN(numericValue) && value !== '') return; // Don't send invalid numbers, allow empty string for typing
+
+        try {
+            await updateSet(setId, { [field]: numericValue });
+            // Optionally refresh full workout data periodically or on blur, but not on every keystroke
+        } catch (error) {
+            console.error("Failed to update set:", error);
+        }
+    };
+
+    const handleDeleteSet = async (setId: number) => {
+        try {
+            const success = await deleteSet(setId);
+            if (success) {
+                // Refresh workout
+                const updatedWorkout = await getActiveWorkout();
+                setActiveWorkout(updatedWorkout);
+            } else {
+                alert("Failed to delete set");
+            }
+        } catch (error) {
+            console.error("Failed to delete set:", error);
+            alert("Failed to delete set");
+        }
     };
 
     useEffect(() => {
@@ -211,6 +244,8 @@ export default function ActiveWorkoutScreen() {
                 onAddExercise={() => setIsModalVisible(true)} 
                 onRemoveExercise={handleRemoveExercise}
                 onAddSet={handleAddSet}
+                onDeleteSet={handleDeleteSet}
+                onUpdateSet={handleUpdateSet}
             />
             {renderAddExerciseModal()}
         </>
