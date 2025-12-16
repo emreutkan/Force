@@ -4,7 +4,7 @@ import { useUserStore } from '@/state/userStore'; // Use the store!
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function AccountScreen() {
@@ -17,22 +17,30 @@ export default function AccountScreen() {
     }, []);
 
     const handleLogout = () => {
-        Alert.alert(
-            "Logout",
-            "Are you sure you want to logout?",
-            [
-                { text: "Cancel", style: "cancel" },
-                { 
-                    text: "Logout", 
-                    style: "destructive", 
-                    onPress: () => {
-                        clearTokens();
-                        clearUser(); // Clear global state
-                        router.replace('/(auth)');
+        if (Platform.OS === 'web') {
+            if (window.confirm("Are you sure you want to logout?")) {
+                clearTokens();
+                clearUser();
+                router.replace('/(auth)');
+            }
+        } else {
+            Alert.alert(
+                "Logout",
+                "Are you sure you want to logout?",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    { 
+                        text: "Logout", 
+                        style: "destructive", 
+                        onPress: () => {
+                            clearTokens();
+                            clearUser(); // Clear global state
+                            router.replace('/(auth)');
+                        }
                     }
-                }
-            ]
-        );
+                ]
+            );
+        }
     };
 
     return (

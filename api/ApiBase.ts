@@ -3,8 +3,8 @@
 import { Platform } from 'react-native';
 
 const LOCAL_IP = Platform.select({
-    web: '127.0.0.1',
-    default: '192.168.1.15'
+    web: '192.168.1.7',
+    default: '192.168.1.7'
 });
 
 export const API_URL = `http://${LOCAL_IP}:8000/api`;

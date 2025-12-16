@@ -140,12 +140,40 @@ export default function Home() {
         );
     }
 
+    const handleStartNewWorkout = () => {
+        setModalVisible(true);
+    };
+
+    const handleAddPreviousWorkout = () => {
+        // TODO: Implement logic to select from previous workouts
+        Alert.alert("Coming Soon", "This feature is not yet implemented.");
+    };
+
     const renderAddWorkoutButton = () => {
         return (
             <View style={[styles.fabContainer, { bottom: insets.bottom + 20 }]}>
                 <TouchableOpacity 
                     style={styles.fabButton} 
-                    onPress={() => setModalVisible(true)}
+                    onPress={() => {
+                        Alert.alert(
+                            "Start Workout",
+                            "Choose an option",
+                            [
+                                {
+                                    text: "Start New Workout",
+                                    onPress: handleStartNewWorkout
+                                },
+                                {
+                                    text: "Add Previous Workout",
+                                    onPress: handleAddPreviousWorkout
+                                },
+                                {
+                                    text: "Cancel",
+                                    style: "cancel"
+                                }
+                            ]
+                        );
+                    }}
                     activeOpacity={0.8}
                 >
                     <Ionicons name="add" size={32} color="#FFFFFF" />

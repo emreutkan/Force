@@ -1,4 +1,4 @@
-import { addExerciseToWorkout, getExercises, addSetToExercise, deleteSet, updateSet, removeExerciseFromWorkout } from '@/api/Exercises';
+import { addExerciseToWorkout, addSetToExercise, deleteSet, getExercises, removeExerciseFromWorkout, updateSet } from '@/api/Exercises';
 import { getActiveWorkout } from '@/api/Workout';
 import WorkoutDetailView from '@/components/WorkoutDetailView';
 import { Ionicons } from '@expo/vector-icons';
