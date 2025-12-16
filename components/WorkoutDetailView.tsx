@@ -56,19 +56,20 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose }: a
             enabled={!isLocked}
         >
             <View style={styles.setRow}>
-                <Text style={[styles.setText, { width: 0, color: '#8E8E93' }]}>{index + 1}</Text>
-                <Text style={[styles.setText, { flex: 1, textAlign: 'center' }]}>{set.weight}</Text>
-                <Text style={[styles.setText, { flex: 1, textAlign: 'center' }]}>{set.reps}</Text>
-                <Text style={[styles.setText, { width: 40, textAlign: 'right' }]}>{set.reps_in_reserve ?? '-'}</Text>
+                <Text style={[styles.setText, {maxWidth: 30}]}>{index + 1}</Text>
+                <Text style={[styles.setText, {}]}>{set.weight}</Text>
+                <Text style={[styles.setText, {}]}>{set.reps}</Text>
+                <Text style={[styles.setText, {}]}>{set.reps_in_reserve ?? '-'}</Text>
+                <Text style={[styles.setText, {}]}>{set.rest_time_before_set}</Text>
             </View>
         </ReanimatedSwipeable>
     );
 };
 
-const AddSetRow = ({ lastSet, onAdd, isLocked, onFocus }: any) => {
+const AddSetRow = ({ lastSet, nextSetNumber, onAdd, isLocked, onFocus }: any) => {
     const [inputs, setInputs] = useState({ weight: '', reps: '', rir: '', restTime: '', isWarmup: false });
 
-    // Auto-fill from last set on mount or when lastSet changes, but only if inputs are empty
+    // Auto-fill from lastSet on mount or when lastSet changes, but only if inputs are empty
     useEffect(() => {
         if (lastSet) {
             setInputs(prev => ({
@@ -102,26 +103,26 @@ const AddSetRow = ({ lastSet, onAdd, isLocked, onFocus }: any) => {
             rest_time_before_set: restTimeSeconds
         });
 
-        // Reset fields but keep weight/reps for next set convenience? 
-        // User asked to clear inputs in previous code.
+        // Reset fields but keep weight/reps for next set convenience
         setInputs({ weight: inputs.weight, reps: inputs.reps, rir: '', restTime: '', isWarmup: false }); 
     };
 
     if (isLocked) return null;
 
     return (
+     <>
         <View style={styles.setRow}>
             <TouchableOpacity
                 onPress={() => setInputs(p => ({ ...p, isWarmup: !p.isWarmup }))}
-                style={{ width: 30, alignItems: 'center' }}
+                style={{ width: 30, alignItems: 'center', paddingVertical: 10, }}
             >
-                <Text style={[styles.setText, { color: inputs.isWarmup ? '#FF9F0A' : '#8E8E93', fontWeight: inputs.isWarmup ? 'bold' : 'normal' }]}>
-                    {inputs.isWarmup ? 'W' : '+'}
+                <Text style={[styles.setText, {   color: inputs.isWarmup ? '#FF9F0A' : '#8E8E93', fontWeight: inputs.isWarmup ? 'bold' : 'normal' }]}>
+                    {inputs.isWarmup ? 'W' : nextSetNumber}
                 </Text>
             </TouchableOpacity>
 
             <TextInput
-                style={[styles.setInput, { width: '10%', textAlign: 'center' }]}
+                style={[styles.setInput]}
                 value={inputs.weight}
                 onChangeText={t => setInputs(p => ({ ...p, weight: t }))}
                 keyboardType="numeric"
@@ -130,7 +131,7 @@ const AddSetRow = ({ lastSet, onAdd, isLocked, onFocus }: any) => {
                 onFocus={onFocus}
             />
             <TextInput
-                style={[styles.setInput, { width: '10%', textAlign: 'center' }]}
+                style={[styles.setInput]}
                 value={inputs.reps}
                 onChangeText={t => setInputs(p => ({ ...p, reps: t }))}
                 keyboardType="numeric"
@@ -139,7 +140,7 @@ const AddSetRow = ({ lastSet, onAdd, isLocked, onFocus }: any) => {
                 onFocus={onFocus}
             />
             <TextInput
-                style={[styles.setInput, { width: '10%', textAlign: 'right' }]}
+                style={[styles.setInput]}
                 value={inputs.rir}
                 onChangeText={t => setInputs(p => ({ ...p, rir: t }))}
                 keyboardType="numeric"
@@ -148,7 +149,7 @@ const AddSetRow = ({ lastSet, onAdd, isLocked, onFocus }: any) => {
                 onFocus={onFocus}
             />
             <TextInput
-                style={[styles.setInput, { width: '10%', textAlign: 'right', fontSize: 14 }]}
+                style={[styles.setInput]}
                 value={inputs.restTime}
                 onChangeText={t => setInputs(p => ({ ...p, restTime: t }))}
                 keyboardType="numbers-and-punctuation"
@@ -157,14 +158,15 @@ const AddSetRow = ({ lastSet, onAdd, isLocked, onFocus }: any) => {
                 onFocus={onFocus}
             />
             
-            <TouchableOpacity
-                style={[styles.addSetButton, (!inputs.weight || !inputs.reps) && { opacity: 0.5 }]}
-                onPress={handleAdd}
-                disabled={!inputs.weight || !inputs.reps}
-            >
-                <Ionicons name="add" size={20} color="#2C2C2E" />
-            </TouchableOpacity>
+       
         </View>
+             <TouchableOpacity
+             style={[styles.addSetButton, (!inputs.weight || !inputs.reps) && { opacity: 0.5 }]}
+             onPress={handleAdd}
+             disabled={!inputs.weight || !inputs.reps}
+         >
+             <Ionicons name="add" size={24} color="#FFFFFF" />
+         </TouchableOpacity></>
     );
 };
 
@@ -176,6 +178,7 @@ const ExerciseCard = ({ workoutExercise, isLocked, onToggleLock, onRemove, onAdd
     const exerciseKey = `exercise-${idToLock}`;
     const sets = workoutExercise.sets || [];
     const lastSet = sets.length > 0 ? sets[sets.length - 1] : null;
+    const nextSetNumber = sets.length + 1;
 
     const renderLeftActions = (progress: any, dragX: any) => (
         <SwipeAction
@@ -223,10 +226,11 @@ const ExerciseCard = ({ workoutExercise, isLocked, onToggleLock, onRemove, onAdd
                 {(sets.length > 0 || !isLocked) && (
                     <View style={styles.setsContainer}>
                         <View style={styles.setsHeader}>
-                            <Text style={[styles.setHeaderText, {  }]}>Set</Text>
-                            <Text style={[styles.setHeaderText, { width: '20%', textAlign: 'center' }]}>kg</Text>
-                            <Text style={[styles.setHeaderText, { width: '20%', textAlign: 'center' }]}>Reps</Text>
-                            <Text style={[styles.setHeaderText, { width: '20%', textAlign: 'right' }]}>RPE</Text>
+                            <Text style={[styles.setHeaderText, {maxWidth: 30  }]}>Set</Text>
+                            <Text style={[styles.setHeaderText, {  }]}>Weight</Text>
+                            <Text style={[styles.setHeaderText, {  }]}>Reps</Text>
+                            <Text style={[styles.setHeaderText, {  }]}>RPE</Text>
+                            <Text style={[styles.setHeaderText, {  }]}>Rest</Text>
                         </View>
                         
                         {sets.map((set: any, index: number) => {
@@ -247,6 +251,7 @@ const ExerciseCard = ({ workoutExercise, isLocked, onToggleLock, onRemove, onAdd
 
                         <AddSetRow 
                             lastSet={lastSet}
+                            nextSetNumber={nextSetNumber}
                             onAdd={(data: any) => onAddSet(idToLock, data)}
                             isLocked={isLocked}
                             onFocus={swipeControl.closeAll}
@@ -363,7 +368,8 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, onAd
                         </View>
                     ) : (
                         <View style={styles.placeholderContainer}>
-                            <Text style={styles.placeholderText}>No exercises recorded</Text>
+                            <Ionicons name="barbell-outline" size={48} color="#FFFFFF" />
+                            <Text style={styles.placeholderText}>Start adding exercises to your workout using the + button</Text>
                         </View>
                     )}
                 </ScrollView>
@@ -441,13 +447,30 @@ const styles = StyleSheet.create({
         lineHeight: 24,
     },
     placeholderContainer: {
-        padding: 40,
         alignItems: 'center',
         justifyContent: 'center',
+        flex: 1,
+        padding: 40,
+        paddingTop: 100,
+        paddingBottom: 100, 
+        alignSelf: 'center',
     },
     placeholderText: {
-        color: '#2C2C2E',
+        color: '#FFFFFF',
         fontSize: 16,
+        textAlign: 'center',
+        marginTop: 12,
+        fontWeight: '600',
+        opacity: 0.5,
+        maxWidth: 200,
+        lineHeight: 24,
+        paddingHorizontal: 20,
+        paddingVertical: 20,
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
+        borderRadius: 12,
+        backgroundColor: '#1C1C1E',
+        
     },
     fabContainer: {
         position: 'absolute',
@@ -495,12 +518,11 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     addSetButton: {
-        backgroundColor: '#2C2C2E',
+        backgroundColor: '#0A84FF',
         borderRadius: 12,
-        padding: 4,
+        padding: 8,
         alignItems: 'center',
         justifyContent: 'center',
-        marginLeft: 4
     },
     deleteAction: {
         backgroundColor: '#FF3B30',
@@ -527,35 +549,42 @@ const styles = StyleSheet.create({
         borderTopColor: '#2C2C2E',
     },
     setsHeader: {
+        flex: 1,
         flexDirection: 'row',
         marginBottom: 8,
-        paddingHorizontal: 4,
+        paddingLeft: 4,
     },
     setHeaderText: {
+        flex: 1,
         color: '#8E8E93',
         fontSize: 12,
         fontWeight: '600',
+        textAlign: 'center',
     },
     setRow: {
         flexDirection: 'row',
-        paddingVertical: 8,
-        paddingHorizontal: 4,
+        paddingBottom: 8,
+        paddingTop: 4,
+        paddingHorizontal: 0,
         alignItems: 'center',
         backgroundColor: '#1C1C1E',
     },
     setText: {
+        flex: 1,
         color: '#FFFFFF',
         fontSize: 16,
+        textAlign: 'center',
         fontVariant: ['tabular-nums'],
     },
     setInput: {
+        flex: 1,
+        textAlign: 'center',
         color: '#FFFFFF',
         fontSize: 16,
         fontVariant: ['tabular-nums'],
         backgroundColor: '#2C2C2E',
         borderRadius: 6,
-        paddingVertical: 4,
-        paddingHorizontal: 8,
+        paddingVertical: 6,
         marginHorizontal: 4,
     },
     deleteSetAction: {

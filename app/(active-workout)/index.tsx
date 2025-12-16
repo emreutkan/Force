@@ -1,4 +1,4 @@
-import { addExerciseToWorkout, addSetToExercise, deleteSet, getExercises, removeExerciseFromWorkout, updateSet } from '@/api/Exercises';
+import { addExerciseToWorkout, addSetToExercise, deleteSet, getExercises, removeExerciseFromWorkout } from '@/api/Exercises';
 import { getActiveWorkout } from '@/api/Workout';
 import WorkoutDetailView from '@/components/WorkoutDetailView';
 import { Ionicons } from '@expo/vector-icons';
@@ -88,37 +88,6 @@ export default function ActiveWorkoutScreen() {
         }
     };
 
-    const handleUpdateSet = async (setId: number, field: string, value: string) => {
-        // Optimistic update locally first
-        const updatedWorkout = { ...activeWorkout };
-        let setFound = false;
-        
-        // Find and update the set in the local state
-        updatedWorkout.exercises.forEach((ex: any) => {
-            const setIndex = ex.sets.findIndex((s: any) => s.id === setId);
-            if (setIndex !== -1) {
-                ex.sets[setIndex][field] = value;
-                setFound = true;
-            }
-        });
-
-        if (setFound) {
-            setActiveWorkout(updatedWorkout);
-        }
-
-        // Debounce actual API call? For now, let's just send it.
-        // Convert to number for number fields
-        const numericValue = parseFloat(value);
-        if (isNaN(numericValue) && value !== '') return; // Don't send invalid numbers, allow empty string for typing
-
-        try {
-            await updateSet(setId, { [field]: numericValue });
-            // Optionally refresh full workout data periodically or on blur, but not on every keystroke
-        } catch (error) {
-            console.error("Failed to update set:", error);
-        }
-    };
-
     const handleDeleteSet = async (setId: number) => {
         try {
             const success = await deleteSet(setId);
@@ -176,27 +145,30 @@ export default function ActiveWorkoutScreen() {
             >
                 <View style={styles.modalContainer}>
                     <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Select Exercise</Text>
-                        <TouchableOpacity onPress={() => setIsModalVisible(false)}>
-                            <Text style={styles.closeButton}>Cancel</Text>
+                        <Text style={styles.modalTitle}>Add Exercise</Text>
+                        <TouchableOpacity onPress={() => setIsModalVisible(false)} style={styles.closeButtonContainer}>
+                            <Ionicons name="close-circle" size={28} color="#2C2C2E" />
                         </TouchableOpacity>
                     </View>
                     
-                    <View style={styles.searchContainer}>
-                        <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder="Search exercises..."
-                            placeholderTextColor="#8E8E93"
-                            value={searchQuery}
-                            onChangeText={setSearchQuery}
-                            autoCorrect={false}
-                        />
-                        {searchQuery.length > 0 && (
-                            <TouchableOpacity onPress={() => setSearchQuery('')}>
-                                <Ionicons name="close-circle" size={18} color="#8E8E93" />
-                            </TouchableOpacity>
-                        )}
+                    <View style={styles.searchSection}>
+                        <View style={styles.searchBar}>
+                            <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Search exercises..."
+                                placeholderTextColor="#8E8E93"
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                autoCorrect={false}
+                                autoCapitalize="none"
+                            />
+                            {searchQuery.length > 0 && (
+                                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                    <Ionicons name="close-circle" size={18} color="#8E8E93" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
                     </View>
 
                     {isLoadingExercises ? (
@@ -209,22 +181,32 @@ export default function ActiveWorkoutScreen() {
                             keyExtractor={(item) => item.id.toString()}
                             renderItem={({ item }) => (
                                 <TouchableOpacity 
-                                    style={styles.exerciseItem}
+                                    style={styles.exerciseCard}
                                     onPress={() => handleAddExercise(item.id)}
                                 >
-                                    <View style={styles.exerciseInfo}>
-                                        <Text style={styles.exerciseName}>{item.name}</Text>
-                                        <Text style={styles.exerciseDetail}>
-                                            {item.primary_muscle} • {item.equipment_type || 'No Equipment'}
-                                        </Text>
+                                    <View style={styles.exerciseInfoContainer}>
+                                        <View style={styles.exerciseIconPlaceholder}>
+                                            <Text style={styles.exerciseInitial}>
+                                                {item.name.charAt(0).toUpperCase()}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.exerciseTextContent}>
+                                            <Text style={styles.exerciseName}>{item.name}</Text>
+                                            <Text style={styles.exerciseDetail}>
+                                                {item.primary_muscle} {item.equipment_type ? `• ${item.equipment_type}` : ''}
+                                            </Text>
+                                        </View>
                                     </View>
-                                    <Ionicons name="add-circle-outline" size={24} color="#0A84FF" />
+                                    <View style={styles.addButton}>
+                                        <Ionicons name="add" size={24} color="#0A84FF" />
+                                    </View>
                                 </TouchableOpacity>
                             )}
-                            ItemSeparatorComponent={() => <View style={styles.separator} />}
+                            ItemSeparatorComponent={() => <View style={{height: 12}} />}
                             contentContainerStyle={styles.listContent}
                             ListEmptyComponent={
                                 <View style={styles.emptyContainer}>
+                                    <Ionicons name="barbell-outline" size={48} color="#FFFFFF" />
                                     <Text style={styles.emptyText}>No exercises found</Text>
                                 </View>
                             }
@@ -245,7 +227,6 @@ export default function ActiveWorkoutScreen() {
                 onRemoveExercise={handleRemoveExercise}
                 onAddSet={handleAddSet}
                 onDeleteSet={handleDeleteSet}
-                onUpdateSet={handleUpdateSet}
             />
             {renderAddExerciseModal()}
         </>
@@ -255,45 +236,40 @@ export default function ActiveWorkoutScreen() {
 const styles = StyleSheet.create({
     modalContainer: {
         flex: 1,
-        backgroundColor: '#000000', // Black background
-        paddingHorizontal: 8,
-        paddingVertical: 6,
+        backgroundColor: '#000000',
     },
     modalHeader: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         alignItems: 'center',
-        padding: 16,
-        backgroundColor: '#1C1C1E', // Keep header slightly lighter for contrast or make black? User said "all will also have black backgrounds". I'll keep header slightly distinct or make it black with border. Let's make it black with border to match detail view.
+        paddingVertical: 16,
+        paddingHorizontal: 16,
+        backgroundColor: '#1C1C1E',
         borderBottomWidth: 1,
         borderBottomColor: '#2C2C2E',
+        position: 'relative',
     },
     modalTitle: {
-        fontSize: 17,
-        fontWeight: '600',
+        fontSize: 18,
+        fontWeight: '700',
         color: '#FFFFFF',
     },
-    closeButton: {
-        fontSize: 17,
-        color: '#0A84FF',
-        fontWeight: 'bold',
+    closeButtonContainer: {
+        position: 'absolute',
+        right: 16,
+        top: 14,
     },
-    modalContent: {
+    searchSection: {
         padding: 16,
         backgroundColor: '#000000',
     },
-    text: {
-        color: '#FFFFFF',
-        fontSize: 16,
-    },
-    searchContainer: {
+    searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#1C1C1E',
-        margin: 16,
         paddingHorizontal: 12,
-        height: 40,
-        borderRadius: 10,
+        height: 44,
+        borderRadius: 12,
     },
     searchIcon: {
         marginRight: 8,
@@ -313,36 +289,64 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingBottom: 40,
     },
-    exerciseItem: {
+    exerciseCard: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 12,
+        padding: 16,
+        backgroundColor: '#1C1C1E',
+        borderRadius: 12,
     },
-    exerciseInfo: {
+    exerciseInfoContainer: {
         flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
         marginRight: 12,
+    },
+    exerciseIconPlaceholder: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#2C2C2E',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    exerciseInitial: {
+        color: '#8E8E93',
+        fontSize: 18,
+        fontWeight: '600',
+    },
+    exerciseTextContent: {
+        flex: 1,
     },
     exerciseName: {
         color: '#FFFFFF',
         fontSize: 16,
-        fontWeight: '500',
-        marginBottom: 4,
+        fontWeight: '600',
+        marginBottom: 2,
     },
     exerciseDetail: {
         color: '#8E8E93',
-        fontSize: 14,
+        fontSize: 13,
     },
-    separator: {
-        height: 1,
-        backgroundColor: '#2C2C2E',
+    addButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: 'rgba(10, 132, 255, 0.15)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     emptyContainer: {
-        padding: 32,
+        padding: 48,
         alignItems: 'center',
+        justifyContent: 'center',
+        opacity: 0.5,
     },
     emptyText: {
         color: '#8E8E93',
         fontSize: 16,
+        marginTop: 12,
     }
 });
