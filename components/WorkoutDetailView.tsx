@@ -1,10 +1,11 @@
+import { updateExerciseOrder } from '@/api/Exercises';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 // --- Shared Types & Helpers ---
 
 interface SwipeActionProps {
@@ -34,6 +35,65 @@ const SwipeAction = ({ progress, dragX, onPress, iconSize = 24, style, iconName,
 
 // --- Sub-Components ---
 
+const RestTimerBar = ({ lastSetTimestamp }: { lastSetTimestamp: number | null }) => {
+    const [progress, setProgress] = useState(0);
+    const [timerText, setTimerText] = useState('');
+    const [barColor, setBarColor] = useState('#FF3B30');
+
+    useEffect(() => {
+        if (!lastSetTimestamp) {
+            setProgress(0);
+            setTimerText('');
+            return;
+        }
+
+        const update = () => {
+            const now = Date.now();
+            const elapsed = Math.floor((now - lastSetTimestamp) / 1000);
+            
+            // Progress bar calc (0 to 3 mins = 0% to 100%)
+            // 3 mins = 180 seconds
+            const p = Math.min(elapsed / 180, 1);
+            setProgress(p);
+
+            // Timer text
+            const m = Math.floor(elapsed / 60);
+            const s = elapsed % 60;
+            setTimerText(`${m}:${s.toString().padStart(2, '0')}`);
+
+            // Color interpolation
+            if (p >= 1) {
+                setBarColor('#34C759'); // Green
+            } else {
+                const start = [255, 59, 48]; // Red
+                const end = [52, 199, 89];   // Green
+                const r = Math.round(start[0] + (end[0] - start[0]) * p);
+                const g = Math.round(start[1] + (end[1] - start[1]) * p);
+                const b = Math.round(start[2] + (end[2] - start[2]) * p);
+                setBarColor(`rgb(${r}, ${g}, ${b})`);
+            }
+        };
+
+        update();
+        const interval = setInterval(update, 1000);
+        return () => clearInterval(interval);
+    }, [lastSetTimestamp]);
+
+    if (!lastSetTimestamp) return null;
+
+    return (
+        <View style={styles.restTimerContainer}>
+            <View style={styles.restTimerBarBg}>
+                <View style={[styles.restTimerBarFill, { width: `${progress * 100}%`, backgroundColor: barColor }]} />
+            </View>
+            <View style={styles.restTimerInfo}>
+                <Text style={styles.restTimerLabel}>Rest</Text>
+                <Text style={styles.restTimerValue}>{timerText} / 3:00</Text>
+            </View>
+        </View>
+    );
+};
+
 const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose }: any) => {
     const renderRightActions = (progress: any, dragX: any) => (
         <SwipeAction
@@ -46,6 +106,22 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose }: a
         />
     );
 
+    const formatRestTime = (seconds: number) => {
+        if (!seconds) return '-';
+        if (seconds < 60) return seconds.toString();
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
+
+    const formatWeight = (weight: number) => {
+        if (!weight && weight !== 0) return '-';
+        // If it's an integer, return as is (e.g. 100 -> "100")
+        if (Number.isInteger(weight)) return weight.toString();
+        // If it's a decimal, show 1 digit (e.g. 22.50 -> "22.5")
+        return weight.toFixed ? weight.toFixed(1) : weight.toString();
+    };
+
     return (
         <ReanimatedSwipeable
             ref={swipeRef}
@@ -57,10 +133,10 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose }: a
         >
             <View style={styles.setRow}>
                 <Text style={[styles.setText, {maxWidth: 30}]}>{index + 1}</Text>
-                <Text style={[styles.setText, {}]}>{set.weight}</Text>
+                <Text style={[styles.setText, {}]}>{formatWeight(set.weight)}</Text>
                 <Text style={[styles.setText, {}]}>{set.reps}</Text>
                 <Text style={[styles.setText, {}]}>{set.reps_in_reserve ?? '-'}</Text>
-                <Text style={[styles.setText, {}]}>{set.rest_time_before_set}</Text>
+                <Text style={[styles.setText, {}]}>{formatRestTime(set.rest_time_before_set)}</Text>
             </View>
         </ReanimatedSwipeable>
     );
@@ -101,7 +177,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, onAdd, isLocked, onFocus }: any) =>
             reps_in_reserve: inputs.rir ? parseFloat(inputs.rir) : 0,
             is_warmup: inputs.isWarmup,
             rest_time_before_set: restTimeSeconds
-        });
+        }, !inputs.restTime); // Pass true to use global timer if restTime input is empty
 
         // Reset fields but keep weight/reps for next set convenience
         setInputs({ weight: inputs.weight, reps: inputs.reps, rir: '', restTime: '', isWarmup: false }); 
@@ -252,7 +328,7 @@ const ExerciseCard = ({ workoutExercise, isLocked, onToggleLock, onRemove, onAdd
                         <AddSetRow 
                             lastSet={lastSet}
                             nextSetNumber={nextSetNumber}
-                            onAdd={(data: any) => onAddSet(idToLock, data)}
+                            onAdd={(data: any, useGlobalTimer: boolean) => onAddSet(idToLock, data, useGlobalTimer)}
                             isLocked={isLocked}
                             onFocus={swipeControl.closeAll}
                         />
@@ -279,11 +355,28 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, onAd
     const insets = useSafeAreaInsets();
     const [lockedExerciseIds, setLockedExerciseIds] = useState<Set<number>>(new Set());
     const [exercises, setExercises] = useState(workout?.exercises || []);
+    const [lastSetTimestamp, setLastSetTimestamp] = useState<number | null>(null);
+
     useEffect(() => {
         if (workout?.exercises) {
             setExercises(workout.exercises);
         }
     }, [workout]);
+
+    const handleAddSet = (exerciseId: number, data: any, useGlobalTimer: boolean) => {
+        const now = Date.now();
+        let finalData = { ...data };
+        
+        // Only use global timer if user didn't enter a custom rest time
+        if (useGlobalTimer && lastSetTimestamp) {
+             const elapsedSeconds = Math.floor((now - lastSetTimestamp) / 1000);
+             finalData.rest_time_before_set = elapsedSeconds;
+        }
+
+        onAddSet?.(exerciseId, finalData);
+        // Reset global timer
+        setLastSetTimestamp(now);
+    };
     // Swipe Logic
     const swipeableRefs = useRef<Map<string, SwipeableMethods>>(new Map());
     const currentlyOpenSwipeable = useRef<string | null>(null);
@@ -331,6 +424,29 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, onAd
         );
     }
 
+    const renderItems = ({item, drag, isActive}: {item: any, drag: () => void, isActive: boolean}) => {
+    
+        return (
+            <ScaleDecorator activeScale={0.8}>
+                <TouchableOpacity
+                    onLongPress={drag} // Long press to start dragging
+                    disabled={isActive} 
+                    delayLongPress={100}
+                >
+                                    <ExerciseCard
+                                    key={item.order}
+                                    workoutExercise={item}
+                                    isLocked={lockedExerciseIds.has(item.id)}
+                                    onToggleLock={toggleLock}
+                                    onRemove={onRemoveExercise}
+                                    onAddSet={handleAddSet}
+                                    onDeleteSet={onDeleteSet}
+                                    swipeControl={swipeControl}
+                                />
+                </TouchableOpacity>
+            </ScaleDecorator>
+        );
+    };
     return (
         <TouchableWithoutFeedback onPress={closeCurrentSwipeable}>
             <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -347,37 +463,30 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, onAd
                         {elapsedTime}
                     </Text>
                 </View>
+                
+                <RestTimerBar lastSetTimestamp={lastSetTimestamp} />
 
-                <ScrollView style={styles.content} onScrollBeginDrag={closeCurrentSwipeable}>
-                    {workout.notes ? (
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>NOTES</Text>
-                            <Text style={styles.notesText}>{workout.notes}</Text>
-                        </View>
-                    ) : null}
 
-                    {workout.exercises && workout.exercises.length > 0 ? (
-                        <View style={styles.section}>
-                            {workout.exercises.map((workoutExercise: any, index: number) => (
-                                <ExerciseCard
-                                    key={workoutExercise.order || index}
-                                    workoutExercise={workoutExercise}
-                                    isLocked={lockedExerciseIds.has(workoutExercise.id || index)}
-                                    onToggleLock={toggleLock}
-                                    onRemove={onRemoveExercise}
-                                    onAddSet={onAddSet}
-                                    onDeleteSet={onDeleteSet}
-                                    swipeControl={swipeControl}
-                                />
-                            ))}
-                        </View>
-                    ) : (
-                        <View style={styles.placeholderContainer}>
-                            <Ionicons name="barbell-outline" size={48} color="#FFFFFF" />
-                            <Text style={styles.placeholderText}>Start adding exercises to your workout using the + button</Text>
-                        </View>
-                    )}
-                </ScrollView>
+                            <View                 style={styles.content}
+                            >
+              <DraggableFlatList
+                data={exercises}
+                onDragEnd={async ({ data }: { data: any }) => {
+                    setExercises(data); // Update UI immediately
+                    const exerciseOrders = data.map((item: any, index: number) => ({ id: item.id, order: index + 1 }));
+                    const response = await updateExerciseOrder(workout.id, exerciseOrders);
+                    if (response) {
+                        console.log('Exercise order updated successfully');
+                    } else {
+                        console.log('Failed to update exercise order');
+                    }
+                }}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderItems}
+        
+            />
+                            </View>
+  
                 
                 {isActive && onAddExercise && (
                     <View style={styles.fabContainer}>
@@ -607,4 +716,40 @@ const styles = StyleSheet.create({
         height: '100%',
         borderRadius: 0,
     },
+    restTimerContainer: {
+        paddingHorizontal: 20,
+        paddingBottom: 16,
+        paddingTop: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#1C1C1E',
+    },
+    restTimerBarBg: {
+        height: 6,
+        backgroundColor: '#2C2C2E',
+        borderRadius: 3,
+        marginBottom: 8,
+        overflow: 'hidden',
+    },
+    restTimerBarFill: {
+        height: '100%',
+        borderRadius: 3,
+    },
+    restTimerInfo: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    restTimerLabel: {
+        color: '#8E8E93',
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    restTimerValue: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
+        fontVariant: ['tabular-nums'],
+    },
 });
+
+

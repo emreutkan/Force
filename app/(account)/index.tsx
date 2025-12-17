@@ -43,6 +43,7 @@ export default function AccountScreen() {
         }
     };
 
+
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             {/* iOS-style Navigation Bar */}
@@ -55,39 +56,24 @@ export default function AccountScreen() {
                 <View style={{ width: 60 }} /> 
             </View>
 
-            <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 40 }}>
-                {/* Profile Section - iOS Style */}
-                <View style={styles.profileHeader}>
-                    <View style={styles.avatarContainer}>
-                        <Text style={styles.avatarText}>
-                            {user?.first_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'}
-                        </Text>
+            <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 40, paddingTop: 24 }}>
+                {/* Profile Card */}
+                <View style={styles.section}>
+                    <View style={styles.profileCard}>
+                        <View style={styles.avatarContainer}>
+                            <Text style={styles.avatarText}>
+                                {user?.first_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'}
+                            </Text>
+                        </View>
+                        <View style={styles.profileInfo}>
+                            <Text style={styles.profileName}>
+                                {user?.first_name ? `${user.first_name} ${user.last_name || ''}` : 'User'}
+                            </Text>
+                            <Text style={styles.profileEmail}>{user?.email || 'Loading...'}</Text>
+                        </View>
                     </View>
-                    <Text style={styles.profileName}>
-                        {user?.first_name ? `${user.first_name} ${user.last_name || ''}` : 'User'}
-                    </Text>
-                    <Text style={styles.profileEmail}>{user?.email || 'Loading...'}</Text>
                 </View>
 
-                {/* Settings Group */}
-                <Text style={styles.sectionTitle}>Settings</Text>
-                <View style={styles.section}>
-                    <TouchableOpacity style={styles.menuItem}>
-                        <View style={[styles.iconContainer, { backgroundColor: '#8E8E93' }]}>
-                            <Ionicons name="settings-outline" size={20} color="#FFF" />
-                        </View>
-                        <Text style={styles.menuText}>General</Text>
-                        <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]}>
-                        <View style={[styles.iconContainer, { backgroundColor: '#FF3B30' }]}>
-                            <Ionicons name="notifications-outline" size={20} color="#FFF" />
-                        </View>
-                        <Text style={styles.menuText}>Notifications</Text>
-                        <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
-                    </TouchableOpacity>
-                </View>
 
                 {/* Logout Group */}
                 <View style={[styles.section, { marginTop: 24 }]}>
@@ -96,7 +82,6 @@ export default function AccountScreen() {
                     </TouchableOpacity>
                 </View>
 
-                <Text style={styles.versionText}>Version 1.0.0</Text>
             </ScrollView>
         </View>
     );
@@ -133,33 +118,37 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
     },
-    profileHeader: {
+    profileCard: {
+        flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 30,
-        marginBottom: 10,
+        padding: 16,
     },
     avatarContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: '#1C1C1E', 
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: '#2C2C2E', 
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 16,
+        marginRight: 16,
+    },
+    profileInfo: {
+        flex: 1,
+        justifyContent: 'center',
     },
     avatarText: {
-        fontSize: 32,
+        fontSize: 24,
         fontWeight: '600',
         color: '#8E8E93',
     },
     profileName: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: '600', 
         color: '#FFFFFF',
         marginBottom: 4,
     },
     profileEmail: {
-        fontSize: 16,
+        fontSize: 15,
         color: '#8E8E93',
     },
     sectionTitle: {
@@ -168,11 +157,12 @@ const styles = StyleSheet.create({
         color: '#8E8E93',
         textTransform: 'uppercase',
         marginLeft: 32, 
+        marginTop: 24, // Added spacing
         marginBottom: 8,
     },
     section: {
-        backgroundColor: '#1C1C1E', // Dark Card
-        borderRadius: 10,
+        backgroundColor: '#1C1C1E', 
+        borderRadius: 12, // Smoother corners
         marginHorizontal: 16,
         overflow: 'hidden',
     },
@@ -205,10 +195,4 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         width: '100%',
     },
-    versionText: {
-        textAlign: 'center',
-        color: '#C7C7CC',
-        marginTop: 24,
-        fontSize: 13,
-    }
 });

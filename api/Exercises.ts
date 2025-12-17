@@ -33,6 +33,7 @@ export const removeExerciseFromWorkout = async (workoutId: number, exerciseId: n
     } catch (error: any) {
         return false;
     }
+
 }
 
 export interface AddSetRequest {
@@ -73,5 +74,14 @@ export const updateSet = async (setId: number, data: UpdateSetRequest) => {
         return response.data;
     } catch (error: any) {
         return error.message || 'An unknown error occurred';
+    }
+}
+
+export const updateExerciseOrder = async (workoutId: number, exercise_orders: { id: number, order: number }[]) => {
+    try {
+        const response = await apiClient.post(`/workout/${workoutId}/update_order/`, { exercise_orders: exercise_orders });
+        return response.status === 200;
+    } catch (error: any) {
+        return false;
     }
 }
