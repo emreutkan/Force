@@ -3,7 +3,7 @@ import { useActiveWorkoutStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
@@ -189,13 +189,22 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose }: a
 const AddSetRow = ({ lastSet, nextSetNumber, onAdd, isLocked, onFocus }: any) => {
     const [inputs, setInputs] = useState({ weight: '', reps: '', rir: '', restTime: '', isWarmup: false });
 
+    // Format weight to remove unnecessary decimals (same logic as formatWeight)
+    const formatWeightForInput = (weight: number) => {
+        if (!weight && weight !== 0) return '';
+        const w = Number(weight);
+        if (isNaN(w)) return '';
+        if (Math.abs(w % 1) < 0.0000001) return Math.round(w).toString();
+        return parseFloat(w.toFixed(2)).toString();
+    };
+
     // Auto-fill from lastSet on mount or when lastSet changes, but only if inputs are empty
     useEffect(() => {
         if (lastSet) {
             setInputs(prev => ({
                 ...prev,
-                weight: prev.weight || lastSet.weight?.toString() || '',
-                reps: prev.reps || lastSet.reps?.toString() || ''
+                weight: prev.weight || (lastSet.weight != null ? formatWeightForInput(lastSet.weight) : ''),
+                reps: prev.reps || (lastSet.reps != null ? lastSet.reps.toString() : '')
             }));
         }
     }, [lastSet]);
@@ -299,7 +308,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, onAdd, isLocked, onFocus }: any) =>
     );
 };
 
-const ExerciseCard = ({ workoutExercise, isLocked, onToggleLock, onRemove, onAddSet, onDeleteSet, swipeControl, onInputFocus }: any) => {
+const ExerciseCard = ({ workoutExercise, isLocked, onToggleLock, onRemove, onAddSet, onDeleteSet, swipeControl, onInputFocus, onShowInfo }: any) => {
     const exercise = workoutExercise.exercise || (workoutExercise.name ? workoutExercise : null);
     if (!exercise) return null;
 
@@ -343,9 +352,18 @@ const ExerciseCard = ({ workoutExercise, isLocked, onToggleLock, onRemove, onAdd
             <View style={[styles.exerciseCard, { marginBottom: 0 }]}>
                 <View style={styles.exerciseRow}>
                     <View style={styles.exerciseInfo}>
-                        <Text style={styles.exerciseName}>
-                            {exercise.name} {isLocked && <Ionicons name="lock-closed" size={14} color="#8E8E93" />}
-                        </Text>
+                        <View style={styles.exerciseNameRow}>
+                            <Text style={styles.exerciseName}>
+                                {exercise.name} {isLocked && <Ionicons name="lock-closed" size={14} color="#8E8E93" />}
+                            </Text>
+                            <TouchableOpacity 
+                                onPress={() => onShowInfo?.(exercise)}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                style={styles.exerciseMenuButton}
+                            >
+                                <Ionicons name="ellipsis-horizontal" size={20} color="#8E8E93" />
+                            </TouchableOpacity>
+                        </View>
                         <View style={styles.exerciseInfoRow}>
                             <View style={styles.exerciseMusclesContainer}>
                                 {exercise.primary_muscle && (
@@ -434,6 +452,7 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, onAd
     const insets = useSafeAreaInsets();
     const [lockedExerciseIds, setLockedExerciseIds] = useState<Set<number>>(new Set());
     const [exercises, setExercises] = useState(workout?.exercises || []);
+    const [selectedExerciseInfo, setSelectedExerciseInfo] = useState<any>(null);
     
     // Use global store for rest timer state
     const { 
@@ -550,12 +569,14 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, onAd
                                         const idx = getIndex();
                                         if (idx !== undefined) handleInputFocus(idx);
                                     }}
+                                    onShowInfo={(exercise: any) => setSelectedExerciseInfo(exercise)}
                                 />
                 </TouchableOpacity>
             </ScaleDecorator>
         );
     };
     return (
+        <>
         <TouchableWithoutFeedback onPress={closeCurrentSwipeable}>
             <View style={{ flex: 1, backgroundColor: '#000000' }}>
                 <KeyboardAvoidingView 
@@ -587,6 +608,7 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, onAd
                         <DraggableFlatList
                             ref={flatListRef}
                             data={exercises}
+                            showsVerticalScrollIndicator={false}
                             contentContainerStyle={{ paddingBottom: hasSets && isActive ? 200 : 120 }} // Extra padding when finish button is shown
                             onDragEnd={async ({ data }: { data: any }) => {
                                 setExercises(data); // Update UI immediately
@@ -636,6 +658,68 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, onAd
                 </KeyboardAvoidingView>
             </View>
         </TouchableWithoutFeedback>
+            
+        {/* Exercise Info Modal */}
+        <Modal
+                visible={selectedExerciseInfo !== null}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setSelectedExerciseInfo(null)}
+            >
+                {selectedExerciseInfo && (
+                    <View style={styles.modalContainer}>
+                        <View style={[styles.modalHeader, { paddingTop: insets.top + 16 }]}>
+                            <Text style={styles.modalTitle}>{selectedExerciseInfo.name}</Text>
+                            <TouchableOpacity 
+                                onPress={() => setSelectedExerciseInfo(null)}
+                                style={styles.modalCloseButton}
+                            >
+                                <Ionicons name="close" size={24} color="#FFFFFF" />
+                            </TouchableOpacity>
+                        </View>
+                        
+                        <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalContentContainer}>
+                            {selectedExerciseInfo.description && (
+                                <View style={styles.infoSection}>
+                                    <Text style={styles.infoSectionTitle}>Description</Text>
+                                    <Text style={styles.infoSectionText}>{selectedExerciseInfo.description}</Text>
+                                </View>
+                            )}
+                            
+                            {selectedExerciseInfo.instructions && (
+                                <View style={styles.infoSection}>
+                                    <Text style={styles.infoSectionTitle}>Instructions</Text>
+                                    <Text style={styles.infoSectionText}>{selectedExerciseInfo.instructions}</Text>
+                                </View>
+                            )}
+                            
+                            {selectedExerciseInfo.safety_tips && (
+                                <View style={styles.infoSection}>
+                                    <Text style={styles.infoSectionTitle}>Safety Tips</Text>
+                                    <Text style={styles.infoSectionText}>{selectedExerciseInfo.safety_tips}</Text>
+                                </View>
+                            )}
+                            
+                            <View style={styles.infoRow}>
+                                {selectedExerciseInfo.category && (
+                                    <View style={styles.infoBadge}>
+                                        <Text style={styles.infoBadgeLabel}>Category</Text>
+                                        <Text style={styles.infoBadgeValue}>{selectedExerciseInfo.category}</Text>
+                                    </View>
+                                )}
+                                
+                                {selectedExerciseInfo.difficulty_level && (
+                                    <View style={styles.infoBadge}>
+                                        <Text style={styles.infoBadgeLabel}>Difficulty</Text>
+                                        <Text style={styles.infoBadgeValue}>{selectedExerciseInfo.difficulty_level}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        </ScrollView>
+                    </View>
+                )}
+            </Modal>
+        </>
     );
 }
 
@@ -735,11 +819,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     exerciseInfo: { flex: 1 },
+    exerciseNameRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
     exerciseName: {
         color: '#FFFFFF',
         fontSize: 17,
         fontWeight: '600',
-        marginBottom: 8,
+        flex: 1,
+    },
+    exerciseMenuButton: {
+        padding: 4,
+        marginLeft: 8,
     },
     exerciseInfoRow: {
         flexDirection: 'row',
@@ -773,10 +867,11 @@ const styles = StyleSheet.create({
         fontWeight: '400',
     },
     lockedTag: {
-        opacity: 0.7, // Slight dimming but still visible
+        opacity: 0.85, // Less dimming for better visibility
+        backgroundColor: '#2C2C2E', // Ensure background is visible
     },
     lockedTagText: {
-        color: '#8E8E93', // Ensure readable color even when locked
+        color: '#A1A1A6', // Lighter grey for better contrast (4.5:1 ratio)
         opacity: 1, // Override parent opacity for text
     },
     addSetButton: {
@@ -854,15 +949,21 @@ const styles = StyleSheet.create({
     setInput: {
         flex: 1,
         textAlign: 'center',
+        textAlignVertical: 'center', // Center text vertically
         color: '#FFFFFF',
         fontSize: 16,
         fontVariant: ['tabular-nums'],
         backgroundColor: 'transparent', // Remove solid background
         borderBottomWidth: 1,
         borderBottomColor: '#3A3A3C', // Light grey underline
-        paddingVertical: 12,
+        paddingVertical: 8, // Reduced to align text closer to underline
+        paddingBottom: 4, // Extra bottom padding to push text down
         marginHorizontal: 4,
         minHeight: 44,
+        lineHeight: 20, // Match setText line height
+        ...Platform.select({
+            android: { includeFontPadding: false }, // Remove extra padding on Android
+        }),
     },
     deleteSetAction: {
         backgroundColor: '#FF3B30',
@@ -958,6 +1059,75 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '700',
         letterSpacing: 0.5,
+    },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: '#000000',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#1C1C1E',
+    },
+    modalTitle: {
+        color: '#FFFFFF',
+        fontSize: 20,
+        fontWeight: '700',
+        flex: 1,
+    },
+    modalCloseButton: {
+        padding: 4,
+    },
+    modalContent: {
+        flex: 1,
+    },
+    modalContentContainer: {
+        padding: 20,
+        paddingBottom: 40,
+    },
+    infoSection: {
+        marginBottom: 24,
+    },
+    infoSectionTitle: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 8,
+    },
+    infoSectionText: {
+        color: '#8E8E93',
+        fontSize: 15,
+        lineHeight: 22,
+    },
+    infoRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 8,
+    },
+    infoBadge: {
+        backgroundColor: '#1C1C1E',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
+    },
+    infoBadgeLabel: {
+        color: '#8E8E93',
+        fontSize: 11,
+        fontWeight: '500',
+        marginBottom: 4,
+        textTransform: 'uppercase',
+    },
+    infoBadgeValue: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
+        textTransform: 'capitalize',
     },
 });
 
