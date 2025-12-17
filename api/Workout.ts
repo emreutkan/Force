@@ -45,3 +45,21 @@ export const getWorkout = async (workoutID: number): Promise<Workout | any> => {
             return error.message || 'An unknown error occurred';
         }
     }
+
+export const completeWorkout = async (workoutID: number, data?: { duration?: string, intensity?: number, notes?: string }): Promise<any> => {
+    try {
+        const response = await apiClient.post(`/workout/${workoutID}/complete/`, data);
+        return response.data;
+    } catch (error: any) {
+        return error.message || 'An unknown error occurred';
+    }
+}
+
+export const deleteWorkout = async (workoutID: number): Promise<any> => {
+    try {
+        const response = await apiClient.delete(`/workout/${workoutID}/delete/`);
+        return response.data;
+    } catch (error: any) {
+        return error.message || 'An unknown error occurred';
+    }
+}

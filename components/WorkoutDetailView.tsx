@@ -1,14 +1,13 @@
 import { updateExerciseOrder } from '@/api/Exercises';
 import { useActiveWorkoutStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import ReanimatedSwipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-// --- Shared Types & Helpers ---
-
 interface SwipeActionProps {
     progress: any;
     dragX: any;
@@ -142,18 +141,29 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose }: a
 
     const formatRestTime = (seconds: number) => {
         if (!seconds) return '-';
-        if (seconds < 60) return seconds.toString();
+        if (seconds < 60) return `${seconds}s`;
         const m = Math.floor(seconds / 60);
         const s = seconds % 60;
-        return `${m}:${s.toString().padStart(2, '0')}`;
+        return `${m}m ${s > 0 ? s + 's' : ''}`;
     };
 
     const formatWeight = (weight: number) => {
         if (!weight && weight !== 0) return '-';
-        // If it's an integer, return as is (e.g. 100 -> "100")
-        if (Number.isInteger(weight)) return weight.toString();
-        // If it's a decimal, show 1 digit (e.g. 22.50 -> "22.5")
-        return weight.toFixed ? weight.toFixed(1) : weight.toString();
+        // Parse as number first to handle cases where it might be coming as string
+        const w = Number(weight);
+        if (isNaN(w)) return '-';
+        
+        // Round to nearest 0.25 (standard plate increment)
+        // Or if you want to be stricter, just strip unnecessary decimals
+        
+        // If it's effectively an integer (e.g. 12.0 or 12.00)
+        if (Math.abs(w % 1) < 0.0000001) return Math.round(w).toString();
+        
+        // If it has decimals, show up to 2 but strip trailing zeros
+        // For 53.22 -> maybe round to 53.25? 
+        // User requested: "strip trailing decimals if they aren't necessary"
+        // Let's stick to max 2 decimals but remove trailing zeros (e.g. 12.50 -> 12.5)
+        return parseFloat(w.toFixed(2)).toString();
     };
 
     return (
@@ -270,17 +280,27 @@ const AddSetRow = ({ lastSet, nextSetNumber, onAdd, isLocked, onFocus }: any) =>
             
        
         </View>
-             <TouchableOpacity
-             style={[styles.addSetButton, (!inputs.weight || !inputs.reps) && { opacity: 0.5 }]}
-             onPress={handleAdd}
-             disabled={!inputs.weight || !inputs.reps}
-         >
-             <Text style={styles.addSetButtonText}>Add Set</Text>
-         </TouchableOpacity></>
+
+        {inputs.weight && inputs.reps && (
+                   <TouchableOpacity
+                   style={[styles.addSetButton, (!inputs.weight || !inputs.reps) && { opacity: 0.5 }]}
+                   onPress={handleAdd}
+                   disabled={!inputs.weight || !inputs.reps}
+               >
+                   <Text style={styles.addSetButtonText}>Add Set</Text>
+               </TouchableOpacity>
+               
+        )}
+
+    
+      
+         
+         
+         </>
     );
 };
 
-const ExerciseCard = ({ workoutExercise, isLocked, onToggleLock, onRemove, onAddSet, onDeleteSet, swipeControl }: any) => {
+const ExerciseCard = ({ workoutExercise, isLocked, onToggleLock, onRemove, onAddSet, onDeleteSet, swipeControl, onInputFocus }: any) => {
     const exercise = workoutExercise.exercise || (workoutExercise.name ? workoutExercise : null);
     if (!exercise) return null;
 
@@ -339,7 +359,7 @@ const ExerciseCard = ({ workoutExercise, isLocked, onToggleLock, onRemove, onAdd
                             <Text style={[styles.setHeaderText, {maxWidth: 30  }]}>Set</Text>
                             <Text style={[styles.setHeaderText, {  }]}>Weight</Text>
                             <Text style={[styles.setHeaderText, {  }]}>Reps</Text>
-                            <Text style={[styles.setHeaderText, {  }]}>RPE</Text>
+                            <Text style={[styles.setHeaderText, {  }]}>RIR</Text>
                             <Text style={[styles.setHeaderText, {  }]}>Rest</Text>
                         </View>
                         
@@ -364,7 +384,10 @@ const ExerciseCard = ({ workoutExercise, isLocked, onToggleLock, onRemove, onAdd
                             nextSetNumber={nextSetNumber}
                             onAdd={(data: any, useGlobalTimer: boolean) => onAddSet(idToLock, data, useGlobalTimer)}
                             isLocked={isLocked}
-                            onFocus={swipeControl.closeAll}
+                            onFocus={() => {
+                                swipeControl.closeAll();
+                                onInputFocus?.();
+                            }}
                         />
                     </View>
                 )}
@@ -383,9 +406,10 @@ interface WorkoutDetailViewProps {
     onRemoveExercise?: (exerciseId: number) => void;
     onAddSet?: (exerciseId: number, data: any) => void;
     onDeleteSet?: (setId: number) => void;
+    onCompleteWorkout?: () => void;
 }
 
-export default function WorkoutDetailView({ workout, elapsedTime, isActive, onAddExercise, onRemoveExercise, onAddSet, onDeleteSet }: WorkoutDetailViewProps) {
+export default function WorkoutDetailView({ workout, elapsedTime, isActive, onAddExercise, onRemoveExercise, onAddSet, onDeleteSet, onCompleteWorkout }: WorkoutDetailViewProps) {
     const insets = useSafeAreaInsets();
     const [lockedExerciseIds, setLockedExerciseIds] = useState<Set<number>>(new Set());
     const [exercises, setExercises] = useState(workout?.exercises || []);
@@ -397,6 +421,9 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, onAd
         setLastSetTimestamp, 
         setLastExerciseCategory 
     } = useActiveWorkoutStore();
+
+    // Move useRef to the top level, before any conditional returns
+    const flatListRef = useRef<any>(null);
 
     useEffect(() => {
         if (workout?.exercises) {
@@ -470,7 +497,17 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, onAd
         );
     }
 
-    const renderItems = ({item, drag, isActive}: {item: any, drag: () => void, isActive: boolean}) => {
+    const handleInputFocus = (index: number) => {
+        // Scroll to the item with a slight delay to allow keyboard to appear
+        setTimeout(() => {
+            flatListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0 });
+        }, 100);
+    };
+
+    // Check if there's at least one exercise with at least one set
+    const hasSets = exercises.some((ex: any) => ex.sets && ex.sets.length > 0);
+
+    const renderItems = ({item, drag, isActive, getIndex}: {item: any, drag: () => void, isActive: boolean, getIndex: () => number | undefined}) => {
     
         return (
             <ScaleDecorator activeScale={0.8}>
@@ -488,6 +525,10 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, onAd
                                     onAddSet={handleAddSet}
                                     onDeleteSet={onDeleteSet}
                                     swipeControl={swipeControl}
+                                    onInputFocus={() => {
+                                        const idx = getIndex();
+                                        if (idx !== undefined) handleInputFocus(idx);
+                                    }}
                                 />
                 </TouchableOpacity>
             </ScaleDecorator>
@@ -495,58 +536,79 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, onAd
     };
     return (
         <TouchableWithoutFeedback onPress={closeCurrentSwipeable}>
-            <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-                <View style={styles.workoutHeader}>
-                    <View>
-                        <Text style={styles.workoutTitle}>{workout.title}</Text>
-                        <Text style={styles.workoutDate}>
-                            {new Date(workout.created_at).toLocaleDateString(undefined, {
-                                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-                            })}
+            <View style={{ flex: 1, backgroundColor: '#000000' }}>
+                <KeyboardAvoidingView 
+                    style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
+                    behavior={Platform.OS === "ios" ? "padding" : undefined}
+                    keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+                >
+                    <View style={styles.workoutHeader}>
+                        <View>
+                            <Text style={styles.workoutTitle}>{workout.title}</Text>
+                            <Text style={styles.workoutDate}>
+                                {new Date(workout.created_at).toLocaleDateString(undefined, {
+                                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                                })}
+                            </Text>
+                        </View>
+                        <Text style={[styles.workoutDuration, { color: isActive ? 'orange' : '#8E8E93' }]}>
+                            {elapsedTime}
                         </Text>
                     </View>
-                    <Text style={[styles.workoutDuration, { color: isActive ? 'orange' : '#8E8E93' }]}>
-                        {elapsedTime}
-                    </Text>
-                </View>
-                
-                <RestTimerBar lastSetTimestamp={lastSetTimestamp} category={lastExerciseCategory} />
+                    
+                    <RestTimerBar lastSetTimestamp={lastSetTimestamp} category={lastExerciseCategory} />
 
-
-                            <View                 style={styles.content}
-                            >
-              <DraggableFlatList
-                data={exercises}
-                onDragEnd={async ({ data }: { data: any }) => {
-                    setExercises(data); // Update UI immediately
-                    const exerciseOrders = data.map((item: any, index: number) => ({ id: item.id, order: index + 1 }));
-                    const response = await updateExerciseOrder(workout.id, exerciseOrders);
-                    if (response) {
-                        console.log('Exercise order updated successfully');
-                    } else {
-                        console.log('Failed to update exercise order');
-                    }
-                }}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={renderItems}
-        
-            />
-                            </View>
-  
-                
-                {isActive && onAddExercise && (
-                    <View style={styles.fabContainer}>
-                        <TouchableOpacity 
-                            onPress={() => {
-                                closeCurrentSwipeable();
-                                onAddExercise();
+                    <View style={styles.content}>
+                        <DraggableFlatList
+                            ref={flatListRef}
+                            data={exercises}
+                            contentContainerStyle={{ paddingBottom: hasSets && isActive ? 180 : 120 }} // Extra padding when finish button is shown
+                            onDragEnd={async ({ data }: { data: any }) => {
+                                setExercises(data); // Update UI immediately
+                                const exerciseOrders = data.map((item: any, index: number) => ({ id: item.id, order: index + 1 }));
+                                const response = await updateExerciseOrder(workout.id, exerciseOrders);
+                                if (response) {
+                                    console.log('Exercise order updated successfully');
+                                } else {
+                                    console.log('Failed to update exercise order');
+                                }
                             }}
-                            style={styles.fabButton} 
-                        >
-                            <Ionicons name="add" size={32} color="white" />
-                        </TouchableOpacity>
+                            keyExtractor={(item) => item.id.toString()}
+                            renderItem={renderItems}
+                       
+                        />
                     </View>
-                )}
+
+                    <BlurView intensity={15} tint="dark" style={styles.WorkoutFooter}>
+                            <>
+            
+                     {isActive && onCompleteWorkout && hasSets ? (
+                                    <TouchableOpacity 
+                                        style={styles.completeWorkoutButton}
+                                        onPress={onCompleteWorkout}
+                                    >
+                                        <Text style={styles.completeWorkoutButtonText}>Finish Workout</Text>
+                                    </TouchableOpacity>
+                                ) : null
+                   }
+                   {isActive && onAddExercise && (
+                        <View style={styles.fabContainer}>
+                            <TouchableOpacity 
+                                onPress={() => {
+                                    closeCurrentSwipeable();
+                                    onAddExercise();
+                                }}
+                                style={styles.fabButton} 
+                            >
+                                <Ionicons name="add" size={32} color="white" />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                        </>  
+                    </BlurView>
+        
+                
+                </KeyboardAvoidingView>
             </View>
         </TouchableWithoutFeedback>
     );
@@ -571,6 +633,7 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#1C1C1E',
     },
+
     workoutTitle: {
         color: '#FFFFFF',
         fontSize: 28,
@@ -590,7 +653,7 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        padding: 20,
+        padding: 2,
     },
     section: {
         marginBottom: 24,
@@ -632,29 +695,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#1C1C1E',
         
     },
-    fabContainer: {
-        position: 'absolute',
-        bottom: 40,
-        right: 20,
-        ...Platform.select({
-            web: { boxShadow: '0px 4px 5px rgba(0, 0, 0, 0.3)' },
-            default: {
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 4.65,
-                elevation: 8,
-            }
-        }),
-    },
-    fabButton: {
-        backgroundColor: '#0A84FF',
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
+
     exerciseCard: {
         backgroundColor: '#1C1C1E',
         borderRadius: 12,
@@ -679,7 +720,7 @@ const styles = StyleSheet.create({
     },
     addSetButton: {
         marginTop: 12,
-        backgroundColor: '#0A84FF',
+        backgroundColor: '#6366F1', // Muted indigo
         borderRadius: 8,
         paddingVertical: 10,
         alignItems: 'center',
@@ -751,8 +792,9 @@ const styles = StyleSheet.create({
         fontVariant: ['tabular-nums'],
         backgroundColor: '#2C2C2E',
         borderRadius: 6,
-        paddingVertical: 6,
+        paddingVertical: 12, // Increased touch target height
         marginHorizontal: 4,
+        minHeight: 44, // Minimum touch target size
     },
     deleteSetAction: {
         backgroundColor: '#FF3B30',
@@ -766,8 +808,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingBottom: 16,
         paddingTop: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#1C1C1E',
     },
     restTimerBarBg: {
         height: 6,
@@ -795,6 +835,61 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         fontVariant: ['tabular-nums'],
+    },
+    WorkoutFooter: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 20,
+        marginBottom: 20,
+        marginHorizontal: 10,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
+    },
+    fabContainer: {
+        ...Platform.select({
+            web: { boxShadow: '0px 4px 5px rgba(0, 0, 0, 0.3)' },
+            default: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4.65,
+                elevation: 8,
+            }
+        }),
+
+
+    },
+    fabButton: {
+        backgroundColor: '#0A84FF',
+        padding: 10,
+        borderRadius: 20,
+
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    completeWorkoutButton: {
+        backgroundColor: '#8B5CF6', // Muted purple
+        flex: 1,
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    completeWorkoutButtonText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: '700',
+        letterSpacing: 0.5,
     },
 });
 

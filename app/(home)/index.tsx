@@ -1,9 +1,27 @@
-import { createWorkout, getActiveWorkout } from '@/api/Workout';
+import { createWorkout, deleteWorkout, getActiveWorkout } from '@/api/Workout';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const SwipeAction = ({ progress, dragX, onPress }: any) => {
+    const animatedStyle = useAnimatedStyle(() => {
+        const scale = interpolate(progress.value, [0, 1], [0.5, 1], Extrapolation.CLAMP);
+        return { transform: [{ scale }] };
+    });
+
+    return (
+        <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.deleteAction}>
+            <Animated.View style={animatedStyle}>
+                <Ionicons name="trash-outline" size={24} color="#FFFFFF" />
+            </Animated.View>
+        </TouchableOpacity>
+    );
+};
+
 export default function Home() {
     // 1. State lives here, at the top level
     const [modalVisible, setModalVisible] = useState(false);
@@ -12,12 +30,29 @@ export default function Home() {
     const [elapsedTime, setElapsedTime] = useState('00:00:00');
     const insets = useSafeAreaInsets();
 
-    useEffect(() => {
-        getActiveWorkout().then((workout) => {
-            setActiveWorkout(workout);
-            console.log("Active Workout:", workout);
-        });
-    }, []);
+    const fetchActiveWorkout = async () => {
+        try {
+            const workout = await getActiveWorkout();
+            // Check if workout is an object and has an id (valid workout)
+            if (workout && typeof workout === 'object' && 'id' in workout) {
+                setActiveWorkout(workout);
+                console.log("Active Workout:", workout);
+            } else {
+                // If it returns an error string or object like { error: ... }
+                setActiveWorkout(null);
+                console.log("No active workout found or error:", workout);
+            }
+        } catch (error) {
+            console.error("Failed to fetch active workout", error);
+            setActiveWorkout(null);
+        }
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchActiveWorkout();
+        }, [])
+    );
 
     useEffect(() => {
         let interval: any;
@@ -107,34 +142,83 @@ export default function Home() {
     }
 
 
+    const handleDeleteActiveWorkout = () => {
+        Alert.alert(
+            "Delete Active Workout",
+            "Are you sure you want to delete this workout? This action cannot be undone.",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: () => {
+                        // Second confirmation
+                        Alert.alert(
+                            "Confirm Deletion",
+                            "This will permanently delete all data for this workout. Are you absolutely sure?",
+                            [
+                                { text: "Cancel", style: "cancel" },
+                                {
+                                    text: "Confirm Delete",
+                                    style: "destructive",
+                                    onPress: async () => {
+                                        if (activeWorkout?.id) {
+                                            try {
+                                                await deleteWorkout(activeWorkout.id);
+                                                setActiveWorkout(null);
+                                                setElapsedTime('00:00:00');
+                                            } catch (error) {
+                                                console.error("Failed to delete workout:", error);
+                                                Alert.alert("Error", "Failed to delete workout");
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        );
+                    }
+                }
+            ]
+        );
+    };
+
     const renderActiveWorkout = () => {
-        if (!activeWorkout) return null;
+        if (!activeWorkout || !activeWorkout.id) return null;
+
+        const renderRightActions = (progress: any, dragX: any) => (
+            <SwipeAction progress={progress} dragX={dragX} onPress={handleDeleteActiveWorkout} />
+        );
 
         return (
             <>
-                        <View style={styles.contentContainer}>
-                <Text style={styles.contentTitle}>Active Workout</Text>
-            </View>
-            <TouchableOpacity 
-                style={styles.activeCard} 
-                onPress={() => router.push('/(active-workout)')}
-                activeOpacity={0.8}
-            >
-                <View style={styles.cardHeader}>
-                    <View style={styles.liveBadge}>
-                        <View style={styles.liveDot} />
-                        <Text style={styles.liveText}>IN PROGRESS</Text>
-                    </View>
-                    <View style={styles.timerContainer}>
-                        <Text style={styles.timerText}>{elapsedTime}</Text>
-                        <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-                    </View>
+                <View style={styles.contentContainer}>
+                    <Text style={styles.contentTitle}>Active Workout</Text>
                 </View>
-                <Text style={styles.cardTitle} numberOfLines={1}>
-                    {activeWorkout.title}
-                </Text>
-                
-            </TouchableOpacity>
+                <ReanimatedSwipeable
+                    renderRightActions={renderRightActions}
+                    containerStyle={{ width: '100%', marginVertical: 12 }}
+                >
+                    <TouchableOpacity 
+                        style={[styles.activeCard, { marginVertical: 0 }]} // Remove margin from card as it's on container now
+                        onPress={() => router.push('/(active-workout)')}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.cardHeader}>
+                            <View style={styles.liveBadge}>
+                                <View style={styles.liveDot} />
+                                <Text style={styles.liveText}>IN PROGRESS</Text>
+                            </View>
+                            <View style={styles.timerContainer}>
+                                <Text style={styles.timerText}>{elapsedTime}</Text>
+                                <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                            </View>
+                        </View>
+                        <Text style={styles.cardTitle} numberOfLines={1}>
+                            {activeWorkout.title}
+                        </Text>
+                        
+                    </TouchableOpacity>
+                </ReanimatedSwipeable>
             </>
            
         );
@@ -446,6 +530,14 @@ const styles = StyleSheet.create({
         color: '#8E8E93', // iOS Gray
         fontSize: 14,
         fontWeight: '500',
+    },
+    deleteAction: {
+        backgroundColor: '#FF3B30',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 80,
+        height: '100%',
+        borderRadius: 16, // Matches card border radius
     },
     fabContainer: {
         position: 'absolute',

@@ -1,9 +1,10 @@
 import { addExerciseToWorkout, addSetToExercise, deleteSet, getExercises, removeExerciseFromWorkout } from '@/api/Exercises';
-import { getActiveWorkout } from '@/api/Workout';
+import { completeWorkout, getActiveWorkout } from '@/api/Workout';
 import WorkoutDetailView from '@/components/WorkoutDetailView';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function ActiveWorkoutScreen() {
     const [activeWorkout, setActiveWorkout] = useState<any>(null);
@@ -102,6 +103,36 @@ export default function ActiveWorkoutScreen() {
             console.error("Failed to delete set:", error);
             alert("Failed to delete set");
         }
+    };
+
+    const handleFinishWorkout = async () => {
+        if (!activeWorkout?.id) return;
+
+        Alert.alert(
+            "Finish Workout",
+            "Are you sure you want to finish this workout?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Finish",
+                    style: "default",
+                    onPress: async () => {
+                        try {
+                            // You can pass duration here if you want to save it
+                            const now = new Date().getTime();
+                            const startTime = new Date(activeWorkout.created_at).getTime();
+                            const durationSeconds = Math.floor(Math.max(0, now - startTime) / 1000);
+                            
+                            await completeWorkout(activeWorkout.id, { duration: durationSeconds.toString() });
+                            router.replace('/');
+                        } catch (error) {
+                            console.error("Failed to complete workout:", error);
+                            Alert.alert("Error", "Failed to complete workout. Please try again.");
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     useEffect(() => {
@@ -227,6 +258,7 @@ export default function ActiveWorkoutScreen() {
                 onRemoveExercise={handleRemoveExercise}
                 onAddSet={handleAddSet}
                 onDeleteSet={handleDeleteSet}
+                onCompleteWorkout={handleFinishWorkout}
             />
             {renderAddExerciseModal()}
         </>
