@@ -107,7 +107,7 @@ export default function Home() {
         try {
             const isPrevious = modalCreateButtonAction === 'addPreviousWorkout';
             const payload = isPrevious 
-                ? { title: workoutTitle, date: date.toISOString() } 
+                ? { title: workoutTitle, date: date.toISOString(), is_done: true } 
                 : { title: workoutTitle };
 
             const result = await createWorkout(payload);

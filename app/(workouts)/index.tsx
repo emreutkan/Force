@@ -1,7 +1,7 @@
 import { useWorkoutStore } from "@/state/userStore";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useEffect } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useMemo } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -9,9 +9,21 @@ export default function Workouts() {
     const { workouts, isLoading, fetchWorkouts } = useWorkoutStore();
     const insets = useSafeAreaInsets();
 
-    useEffect(() => {
-        fetchWorkouts();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            fetchWorkouts();
+        }, [fetchWorkouts])
+    );
+
+    // Sort workouts by datetime (most recent first)
+    const sortedWorkouts = useMemo(() => {
+        return [...workouts].sort((a, b) => {
+            const dateA = a.datetime || a.created_at;
+            const dateB = b.datetime || b.created_at;
+            // Sort descending (newest first)
+            return new Date(dateB).getTime() - new Date(dateA).getTime();
+        });
+    }, [workouts]);
 
     const renderItem = ({ item }: { item: any }) => {
         // Use datetime (when workout happened) for display, fallback to created_at if datetime not available
@@ -47,7 +59,7 @@ export default function Workouts() {
             </View>
 
             <FlatList
-                data={workouts}
+                data={sortedWorkouts}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={styles.listContent}

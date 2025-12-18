@@ -42,7 +42,11 @@ export const useWorkoutStore = create<WorkoutState>((set) => ({
         set({ isLoading: true });
         try {
             const workoutsData = await getWorkouts();
-            set({ workouts: workoutsData });
+            // Handle both { workouts: [...] } and direct array response
+            const workoutsArray = Array.isArray(workoutsData) 
+                ? workoutsData 
+                : (workoutsData?.workouts || []);
+            set({ workouts: workoutsArray });
         } catch (error) {
             console.error('Failed to fetch workouts:', error);
             set({ workouts: [] });

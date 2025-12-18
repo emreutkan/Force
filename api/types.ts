@@ -1,6 +1,7 @@
 export interface CreateWorkoutRequest {
     title: string; 
     date?: string; // Optional - ISO datetime string like "2025-12-09T01:05:00.000Z"
+    is_done?: boolean; // Optional - defaults to false, set to true for past workouts
 }
 
 export interface CreateWorkoutResponse {
