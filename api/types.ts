@@ -34,6 +34,7 @@ export interface Workout {
     total_volume?: number; // Total volume in kg (weight × reps for all sets)
     primary_muscles_worked?: string[]; // Array of primary muscles targeted
     secondary_muscles_worked?: string[]; // Array of secondary muscles targeted
+    calories_burned?: string | number; // Calories burned during the workout
 }
 
 export interface WorkoutExercise {

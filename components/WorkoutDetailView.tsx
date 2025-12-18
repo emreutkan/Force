@@ -603,8 +603,8 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEd
         return (
             <ScaleDecorator activeScale={0.8}>
                 <TouchableOpacity
-                    onLongPress={drag} // Long press to start dragging
-                    disabled={isActive} 
+                    onLongPress={isViewOnly ? undefined : drag} // Long press to start dragging
+                    disabled={isActive || isViewOnly} 
                     delayLongPress={100}
                 >
                                     <ExerciseCard
@@ -654,21 +654,28 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEd
                                         weekday: 'long', year: 'numeric', month: 'short', day: 'numeric'
                                     })}
                                 </Text>
+                               
                             </View>
-                            {!isActive && (
-                                <Text style={[styles.workoutDuration, { color: '#8E8E93' }]}>
+                            <Text style={[styles.workoutDuration]}>
                                     {elapsedTime}
                                 </Text>
-                            )}
+                      
                         </View>
                         
                         {/* Workout Stats */}
-                        {!isActive && (workout.total_volume || workout.primary_muscles_worked?.length || workout.intensity || workout.notes) && (
+                        {!isActive && (workout.total_volume || workout.primary_muscles_worked?.length || workout.intensity || workout.notes || workout.calories_burned) && (
                             <View style={styles.workoutStatsContainer}>
+                                {workout.calories_burned && parseFloat(String(workout.calories_burned)) > 0 && (
+                                    <View style={styles.statItem}>
+                                        <Text style={styles.statLabel}>Calories Burned</Text>
+                                        <Text style={styles.statValue}>{parseFloat(String(workout.calories_burned)).toFixed(0)} kcal</Text>
+                                    </View>
+                                )}
+                                
                                 {workout.total_volume !== undefined && workout.total_volume > 0 && (
                                     <View style={styles.statItem}>
-                                        <Text style={styles.statLabel}>Total Volume</Text>
-                                        <Text style={styles.statValue}>{workout.total_volume.toFixed(1)} kg</Text>
+                                        <Text style={styles.statLabel}>Volume (kg)</Text>
+                                        <Text style={styles.statValue}>{workout.total_volume.toFixed(0)}</Text>
                                     </View>
                                 )}
                                 
@@ -676,7 +683,7 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEd
                                     <View style={styles.statItem}>
                                         <Text style={styles.statLabel}>Primary Muscles</Text>
                                         <View style={styles.muscleTagsContainer}>
-                                            {workout.primary_muscles_worked.map((muscle, idx) => (
+                                            {workout.primary_muscles_worked.map((muscle: string, idx: number) => (
                                                 <View key={idx} style={styles.muscleTag}>
                                                     <Text style={styles.muscleTagText}>{muscle}</Text>
                                                 </View>
@@ -727,7 +734,7 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEd
                             data={exercises}
                             showsVerticalScrollIndicator={false}
                             contentContainerStyle={{ paddingBottom: hasSets && isActive ? 200 : 120 }} // Extra padding when finish button is shown
-                            onDragEnd={async ({ data }: { data: any }) => {
+                            onDragEnd={isViewOnly ? undefined : async ({ data }: { data: any }) => {
                                 setExercises(data); // Update UI immediately
                                 const exerciseOrders = data.map((item: any, index: number) => ({ id: item.id, order: index + 1 }));
                                 const response = await updateExerciseOrder(workout.id, exerciseOrders);
@@ -842,6 +849,8 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEd
 
 const styles = StyleSheet.create({
     container: {
+        paddingHorizontal: 16,
+
         flex: 1,
         backgroundColor: '#000000',
     },
@@ -851,25 +860,26 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     workoutHeader: {
-        paddingHorizontal: 16,
-        paddingBottom: 16,
-        borderBottomWidth: 1,
+        paddingBottom: 12,
         borderBottomColor: '#1C1C1E',
     },
     workoutHeaderTop: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 16,
     },
     workoutTitleContainer: {
-        flex: 1,
+        width: '75%',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        alignItems: 'flex-start',
+        gap: 4,
+        paddingBottom: 12,
     },
     workoutTitle: {
         color: '#FFFFFF',
         fontSize: 28,
         fontWeight: '800',
-        marginBottom: 4,
     },
     workoutDate: {
         color: '#63666F',
@@ -878,6 +888,7 @@ const styles = StyleSheet.create({
         textTransform: 'none',
     },
     workoutDuration: {
+        color: 'orange',
         fontSize: 18,
         fontWeight: '600',
         fontVariant: ['tabular-nums'],
@@ -954,9 +965,7 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        padding: 2,
         
-        paddingHorizontal: 8,
     },
     section: {
         marginBottom: 24,
@@ -1195,7 +1204,6 @@ const styles = StyleSheet.create({
         borderRadius: 0,
     },
     restTimerContainer: {
-        paddingHorizontal: 10,
         paddingBottom: 16,
         paddingTop: 12,
     },
@@ -1234,7 +1242,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
         paddingVertical: 10,
         borderRadius: 20,
         marginBottom: 20,

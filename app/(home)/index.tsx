@@ -1,11 +1,11 @@
-import { checkRestDay, createWorkout, deleteWorkout, getActiveWorkout, getAvailableYears, getCalendar, getCalendarStats, getTemplateWorkouts, startTemplateWorkout } from '@/api/Workout';
+import { checkRestDay, checkToday, createWorkout, deleteWorkout, getActiveWorkout, getAvailableYears, getCalendar, getCalendarStats, getTemplateWorkouts, startTemplateWorkout } from '@/api/Workout';
 import { CalendarDay, CalendarStats, TemplateWorkout } from '@/api/types';
 import { useWorkoutStore } from '@/state/userStore';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView as RNScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -45,7 +45,13 @@ export default function Home() {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [showCalendarModal, setShowCalendarModal] = useState(false);
+    const [todayStatus, setTodayStatus] = useState<any>(null);
+    const [isLoadingToday, setIsLoadingToday] = useState(true);
 
+    const screenWidth = Dimensions.get('window').width;
+    const templateCardWidth = screenWidth * 0.6;
+    const addTemplateCardWidth = screenWidth * 0.34;
+    
     const fetchActiveWorkout = async () => {
         try {
             const workout = await getActiveWorkout();
@@ -127,8 +133,21 @@ export default function Home() {
         }
     };
 
+    const fetchTodayStatus = async () => {
+        setIsLoadingToday(true);
+        try {
+            const result = await checkToday();
+            setTodayStatus(result);
+        } catch (error) {
+            setTodayStatus(null);
+        } finally {
+            setIsLoadingToday(false);
+        }
+    };
+
     useFocusEffect(
         useCallback(() => {
+            fetchTodayStatus();
             fetchActiveWorkout();
             fetchWorkouts();
             fetchRestDayInfo();
@@ -163,7 +182,7 @@ export default function Home() {
 
     useEffect(() => {
         let interval: any;
-        if (activeWorkout?.created_at) {
+        if (todayStatus?.error === "ACTIVE_WORKOUT_EXISTS" && activeWorkout?.created_at) {
             const startTime = new Date(activeWorkout.created_at).getTime();
             const updateTimer = () => {
                 const now = new Date().getTime();
@@ -179,7 +198,7 @@ export default function Home() {
             setElapsedTime('00:00:00');
         }
         return () => { if (interval) clearInterval(interval); };
-    }, [activeWorkout]);
+    }, [todayStatus, activeWorkout]);
 
     // Handle initial state when modal opens
     useEffect(() => {
@@ -237,11 +256,12 @@ export default function Home() {
         Alert.alert("Delete Workout", "This action cannot be undone.", [
             { text: "Cancel", style: "cancel" },
             { text: "Delete", style: "destructive", onPress: async () => {
-                if (activeWorkout?.id) {
-                    await deleteWorkout(activeWorkout.id);
+                if (todayStatus?.active_workout_id) {
+                    await deleteWorkout(todayStatus.active_workout_id);
                     setActiveWorkout(null);
                     setElapsedTime('00:00:00');
-                    fetchWorkouts(); // Refresh workouts list
+                    fetchTodayStatus();
+                    fetchWorkouts();
                 }
             }}
         ]);
@@ -251,8 +271,9 @@ export default function Home() {
         Alert.alert("Delete Workout", "This action cannot be undone.", [
             { text: "Cancel", style: "cancel" },
             { text: "Delete", style: "destructive", onPress: async () => {
-                if (todaysWorkout?.id) {
-                    await deleteWorkout(todaysWorkout.id);
+                if (todayStatus?.workout?.id) {
+                    await deleteWorkout(todayStatus.workout.id);
+                    fetchTodayStatus();
                     fetchWorkouts();
                 }
             }}
@@ -263,9 +284,9 @@ export default function Home() {
         Alert.alert("Delete Rest Day", "This action cannot be undone.", [
             { text: "Cancel", style: "cancel" },
             { text: "Delete", style: "destructive", onPress: async () => {
-                if (restDayInfo?.rest_day_id) {
-                    await deleteWorkout(restDayInfo.rest_day_id);
-                    fetchRestDayInfo();
+                if (todayStatus?.rest_day_id) {
+                    await deleteWorkout(todayStatus.rest_day_id);
+                    fetchTodayStatus();
                 }
             }}
         ]);
@@ -280,7 +301,8 @@ export default function Home() {
             }
             if (result?.id) {
                 Alert.alert("Success", "Rest day added successfully.");
-                fetchRestDayInfo(); // Refresh to show the new rest day
+                fetchTodayStatus(); // Refresh to show the new rest day
+                fetchRestDayInfo(); // Also refresh rest day info
             }
         } catch (error) {
             Alert.alert("Error", "Failed to add rest day. Please try again.");
@@ -295,86 +317,88 @@ export default function Home() {
                 </TouchableOpacity>
             </View>
 
-            {activeWorkout?.id && (
+            {/* Today's Activity Indicator */}
+            {isLoadingToday ? (
+                <View style={{ width: '100%', paddingVertical: 20 }}>
+                    <ActivityIndicator size="large" color="#0A84FF" />
+                </View>
+            ) : todayStatus && (
                 <View style={{ width: '100%' }}>
                     <View style={styles.contentContainer}>
-                        <Text style={styles.contentTitle}>Active Workout</Text>
+                        <Text style={styles.contentTitle}>Today's Activity</Text>
                     </View>
-                    <ReanimatedSwipeable
-                        renderRightActions={(progress, dragX) => <SwipeAction progress={progress} dragX={dragX} onPress={handleDeleteActiveWorkout} />}
-                        containerStyle={{ width: '100%', marginVertical: 12 }}
-                    >
-                        <TouchableOpacity style={styles.activeCard} onPress={() => router.push('/(active-workout)')} activeOpacity={0.8}>
-                            <View style={styles.cardHeader}>
-                                <View style={styles.liveBadge}>
-                                    <View style={styles.liveDot} />
-                                    <Text style={styles.liveText}>IN PROGRESS</Text>
+                    {todayStatus.error === "ACTIVE_WORKOUT_EXISTS" ? (
+                        // Active Workout
+                        <ReanimatedSwipeable
+                            renderRightActions={(progress, dragX) => <SwipeAction progress={progress} dragX={dragX} onPress={handleDeleteActiveWorkout} />}
+                            containerStyle={{ width: '100%', marginVertical: 12 }}
+                        >
+                            <TouchableOpacity style={styles.activeCard} onPress={() => router.push('/(active-workout)')} activeOpacity={0.8}>
+                                <View style={styles.cardHeader}>
+                                    <View style={styles.liveBadge}>
+                                        <View style={styles.liveDot} />
+                                        <Text style={styles.liveText}>ACTIVE WORKOUT</Text>
+                                    </View>
+                                    <View style={styles.timerContainer}>
+                                        <Text style={styles.timerText}>{elapsedTime}</Text>
+                                        <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                                    </View>
                                 </View>
-                                <View style={styles.timerContainer}>
-                                    <Text style={styles.timerText}>{elapsedTime}</Text>
+                                <Text style={styles.cardTitle} numberOfLines={1}>{todayStatus.active_workout_title || 'Active Workout'}</Text>
+                            </TouchableOpacity>
+                        </ReanimatedSwipeable>
+                    ) : todayStatus.workout_performed && todayStatus.is_rest_day ? (
+                        // Rest Day
+                        <ReanimatedSwipeable
+                            renderRightActions={(progress, dragX) => <SwipeAction progress={progress} dragX={dragX} onPress={handleDeleteRestDay} />}
+                            containerStyle={{ width: '100%', marginVertical: 12 }}
+                        >
+                            <View style={[styles.completedCard, { paddingTop: 12, paddingLeft: 12, paddingRight: 12, paddingBottom: 12 }]}>
+                                <View style={styles.cardHeader}>
+                                    <View style={styles.completedBadge}>
+                                        <View style={styles.completedDot} />
+                                        <Text style={styles.completedText}>REST DAY</Text>
+                                    </View>
+                                </View>
+                            </View>
+                        </ReanimatedSwipeable>
+                    ) : todayStatus.workout_performed && todayStatus.workout ? (
+                        // Today's Performed Workout
+                        <ReanimatedSwipeable
+                            renderRightActions={(progress, dragX) => <SwipeAction progress={progress} dragX={dragX} onPress={handleDeleteTodaysWorkout} />}
+                            containerStyle={{ width: '100%', marginVertical: 12 }}
+                        >
+                            <TouchableOpacity 
+                                style={styles.completedCard} 
+                                onPress={() => router.push(`/(workouts)/${todayStatus.workout.id}`)} 
+                                activeOpacity={0.8}
+                            >
+                                <View style={styles.cardHeader}>
+                                    <View style={styles.completedBadge}>
+                                        <View style={styles.completedDot} />
+                                        <Text style={styles.completedText}>WORKOUT PERFORMED</Text>
+                                    </View>
                                     <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
                                 </View>
-                            </View>
-                            <Text style={styles.cardTitle} numberOfLines={1}>{activeWorkout.title}</Text>
-                        </TouchableOpacity>
-                    </ReanimatedSwipeable>
-                </View>
-            )}
-
-            {!activeWorkout?.id && restDayInfo?.is_rest_day && (
-                <View style={{ width: '100%' }}>
-                    <View style={styles.contentContainer}>
-                        <Text style={styles.contentTitle}></Text>
-                    </View>
-                    <ReanimatedSwipeable
-                        renderRightActions={(progress, dragX) => <SwipeAction progress={progress} dragX={dragX} onPress={handleDeleteRestDay} />}
-                        containerStyle={{ width: '100%', marginVertical: 12 }}
-                    >
-                        <View 
-                            style={[styles.completedCard, { paddingTop: 12, paddingLeft: 12, paddingRight: 12, paddingBottom: 0 }]} 
-                        >
-                            <View style={styles.cardHeader}>
-                                <View style={styles.completedBadge}>
-                                    <View style={styles.completedDot} />
-                                    <Text style={styles.completedText}>REST DAY</Text>
-                                </View>
-                            </View>
-                        </View>
-                    </ReanimatedSwipeable>
-                </View>
-            )}
-
-            {!activeWorkout?.id && !restDayInfo?.is_rest_day && todaysWorkout && (
-                <View style={{ width: '100%' }}>
-                    <View style={styles.contentContainer}>
-                        <Text style={styles.contentTitle}>Workout Done</Text>
-                    </View>
-                    <ReanimatedSwipeable
-                        renderRightActions={(progress, dragX) => <SwipeAction progress={progress} dragX={dragX} onPress={handleDeleteTodaysWorkout} />}
-                        containerStyle={{ width: '100%', marginVertical: 12 }}
-                    >
-                        <TouchableOpacity 
-                            style={styles.completedCard} 
-                            onPress={() => router.push(`/(workouts)/${todaysWorkout.id}`)} 
-                            activeOpacity={0.8}
-                        >
-                            <View style={styles.cardHeader}>
-                                <View style={styles.completedBadge}>
-                                    <View style={styles.completedDot} />
-                                    <Text style={styles.completedText}>COMPLETED</Text>
-                                </View>
-                                <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-                            </View>
-                            <Text style={styles.cardTitle} numberOfLines={1}>{todaysWorkout.title}</Text>
-                        </TouchableOpacity>
-                    </ReanimatedSwipeable>
+                                <Text style={styles.cardTitle} numberOfLines={1}>{todayStatus.workout.title || 'Workout'}</Text>
+                                {todayStatus.workout.calories_burned && parseFloat(String(todayStatus.workout.calories_burned)) > 0 && (
+                                    <View style={styles.caloriesContainer}>
+                                        <Ionicons name="flame" size={16} color="#FF9500" />
+                                        <Text style={styles.caloriesText}>
+                                            {parseFloat(String(todayStatus.workout.calories_burned)).toFixed(0)} kcal burned
+                                        </Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                        </ReanimatedSwipeable>
+                    ) : null}
                 </View>
             )}
 
             {/* Calendar Week View */}
-            <View style={{ width: '100%' }}>
+            <View style={[styles.WeeklyActivityContainer]}>
                 <View style={[styles.contentContainer, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
-                    <Text style={styles.contentTitle}>This Week</Text>
+                    <Text style={styles.WeeklyActivityContentTitle}>Weekly Activity</Text>
                     <TouchableOpacity 
                         onPress={() => setShowCalendarModal(true)}
                         style={styles.calendarExpandButton}
@@ -383,85 +407,72 @@ export default function Home() {
                     </TouchableOpacity>
                 </View>
                 <View style={styles.weekCalendarContainer}>
-                    <View style={styles.weekDaysRow}>
-                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
-                            <View key={idx} style={styles.weekDayHeader}>
-                                <Text style={styles.weekDayHeaderText}>{day}</Text>
-                            </View>
-                        ))}
-                    </View>
-                    <View style={styles.weekDaysRow}>
-                        {(() => {
-                            const today = new Date();
-                            const currentDay = today.getDay();
-                            const startOfWeek = new Date(today);
-                            startOfWeek.setDate(today.getDate() - currentDay);
-                            
-                            return Array.from({ length: 7 }, (_, i) => {
-                                const date = new Date(startOfWeek);
-                                date.setDate(startOfWeek.getDate() + i);
-                                const dateStr = date.toISOString().split('T')[0];
-                                const dayData = calendarData.find(d => d.date === dateStr);
-                                const isToday = date.toDateString() === today.toDateString();
-                                
-                                return (
-                                    <View key={i} style={styles.weekDayCell}>
-                                        <Text style={[styles.weekDayNumber, isToday && styles.weekDayNumberToday]}>
-                                            {date.getDate()}
-                                        </Text>
-                                        <View style={styles.weekDayDots}>
-                                            {dayData?.has_workout && (
-                                                <View style={styles.workoutDot} />
-                                            )}
-                                            {dayData?.is_rest_day && (
-                                                <View style={styles.restDayDot} />
-                                            )}
+         
+                    {(() => {
+                        const today = new Date();
+                        const currentDay = today.getDay();
+                        // Calculate week starting from Saturday (6 = Saturday in JS Date)
+                        const startOfWeek = new Date(today);
+                        const daysFromSaturday = (currentDay + 1) % 7; // Convert to Saturday-based (0=Sat, 1=Sun, etc.)
+                        startOfWeek.setDate(today.getDate() - daysFromSaturday);
+                        
+                        const weekDays = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+                        
+                        return (
+                            <>
+                                <View style={styles.weekDaysRow}>
+                                    {Array.from({ length: 7 }, (_, i) => {
+                                        const date = new Date(startOfWeek);
+                                        date.setDate(startOfWeek.getDate() + i);
+                                        const dateStr = date.toISOString().split('T')[0];
+                                        const dayData = calendarData.find(d => d.date === dateStr);
+                                        const isToday = date.toDateString() === today.toDateString();
+                                        
+                                        return (
+                                            <View key={i} style={styles.weekDayCell}>
+                                                <Text style={[styles.weekDayNumber, isToday && styles.weekDayNumberToday]}>
+                                                    {date.getDate()}
+                                                </Text>
+                                                <View style={styles.weekDayDots}>
+                                                    {dayData?.has_workout && (
+                                                        <View style={styles.workoutDot} />
+                                                    )}
+                                                    {dayData?.is_rest_day && (
+                                                        <View style={styles.restDayDot} />
+                                                    )}
+                                                </View>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                                <View style={styles.weekDaysRow}>
+                                    {weekDays.map((day, idx) => (
+                                        <View key={idx} style={styles.weekDayHeader}>
+                                            <Text style={styles.weekDayHeaderText}>{day}</Text>
                                         </View>
-                                    </View>
-                                );
-                            });
-                        })()}
-                    </View>
-                    {calendarStats && (
-                        <View style={styles.weekStatsRow}>
-                            <View style={styles.statBadge}>
-                                <Text style={styles.statBadgeLabel}>Workouts</Text>
-                                <Text style={styles.statBadgeValue}>{calendarStats.total_workouts}</Text>
-                            </View>
-                            <View style={styles.statBadge}>
-                                <Text style={styles.statBadgeLabel}>Rest Days</Text>
-                                <Text style={styles.statBadgeValue}>{calendarStats.total_rest_days}</Text>
-                            </View>
-                            <View style={styles.statBadge}>
-                                <Text style={styles.statBadgeLabel}>Rest</Text>
-                                <Text style={styles.statBadgeValue}>{calendarStats.days_not_worked}</Text>
-                            </View>
-                        </View>
-                    )}
+                                    ))}
+                                </View>
+                            </>
+                        );
+                    })()}
+                 
                 </View>
+                
+
             </View>
 
-            {/* Templates Section */}
-            <View style={{ width: '100%' }}>
+            <View style={{ width: '100%', paddingTop: 12 }}>
                 <View style={styles.contentContainer}>
                     <Text style={styles.contentTitle}>Templates</Text>
                 </View>
-                {templates.length === 0 ? (
-                    <TouchableOpacity 
-                        style={styles.addTemplateCard}
-                        onPress={() => {
-                            router.push('/(templates)/create');
-                        }}
-                        activeOpacity={0.8}
-                    >
-                        <Ionicons name="add" size={48} color="#8E8E93" />
-                    </TouchableOpacity>
-                ) : (
-                    <View>
+                <RNScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                >
                         {templates.map((template) => (
                             <TouchableOpacity
                                 key={template.id}
-                                style={styles.templateCard}
+                                style={[styles.templateCard, { width: templateCardWidth }]}
                                 onPress={async () => {
                                     try {
                                         const result = await startTemplateWorkout({ template_workout_id: template.id });
@@ -482,7 +493,7 @@ export default function Home() {
                                 activeOpacity={0.8}
                             >
                                 <View style={styles.templateCardContent}>
-                                    <View style={styles.templateInfo}>
+                                    <View>
                                         <Text style={styles.templateTitle}>{template.title}</Text>
                                         <Text style={styles.templateExercises}>
                                             {template.exercises.length} {template.exercises.length === 1 ? 'exercise' : 'exercises'}
@@ -496,23 +507,24 @@ export default function Home() {
                                                 ))}
                                             </View>
                                         )}
+                                        
                                     </View>
                                     <Ionicons name="play-circle-outline" size={28} color="#0A84FF" />
+                                    
                                 </View>
+            
                             </TouchableOpacity>
                         ))}
                         <TouchableOpacity 
-                            style={styles.addTemplateCardSmall}
+                            style={[styles.addTemplateCardSmall, { width: addTemplateCardWidth }]}
                             onPress={() => {
                                 router.push('/(templates)/create');
                             }}
-                            activeOpacity={0.8}
                         >
                             <Ionicons name="add" size={24} color="#8E8E93" />
-                            <Text style={styles.addTemplateText}>Add Template</Text>
                         </TouchableOpacity>
-                    </View>
-                )}
+                </RNScrollView>
+                
             </View>
 
             {/* Layout Navigation Buttons */}
@@ -639,7 +651,22 @@ export default function Home() {
                                 <Ionicons name="close" size={24} color="#FFFFFF" />
                             </TouchableOpacity>
                         </View>
-
+                        {calendarStats && (
+                    <View style={styles.weekStatsRow}>
+                        <View style={styles.statBadge}>
+                            <Text style={styles.statBadgeLabel}>Workouts</Text>
+                            <Text style={styles.statBadgeValue}>{calendarStats.total_workouts}</Text>
+                        </View>
+                        <View style={styles.statBadge}>
+                            <Text style={styles.statBadgeLabel}>Rest Days</Text>
+                            <Text style={styles.statBadgeValue}>{calendarStats.total_rest_days}</Text>
+                        </View>
+                        <View style={styles.statBadge}>
+                            <Text style={styles.statBadgeLabel}>Not Worked</Text>
+                            <Text style={styles.statBadgeValue}>{calendarStats.days_not_worked}</Text>
+                        </View>
+                    </View>
+                )}
                         {/* Year/Month Selector */}
                         <View style={styles.calendarControls}>
                             <TouchableOpacity
@@ -701,23 +728,7 @@ export default function Home() {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Calendar Stats */}
-                        {calendarStats && (
-                            <View style={styles.calendarStatsContainer}>
-                                <View style={styles.calendarStatItem}>
-                                    <Text style={styles.calendarStatValue}>{calendarStats.total_workouts}</Text>
-                                    <Text style={styles.calendarStatLabel}>Workouts</Text>
-                                </View>
-                                <View style={styles.calendarStatItem}>
-                                    <Text style={styles.calendarStatValue}>{calendarStats.total_rest_days}</Text>
-                                    <Text style={styles.calendarStatLabel}>Rest Days</Text>
-                                </View>
-                                <View style={styles.calendarStatItem}>
-                                    <Text style={styles.calendarStatValue}>{calendarStats.days_not_worked}</Text>
-                                    <Text style={styles.calendarStatLabel}>Rest</Text>
-                                </View>
-                            </View>
-                        )}
+        
 
                         {/* Calendar Grid */}
                         <View style={styles.calendarGridContainer}>
@@ -784,10 +795,12 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, alignItems: 'center', padding: 8, backgroundColor: '#000000' },
-    headerContainer: { paddingHorizontal: 4, alignItems: 'flex-end', width: '100%', marginBottom: -28, zIndex: 10, position: 'relative' },
-    contentContainer: { width: '100%', paddingHorizontal: 4, marginBottom: 8 },
+    container: { flex: 1, alignItems: 'center', padding: 2, backgroundColor: '#000000' },
+    headerContainer: { paddingHorizontal: 4, alignItems: 'flex-end', width: '100%', marginBottom: 8, zIndex: 10, position: 'relative' },
+    contentContainer: { width: '100%', paddingHorizontal: 0, marginBottom: 8,},
+    WeeklyActivityContainer: { width: '100%', backgroundColor: 'white', borderRadius: 24, padding: 10, },
     contentTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
+    WeeklyActivityContentTitle: { color: 'black', fontSize: 22, fontWeight: '700' },
     calendarExpandButton: { padding: 4 },
     activeCard: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#2C2C2E' },
     completedCard: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#2C2C2E' },
@@ -824,35 +837,31 @@ const styles = StyleSheet.create({
     sheetHeader: { height: 50, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#2C2C2E' },
     doneText: { color: '#0A84FF', fontSize: 17, fontWeight: '600' },
     deleteAction: { backgroundColor: '#FF3B30', justifyContent: 'center', alignItems: 'center', width: 80, height: '100%', borderRadius: 16 },
-    addTemplateCard: { 
-        width: '100%', 
-        backgroundColor: '#1C1C1E', 
-        borderRadius: 16, 
-        padding: 60, 
-        borderWidth: 1, 
-        borderColor: '#2C2C2E',
-        borderStyle: 'dashed',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 16
-    },
     templateCard: {
-        width: '100%',
+        height: 200,
+        marginRight: 12,
         backgroundColor: '#1C1C1E',
         borderRadius: 16,
         padding: 16,
         borderWidth: 1,
         borderColor: '#2C2C2E',
-        marginBottom: 12
+    },
+    addTemplateCardSmall: {
+        height: 200,
+        backgroundColor: '#1C1C1E',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     templateCardContent: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center'
     },
-    templateInfo: {
-        flex: 1
-    },
+
     templateTitle: {
         color: '#FFFFFF',
         fontSize: 18,
@@ -880,20 +889,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '400'
     },
-    addTemplateCardSmall: {
-        width: '100%',
-        backgroundColor: '#1C1C1E',
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: '#2C2C2E',
-        borderStyle: 'dashed',
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 16
-    },
+   
     addTemplateText: {
         color: '#8E8E93',
         fontSize: 16,
@@ -901,41 +897,44 @@ const styles = StyleSheet.create({
     },
     // Calendar Styles
     weekCalendarContainer: {
-        backgroundColor: '#1C1C1E',
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: '#2C2C2E',
         marginBottom: 16
     },
     weekDaysRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 12
+        marginBottom: 8
     },
     weekDayHeader: {
         flex: 1,
         alignItems: 'center'
     },
     weekDayHeaderText: {
-        color: '#8E8E93',
+        color: 'black',
         fontSize: 12,
         fontWeight: '600'
     },
     weekDayCell: {
         flex: 1,
         alignItems: 'center',
-        paddingVertical: 8
+        
     },
     weekDayNumber: {
-        color: '#FFFFFF',
+        color: 'black',
         fontSize: 16,
         fontWeight: '600',
-        marginBottom: 4
+        padding: 12,
+        textAlign: 'center',
+        textAlignVertical: 'center',
+        borderWidth: 2,
+        borderColor: '#2C2C2E',
+        borderRadius: 100,
+
     },
     weekDayNumberToday: {
         color: '#0A84FF',
-        fontWeight: '700'
+        fontWeight: '700',
+        borderColor: '#0A84FF',
+        backgroundColor: 'rgba(10, 132, 255, 0.1)',
     },
     weekDayDots: {
         flexDirection: 'row',
@@ -957,24 +956,37 @@ const styles = StyleSheet.create({
     weekStatsRow: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        marginTop: 12,
-        paddingTop: 12,
-        borderTopWidth: 1,
-        borderTopColor: '#2C2C2E'
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
+        borderRadius: 16,
+        padding: 8,
+        marginVertical: 8,
+        marginBottom: 16,
     },
     statBadge: {
         alignItems: 'center'
     },
     statBadgeLabel: {
-        color: '#8E8E93',
+        color: 'white',
         fontSize: 11,
         fontWeight: '500',
         marginBottom: 4
     },
     statBadgeValue: {
-        color: '#FFFFFF',
+        color: 'white',
         fontSize: 18,
         fontWeight: '700'
+    },
+    caloriesContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: 8,
+    },
+    caloriesText: {
+        color: '#FF9500',
+        fontSize: 14,
+        fontWeight: '600',
     },
     // Calendar Modal Styles
     calendarModalContainer: {

@@ -16,7 +16,6 @@ export default function WorkoutDetailScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [exercises, setExercises] = useState<any[]>([]);
     const [isLoadingExercises, setIsLoadingExercises] = useState(false);
-    const [isViewOnly, setIsViewOnly] = useState(false);
     const insets = useSafeAreaInsets();
 
     const fetchWorkout = useCallback(async () => {
@@ -166,7 +165,6 @@ export default function WorkoutDetailScreen() {
                                     </TouchableOpacity>
                                 )}
                                 ItemSeparatorComponent={() => <View style={styles.separator} />}
-                                contentContainerStyle={styles.listContent}
                             />
                         )}
                     </View>
@@ -205,7 +203,7 @@ export default function WorkoutDetailScreen() {
                     elapsedTime={formatDuration(workout?.duration || 0)} 
                     isActive={false}
                     isEditMode={isEditMode}
-                    isViewOnly={isViewOnly}
+                    isViewOnly={!isEditMode}
                     onAddExercise={isEditMode ? () => setIsModalVisible(true) : undefined}
                     onRemoveExercise={isEditMode ? handleRemoveExercise : undefined}
                     onAddSet={isEditMode ? handleAddSet : undefined}

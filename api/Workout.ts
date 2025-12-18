@@ -179,3 +179,15 @@ export const getCalendarStats = async (year: number, month?: number, week?: numb
         return error.message || 'An unknown error occurred';
     }
 }
+
+export const checkToday = async (): Promise<any> => {
+    try {
+        const response = await apiClient.get('/workout/check-today/');
+        return response.data;
+    } catch (error: any) {
+        if (error.response) {
+            return error.response.data;
+        }
+        return error.message || 'An unknown error occurred';
+    }
+}

@@ -69,7 +69,8 @@ export default function Workouts() {
         const dateText = workoutDate ? formatDate(workoutDate) : `Workout #${item.id}`;
         const duration = formatDuration(item.duration);
         const exerciseCount = getExerciseCount(item);
-        const hasStats = duration || item.total_volume || exerciseCount > 0;
+        const caloriesBurned = item.calories_burned ? parseFloat(String(item.calories_burned)) : null;
+        const hasStats = duration || item.total_volume || exerciseCount > 0 || caloriesBurned;
 
         return (
             <TouchableOpacity 
@@ -113,6 +114,12 @@ export default function Workouts() {
                             <View style={styles.statItem}>
                                 <Ionicons name="fitness-outline" size={14} color="#8E8E93" />
                                 <Text style={styles.statText}>{item.total_volume.toFixed(0)} kg</Text>
+                            </View>
+                        )}
+                        {caloriesBurned && caloriesBurned > 0 && (
+                            <View style={styles.statItem}>
+                                <Ionicons name="flame-outline" size={14} color="#FF9500" />
+                                <Text style={styles.statText}>{caloriesBurned.toFixed(0)} kcal</Text>
                             </View>
                         )}
                     </View>
