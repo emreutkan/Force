@@ -92,6 +92,8 @@ export default function WorkoutDetailScreen() {
             const result = await addSetToExercise(exerciseId, data);
             if (result?.id) {
                 fetchWorkout();
+                // Note: Recovery status will be recalculated on backend when workout is completed
+                // If this is a completed workout being edited, recovery may need backend recalculation
             } else if (typeof result === 'string') {
                 Alert.alert("Error", result);
             } else {
@@ -108,6 +110,7 @@ export default function WorkoutDetailScreen() {
             const success = await deleteSet(setId);
             if (success) {
                 fetchWorkout();
+                // Note: Recovery status will be recalculated on backend when workout is completed
             }
         } catch (error) {
             Alert.alert("Error", "Failed to delete set.");

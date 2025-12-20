@@ -1,11 +1,11 @@
-import { checkRestDay, checkToday, createWorkout, deleteWorkout, getActiveWorkout, getAvailableYears, getCalendar, getCalendarStats, getTemplateWorkouts, startTemplateWorkout } from '@/api/Workout';
-import { CalendarDay, CalendarStats, TemplateWorkout } from '@/api/types';
+import { checkRestDay, checkToday, createWorkout, deleteWorkout, getActiveWorkout, getAvailableYears, getCalendar, getCalendarStats, getRecoveryStatus, getTemplateWorkouts, startTemplateWorkout } from '@/api/Workout';
+import { CalendarDay, CalendarStats, MuscleRecovery, RecoveryStatusResponse, TemplateWorkout } from '@/api/types';
 import { useWorkoutStore } from '@/state/userStore';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView as RNScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, Keyboard, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView as RNScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,6 +47,31 @@ export default function Home() {
     const [showCalendarModal, setShowCalendarModal] = useState(false);
     const [todayStatus, setTodayStatus] = useState<any>(null);
     const [isLoadingToday, setIsLoadingToday] = useState(true);
+    const [recoveryStatus, setRecoveryStatus] = useState<Record<string, MuscleRecovery>>({});
+    const [isLoadingRecovery, setIsLoadingRecovery] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        try {
+            await Promise.all([
+                fetchTodayStatus(),
+                fetchActiveWorkout(),
+                fetchWorkouts(),
+                fetchRestDayInfo(),
+                fetchTemplates(),
+                fetchAvailableYears(),
+                fetchRecoveryStatus(),
+            ]);
+            const now = new Date();
+            await Promise.all([
+                fetchCalendar(now.getFullYear(), now.getMonth() + 1),
+                fetchCalendarStats(now.getFullYear(), now.getMonth() + 1),
+            ]);
+        } finally {
+            setRefreshing(false);
+        }
+    }, [fetchWorkouts]);
 
     const screenWidth = Dimensions.get('window').width;
     const templateCardWidth = screenWidth * 0.6;
@@ -145,6 +170,36 @@ export default function Home() {
         }
     };
 
+    const fetchRecoveryStatus = async () => {
+        setIsLoadingRecovery(true);
+        try {
+            const result: RecoveryStatusResponse = await getRecoveryStatus();
+            if (result?.recovery_status) {
+                setRecoveryStatus(result.recovery_status);
+            }
+        } catch (error) {
+            setRecoveryStatus({});
+        } finally {
+            setIsLoadingRecovery(false);
+        }
+    };
+
+    const formatRecoveryTime = (hours: number): string => {
+        if (hours === 0) return 'Recovered';
+        if (hours < 1) return `${Math.round(hours * 60)}m`;
+        if (hours < 24) return `${Math.round(hours)}h`;
+        const days = Math.floor(hours / 24);
+        const remainingHours = Math.round(hours % 24);
+        return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
+    };
+
+    const getRecoveringMuscles = () => {
+        return Object.entries(recoveryStatus)
+            .filter(([_, status]) => !status.is_recovered && status.fatigue_score > 0)
+            .sort(([_, a], [__, b]) => a.hours_until_recovery - b.hours_until_recovery)
+            .slice(0, 5);
+    };
+
     useFocusEffect(
         useCallback(() => {
             fetchTodayStatus();
@@ -153,6 +208,7 @@ export default function Home() {
             fetchRestDayInfo();
             fetchTemplates();
             fetchAvailableYears();
+            fetchRecoveryStatus(); // Refresh recovery status when screen comes into focus
             const now = new Date();
             fetchCalendar(now.getFullYear(), now.getMonth() + 1);
             fetchCalendarStats(now.getFullYear(), now.getMonth() + 1);
@@ -303,6 +359,7 @@ export default function Home() {
                 Alert.alert("Success", "Rest day added successfully.");
                 fetchTodayStatus(); // Refresh to show the new rest day
                 fetchRestDayInfo(); // Also refresh rest day info
+                fetchRecoveryStatus(); // Refresh recovery status
             }
         } catch (error) {
             Alert.alert("Error", "Failed to add rest day. Please try again.");
@@ -317,7 +374,20 @@ export default function Home() {
                 </TouchableOpacity>
             </View>
 
-            {/* Today's Activity Indicator */}
+            <RNScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#0A84FF"
+                        colors={["#0A84FF"]}
+                    />
+                }
+            >
+                {/* Today's Activity Indicator */}
             {isLoadingToday ? (
                 <View style={{ width: '100%', paddingVertical: 20 }}>
                     <ActivityIndicator size="large" color="#0A84FF" />
@@ -461,6 +531,60 @@ export default function Home() {
 
             </View>
 
+            {/* Muscle Recovery Status */}
+            <View style={{ width: '100%', paddingTop: 12 }}>
+                <View style={styles.contentContainer}>
+                    <Text style={styles.contentTitle}>Recovery Status</Text>
+                </View>
+                {isLoadingRecovery ? (
+                    <View style={styles.recoveryLoadingContainer}>
+                        <ActivityIndicator size="small" color="#0A84FF" />
+                    </View>
+                ) : (
+                    <View style={styles.recoveryContainer}>
+                        {getRecoveringMuscles().length > 0 ? (
+                            <>
+                                {getRecoveringMuscles().map(([muscle, status]) => (
+                                    <View key={muscle} style={styles.recoveryItem}>
+                                        <View style={styles.recoveryItemLeft}>
+                                            <Text style={styles.recoveryMuscleName}>
+                                                {muscle.charAt(0).toUpperCase() + muscle.slice(1).replace('_', ' ')}
+                                            </Text>
+                                            <View style={styles.recoveryBarContainer}>
+                                                <View style={styles.recoveryBarBackground}>
+                                                    <View 
+                                                        style={[
+                                                            styles.recoveryBarFill,
+                                                            { 
+                                                                width: `${status.recovery_percentage}%`,
+                                                                backgroundColor: status.recovery_percentage >= 80 ? '#32D74B' : status.recovery_percentage >= 50 ? '#FF9F0A' : '#FF3B30'
+                                                            }
+                                                        ]}
+                                                    />
+                                                </View>
+                                            </View>
+                                        </View>
+                                        <View style={styles.recoveryItemRight}>
+                                            <Text style={styles.recoveryTime}>
+                                                {formatRecoveryTime(status.hours_until_recovery)}
+                                            </Text>
+                                            <Text style={styles.recoveryPercentage}>
+                                                {status.recovery_percentage.toFixed(0)}%
+                                            </Text>
+                                        </View>
+                                    </View>
+                                ))}
+                            </>
+                        ) : (
+                            <View style={styles.recoveryEmptyContainer}>
+                                <Ionicons name="checkmark-circle-outline" size={32} color="#32D74B" />
+                                <Text style={styles.recoveryEmptyText}>All muscles recovered</Text>
+                            </View>
+                        )}
+                    </View>
+                )}
+            </View>
+
             <View style={{ width: '100%', paddingTop: 12 }}>
                 <View style={styles.contentContainer}>
                     <Text style={styles.contentTitle}>Templates</Text>
@@ -526,6 +650,7 @@ export default function Home() {
                 </RNScrollView>
                 
             </View>
+            </RNScrollView>
 
             {/* Layout Navigation Buttons */}
             <View style={[styles.workoutsButtonContainer, { bottom: insets.bottom + 20 }]}>
@@ -537,6 +662,12 @@ export default function Home() {
             <View style={[styles.SupplementsButtonContainer, { bottom: insets.bottom + 20 }]}>
                 <TouchableOpacity onPress={() => router.push('/(supplements)')} style={styles.fabButton}>
                     <MaterialIcons name="medication" size={32} color="#FFFFFF" />
+                </TouchableOpacity>
+            </View>
+
+            <View style={[styles.CalculationsButtonContainer, { bottom: insets.bottom + 20 }]}>
+                <TouchableOpacity onPress={() => router.push('/(calculations)')} style={styles.fabButton}>
+                    <Ionicons name="calculator-outline" size={32} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
 
@@ -797,6 +928,14 @@ export default function Home() {
 const styles = StyleSheet.create({
     container: { flex: 1, alignItems: 'center', padding: 2, backgroundColor: '#000000' },
     headerContainer: { paddingHorizontal: 4, alignItems: 'flex-end', width: '100%', marginBottom: 8, zIndex: 10, position: 'relative' },
+    scrollView: {
+        flex: 1,
+        width: '100%',
+    },
+    scrollContent: {
+        alignItems: 'center',
+        paddingBottom: 100,
+    },
     contentContainer: { width: '100%', paddingHorizontal: 0, marginBottom: 8,},
     WeeklyActivityContainer: { width: '100%', backgroundColor: 'white', borderRadius: 24, padding: 10, },
     contentTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
@@ -816,6 +955,7 @@ const styles = StyleSheet.create({
     cardTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
     workoutsButtonContainer: { position: 'absolute', left: 20 },
     SupplementsButtonContainer: { position: 'absolute', left: 90 },
+    CalculationsButtonContainer: { position: 'absolute', left: 160 },
     fabContainer: { position: 'absolute', right: 20 },
     fabButton: { backgroundColor: '#1C1C1E', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#2C2C2E' },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', padding: 20 },
@@ -987,6 +1127,73 @@ const styles = StyleSheet.create({
         color: '#FF9500',
         fontSize: 14,
         fontWeight: '600',
+    },
+    recoveryLoadingContainer: {
+        padding: 20,
+        alignItems: 'center',
+    },
+    recoveryContainer: {
+        backgroundColor: '#1C1C1E',
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
+        marginBottom: 16,
+    },
+    recoveryItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#2C2C2E',
+    },
+    recoveryItemLeft: {
+        flex: 1,
+        marginRight: 12,
+    },
+    recoveryMuscleName: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '600',
+        marginBottom: 6,
+        textTransform: 'capitalize',
+    },
+    recoveryBarContainer: {
+        width: '100%',
+    },
+    recoveryBarBackground: {
+        height: 6,
+        backgroundColor: '#2C2C2E',
+        borderRadius: 3,
+        overflow: 'hidden',
+    },
+    recoveryBarFill: {
+        height: '100%',
+        borderRadius: 3,
+    },
+    recoveryItemRight: {
+        alignItems: 'flex-end',
+    },
+    recoveryTime: {
+        color: '#8E8E93',
+        fontSize: 12,
+        fontWeight: '500',
+        marginBottom: 4,
+    },
+    recoveryPercentage: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    recoveryEmptyContainer: {
+        padding: 24,
+        alignItems: 'center',
+    },
+    recoveryEmptyText: {
+        color: '#8E8E93',
+        fontSize: 14,
+        marginTop: 8,
     },
     // Calendar Modal Styles
     calendarModalContainer: {

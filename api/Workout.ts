@@ -28,9 +28,12 @@ export const getActiveWorkout = async (): Promise<CreateWorkoutResponse | any> =
     }
 }
 
-export const getWorkouts = async (): Promise<GetWorkoutsResponse | any> => {
+export const getWorkouts = async (page?: number, pageSize?: number): Promise<GetWorkoutsResponse | any> => {
     try {
-        const response = await apiClient.get('/workout/list/');
+        const params: any = {};
+        if (page !== undefined) params.page = page;
+        if (pageSize !== undefined) params.page_size = pageSize;
+        const response = await apiClient.get('/workout/list/', { params });
         return response.data;
     } catch (error: any) {
         return error.message || 'An unknown error occurred';
@@ -183,6 +186,18 @@ export const getCalendarStats = async (year: number, month?: number, week?: numb
 export const checkToday = async (): Promise<any> => {
     try {
         const response = await apiClient.get('/workout/check-today/');
+        return response.data;
+    } catch (error: any) {
+        if (error.response) {
+            return error.response.data;
+        }
+        return error.message || 'An unknown error occurred';
+    }
+}
+
+export const getRecoveryStatus = async (): Promise<any> => {
+    try {
+        const response = await apiClient.get('/workout/recovery/status/');
         return response.data;
     } catch (error: any) {
         if (error.response) {

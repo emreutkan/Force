@@ -24,9 +24,16 @@ export const login = async (email: string, password: string): Promise<{ access: 
 }
 
 
-export const register = async (email: string, password: string): Promise<{ access: string, refresh: string } | string> => {
+export const register = async (email: string, password: string, gender?: string, height?: number): Promise<{ access: string, refresh: string } | string> => {
     try {
-        const response = await apiClient.post(REGISTER_URL, { email, password });
+        const payload: any = { email, password };
+        if (gender) {
+            payload.gender = gender;
+        }
+        if (height !== undefined && height !== null) {
+            payload.height = height;
+        }
+        const response = await apiClient.post(REGISTER_URL, payload);
         if (response.status == 200) {
             await storeAccessToken(response.data.access);
             await storeRefreshToken(response.data.refresh);

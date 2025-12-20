@@ -13,9 +13,11 @@ export interface CreateWorkoutResponse {
 }
 
 export interface GetAccountResponse {
-    id: number;
+    id: string;
     email: string;
     is_verified: boolean;
+    gender: string;
+    height: number | null;
     created_at: string;
 }
 
@@ -58,7 +60,10 @@ export interface WorkoutExerciseSet {
 }
 
 export interface GetWorkoutsResponse {
-    workouts: Workout[];
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: Workout[];
 }
 
 export interface Exercise {
@@ -134,6 +139,122 @@ export interface Exercise1RMHistory {
     history: Exercise1RMHistoryEntry[];
 }
 
+// Body Measurements Types
+export interface BodyMeasurement {
+    id: number;
+    height: number | string;  // cm
+    weight: number | string;  // kg
+    waist: number | string;   // cm
+    neck: number | string;    // cm
+    hips: number | string | null;  // cm (required for women)
+    body_fat_percentage: number | string | null;  // Auto-calculated
+    gender: "male" | "female";
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CreateMeasurementRequest {
+    height: number;
+    weight: number;
+    waist: number;
+    neck: number;
+    hips?: number;  // Required for women
+    gender?: "male" | "female";  // Optional - uses user's gender from database if not provided
+    notes?: string;
+}
+
+export interface CalculateBodyFatMenRequest {
+    height: number;
+    weight: number;
+    waist: number;
+    neck: number;
+    gender?: "male" | "female";  // Optional - uses user's gender from database if not provided
+}
+
+export interface CalculateBodyFatWomenRequest {
+    height: number;
+    weight: number;
+    waist: number;
+    neck: number;
+    hips: number;
+    gender?: "male" | "female";  // Optional - uses user's gender from database if not provided
+}
+
+export interface CalculateBodyFatResponse {
+    body_fat_percentage: number;
+    measurements: {
+        height_cm: number;
+        weight_kg: number;
+        waist_cm: number;
+        neck_cm: number;
+        hips_cm?: number;  // Only for women
+    };
+    gender_used: "male" | "female";
+    method: string;
+}
+
+// Knowledge Base Types
+export interface TrainingResearch {
+    id: number;
+    title: string;
+    summary: string;
+    content: string;
+    category: string;
+    tags: string[];
+    source_title?: string;
+    source_url?: string;
+    source_authors: string[];
+    publication_date?: string;
+    evidence_level?: string;
+    confidence_score: number;
+    applicable_muscle_groups: string[];
+    applicable_exercise_types: string[];
+    parameters: Record<string, any>;
+    is_active: boolean;
+    is_validated: boolean;
+    priority: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ResearchFilters {
+    category?: string;
+    muscle_group?: string;
+    exercise_type?: string;
+    tags?: string[];
+}
+
+// Volume Analysis Types
+export interface MuscleGroupData {
+    total_volume: number;
+    sets: number;
+    workouts: number;
+}
+
+export interface WeeklyVolumeData {
+    week_start: string; // YYYY-MM-DD
+    week_end: string; // YYYY-MM-DD
+    muscle_groups: Record<string, MuscleGroupData>;
+}
+
+export interface VolumePeriod {
+    start_date: string;
+    end_date: string;
+    total_weeks: number;
+}
+
+export interface VolumeAnalysisResponse {
+    period: VolumePeriod;
+    weeks: WeeklyVolumeData[];
+}
+
+export interface VolumeAnalysisFilters {
+    weeks_back?: number;
+    start_date?: string; // YYYY-MM-DD
+    end_date?: string; // YYYY-MM-DD
+}
+
 // Calendar Types
 export interface CalendarDay {
     date: string; // ISO date string "2025-12-18"
@@ -170,6 +291,27 @@ export interface AvailableYearsResponse {
     years: number[];
 }
 
+// Muscle Recovery Types
+export interface MuscleRecovery {
+    id: number | null;
+    muscle_group: string;
+    fatigue_score: number;
+    total_sets: number;
+    recovery_hours: number;
+    recovery_until: string | null;
+    is_recovered: boolean;
+    hours_until_recovery: number;
+    recovery_percentage: number;
+    source_workout: number | null;
+    created_at: string | null;
+    updated_at: string | null;
+}
+
+export interface RecoveryStatusResponse {
+    recovery_status: Record<string, MuscleRecovery>;
+    timestamp: string;
+}
+
 // Exercise 1RM History Types
 export interface Exercise1RMHistoryEntry {
     workout_id: number;
@@ -183,4 +325,120 @@ export interface Exercise1RMHistory {
     exercise_name: string;
     total_workouts: number;
     history: Exercise1RMHistoryEntry[];
+}
+
+// Body Measurements Types
+export interface BodyMeasurement {
+    id: number;
+    height: number | string;  // cm
+    weight: number | string;  // kg
+    waist: number | string;   // cm
+    neck: number | string;    // cm
+    hips: number | string | null;  // cm (required for women)
+    body_fat_percentage: number | string | null;  // Auto-calculated
+    gender: "male" | "female";
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CreateMeasurementRequest {
+    height: number;
+    weight: number;
+    waist: number;
+    neck: number;
+    hips?: number;  // Required for women
+    gender?: "male" | "female";  // Optional - uses user's gender from database if not provided
+    notes?: string;
+}
+
+export interface CalculateBodyFatMenRequest {
+    height: number;
+    weight: number;
+    waist: number;
+    neck: number;
+    gender?: "male" | "female";  // Optional - uses user's gender from database if not provided
+}
+
+export interface CalculateBodyFatWomenRequest {
+    height: number;
+    weight: number;
+    waist: number;
+    neck: number;
+    hips: number;
+    gender?: "male" | "female";  // Optional - uses user's gender from database if not provided
+}
+
+export interface CalculateBodyFatResponse {
+    body_fat_percentage: number;
+    measurements: {
+        height_cm: number;
+        weight_kg: number;
+        waist_cm: number;
+        neck_cm: number;
+        hips_cm?: number;  // Only for women
+    };
+    gender_used: "male" | "female";
+    method: string;
+}
+
+// Knowledge Base Types
+export interface TrainingResearch {
+    id: number;
+    title: string;
+    summary: string;
+    content: string;
+    category: string;
+    tags: string[];
+    source_title?: string;
+    source_url?: string;
+    source_authors: string[];
+    publication_date?: string;
+    evidence_level?: string;
+    confidence_score: number;
+    applicable_muscle_groups: string[];
+    applicable_exercise_types: string[];
+    parameters: Record<string, any>;
+    is_active: boolean;
+    is_validated: boolean;
+    priority: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ResearchFilters {
+    category?: string;
+    muscle_group?: string;
+    exercise_type?: string;
+    tags?: string[];
+}
+
+// Volume Analysis Types
+export interface MuscleGroupData {
+    total_volume: number;
+    sets: number;
+    workouts: number;
+}
+
+export interface WeeklyVolumeData {
+    week_start: string; // YYYY-MM-DD
+    week_end: string; // YYYY-MM-DD
+    muscle_groups: Record<string, MuscleGroupData>;
+}
+
+export interface VolumePeriod {
+    start_date: string;
+    end_date: string;
+    total_weeks: number;
+}
+
+export interface VolumeAnalysisResponse {
+    period: VolumePeriod;
+    weeks: WeeklyVolumeData[];
+}
+
+export interface VolumeAnalysisFilters {
+    weeks_back?: number;
+    start_date?: string; // YYYY-MM-DD
+    end_date?: string; // YYYY-MM-DD
 }

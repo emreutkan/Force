@@ -13,7 +13,11 @@ interface UserState {
 interface WorkoutState {
     workouts: Workout[];
     isLoading: boolean;
-    fetchWorkouts: () => Promise<void>;
+    isLoadingMore: boolean;
+    hasMore: boolean;
+    currentPage: number;
+    fetchWorkouts: (reset?: boolean) => Promise<void>;
+    loadMoreWorkouts: () => Promise<void>;
     clearWorkouts: () => void;
 }
 
@@ -35,26 +39,51 @@ export const useUserStore = create<UserState>((set) => ({
     clearUser: () => set({ user: null }),
 }));
 
-export const useWorkoutStore = create<WorkoutState>((set) => ({
+export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     workouts: [],
     isLoading: false,
-    fetchWorkouts: async () => {
-        set({ isLoading: true });
+    isLoadingMore: false,
+    hasMore: false,
+    currentPage: 1,
+    fetchWorkouts: async (reset = true) => {
+        if (reset) {
+            set({ isLoading: true, currentPage: 1 });
+        }
         try {
-            const workoutsData = await getWorkouts();
-            // Handle both { workouts: [...] } and direct array response
-            const workoutsArray = Array.isArray(workoutsData) 
-                ? workoutsData 
-                : (workoutsData?.workouts || []);
-            set({ workouts: workoutsArray });
+            const workoutsData = await getWorkouts(1);
+            const workoutsArray = workoutsData?.results || [];
+            set({ 
+                workouts: workoutsArray,
+                hasMore: !!workoutsData?.next,
+                currentPage: 1,
+                isLoading: false
+            });
         } catch (error) {
             console.error('Failed to fetch workouts:', error);
-            set({ workouts: [] });
-        } finally {
-            set({ isLoading: false });
+            set({ workouts: [], hasMore: false, isLoading: false });
         }
     },
-    clearWorkouts: () => set({ workouts: [] }),
+    loadMoreWorkouts: async () => {
+        const { currentPage, hasMore, isLoadingMore } = get();
+        if (!hasMore || isLoadingMore) return;
+        
+        set({ isLoadingMore: true });
+        try {
+            const nextPage = currentPage + 1;
+            const workoutsData = await getWorkouts(nextPage);
+            const newWorkouts = workoutsData?.results || [];
+            set((state) => ({
+                workouts: [...state.workouts, ...newWorkouts],
+                hasMore: !!workoutsData?.next,
+                currentPage: nextPage,
+                isLoadingMore: false
+            }));
+        } catch (error) {
+            console.error('Failed to load more workouts:', error);
+            set({ isLoadingMore: false });
+        }
+    },
+    clearWorkouts: () => set({ workouts: [], currentPage: 1, hasMore: false }),
 }));
 
 interface ActiveWorkoutState {

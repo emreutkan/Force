@@ -16,14 +16,17 @@ export default function ActiveWorkoutScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [exercises, setExercises] = useState<any[]>([]);
     const [isLoadingExercises, setIsLoadingExercises] = useState(false);
-    
+    const [isLoadingMoreExercises, setIsLoadingMoreExercises] = useState(false);
+    const [hasMoreExercises, setHasMoreExercises] = useState(false);
+    const [exercisePage, setExercisePage] = useState(1);
+
     // Rest timer state from Zustand
     const { setLastSetTimestamp, setLastExerciseCategory } = useActiveWorkoutStore();
 
     const fetchActiveWorkout = useCallback(async () => {
         const workout = await getActiveWorkout();
-        setActiveWorkout(workout);
-        console.log("Active Workout:", workout);
+            setActiveWorkout(workout);
+            console.log("Active Workout:", workout);
     }, []);
 
     const fetchRestTimerState = useCallback(async () => {
@@ -62,26 +65,59 @@ export default function ActiveWorkoutScreen() {
 
     // Load exercises when modal opens or search query changes
     useEffect(() => {
-        if (!isModalVisible) return;
+        if (!isModalVisible) {
+            setExercises([]);
+            setExercisePage(1);
+            setHasMoreExercises(false);
+            return;
+        }
 
         const delayDebounceFn = setTimeout(() => {
-            loadExercises();
+            loadExercises(true);
         }, 300);
 
         return () => clearTimeout(delayDebounceFn);
     }, [searchQuery, isModalVisible]);
 
-    const loadExercises = async () => {
-        setIsLoadingExercises(true);
+    const loadExercises = async (reset = false) => {
+        if (reset) {
+            setIsLoadingExercises(true);
+            setExercisePage(1);
+        } else {
+            setIsLoadingMoreExercises(true);
+        }
         try {
-            const data = await getExercises(searchQuery);
-            if (Array.isArray(data)) {
-                setExercises(data);
+            const page = reset ? 1 : exercisePage + 1;
+            const data = await getExercises(searchQuery, page);
+            if (data?.results) {
+                // Paginated response
+                if (reset) {
+                    setExercises(data.results);
+                } else {
+                    setExercises(prev => [...prev, ...data.results]);
+                }
+                setHasMoreExercises(!!data.next);
+                setExercisePage(page);
+            } else if (Array.isArray(data)) {
+                // Fallback for non-paginated response
+                if (reset) {
+                    setExercises(data);
+                } else {
+                    setExercises(prev => [...prev, ...data]);
+                }
+                setHasMoreExercises(false);
             }
         } catch (error) {
             console.error("Failed to load exercises:", error);
         } finally {
             setIsLoadingExercises(false);
+            setIsLoadingMoreExercises(false);
+        }
+    };
+
+    const loadMoreExercises = () => {
+        if (hasMoreExercises && !isLoadingMoreExercises && !isLoadingExercises) {
+            loadExercises(false);
         }
     };
 
@@ -277,6 +313,15 @@ export default function ActiveWorkoutScreen() {
                             )}
                             ItemSeparatorComponent={() => <View style={{height: 12}} />}
                             contentContainerStyle={styles.listContent}
+                            onEndReached={loadMoreExercises}
+                            onEndReachedThreshold={0.5}
+                            ListFooterComponent={
+                                isLoadingMoreExercises ? (
+                                    <View style={styles.footerLoader}>
+                                        <ActivityIndicator size="small" color="#0A84FF" />
+                                    </View>
+                                ) : null
+                            }
                             ListEmptyComponent={
                                 <View style={styles.emptyContainer}>
                                     <Ionicons name="barbell-outline" size={48} color="#FFFFFF" />
@@ -358,6 +403,10 @@ const styles = StyleSheet.create({
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
+        alignItems: 'center',
+    },
+    footerLoader: {
+        paddingVertical: 20,
         alignItems: 'center',
     },
     listContent: {

@@ -12,31 +12,62 @@ export default function CreateTemplateScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [exercises, setExercises] = useState<any[]>([]);
     const [isLoadingExercises, setIsLoadingExercises] = useState(false);
+    const [isLoadingMoreExercises, setIsLoadingMoreExercises] = useState(false);
+    const [hasMoreExercises, setHasMoreExercises] = useState(false);
+    const [exercisePage, setExercisePage] = useState(1);
     const [isCreating, setIsCreating] = useState(false);
     const insets = useSafeAreaInsets();
 
     useEffect(() => {
-        loadExercises();
+        loadExercises(true);
     }, []);
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            loadExercises();
+            loadExercises(true);
         }, 300);
         return () => clearTimeout(delayDebounceFn);
     }, [searchQuery]);
 
-    const loadExercises = async () => {
-        setIsLoadingExercises(true);
+    const loadExercises = async (reset = false) => {
+        if (reset) {
+            setIsLoadingExercises(true);
+            setExercisePage(1);
+        } else {
+            setIsLoadingMoreExercises(true);
+        }
         try {
-            const data = await getExercises(searchQuery);
-            if (Array.isArray(data)) {
-                setExercises(data);
+            const page = reset ? 1 : exercisePage + 1;
+            const data = await getExercises(searchQuery, page);
+            if (data?.results) {
+                // Paginated response
+                if (reset) {
+                    setExercises(data.results);
+                } else {
+                    setExercises(prev => [...prev, ...data.results]);
+                }
+                setHasMoreExercises(!!data.next);
+                setExercisePage(page);
+            } else if (Array.isArray(data)) {
+                // Fallback for non-paginated response
+                if (reset) {
+                    setExercises(data);
+                } else {
+                    setExercises(prev => [...prev, ...data]);
+                }
+                setHasMoreExercises(false);
             }
         } catch (error) {
             console.error("Failed to load exercises:", error);
         } finally {
             setIsLoadingExercises(false);
+            setIsLoadingMoreExercises(false);
+        }
+    };
+
+    const loadMoreExercises = () => {
+        if (hasMoreExercises && !isLoadingMoreExercises && !isLoadingExercises) {
+            loadExercises(false);
         }
     };
 
@@ -181,32 +212,47 @@ export default function CreateTemplateScreen() {
             </View>
 
             {/* Exercise List */}
-            <FlatList
-                data={exercises.filter(e => !selectedExercises.includes(e.id))}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={({ item }) => (
-                    <TouchableOpacity
-                        style={styles.exerciseCard}
-                        onPress={() => toggleExercise(item.id)}
-                    >
-                        <View style={styles.exerciseInfo}>
-                            <Text style={styles.exerciseName}>{item.name}</Text>
-                            <Text style={styles.exerciseDetail}>
-                                {item.primary_muscle} {item.equipment_type ? `• ${item.equipment_type}` : ''}
-                            </Text>
+            {isLoadingExercises ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#0A84FF" />
+                </View>
+            ) : (
+                <FlatList
+                    data={exercises.filter(e => !selectedExercises.includes(e.id))}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={styles.exerciseCard}
+                            onPress={() => toggleExercise(item.id)}
+                        >
+                            <View style={styles.exerciseInfo}>
+                                <Text style={styles.exerciseName}>{item.name}</Text>
+                                <Text style={styles.exerciseDetail}>
+                                    {item.primary_muscle} {item.equipment_type ? `• ${item.equipment_type}` : ''}
+                                </Text>
+                            </View>
+                            <Ionicons name="add-circle-outline" size={24} color="#0A84FF" />
+                        </TouchableOpacity>
+                    )}
+                    ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+                    contentContainerStyle={styles.listContent}
+                    onEndReached={loadMoreExercises}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={
+                        isLoadingMoreExercises ? (
+                            <View style={styles.footerLoader}>
+                                <ActivityIndicator size="small" color="#0A84FF" />
+                            </View>
+                        ) : null
+                    }
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <Ionicons name="barbell-outline" size={48} color="#8E8E93" />
+                            <Text style={styles.emptyText}>No exercises found</Text>
                         </View>
-                        <Ionicons name="add-circle-outline" size={24} color="#0A84FF" />
-                    </TouchableOpacity>
-                )}
-                ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-                contentContainerStyle={styles.listContent}
-                ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Ionicons name="barbell-outline" size={48} color="#8E8E93" />
-                        <Text style={styles.emptyText}>No exercises found</Text>
-                    </View>
-                }
-            />
+                    }
+                />
+            )}
 
             {/* Create Button */}
             <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
@@ -371,6 +417,15 @@ const styles = StyleSheet.create({
         color: '#8E8E93',
         fontSize: 16,
         marginTop: 12,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    footerLoader: {
+        paddingVertical: 20,
+        alignItems: 'center',
     },
     footer: {
         position: 'absolute',

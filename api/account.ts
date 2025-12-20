@@ -14,3 +14,27 @@ export const getAccount = async () : Promise<getAccountResponse > => {
         return error.message || 'An unknown error occurred while getting account information /me endpoint';
     }
 }
+
+export const updateHeight = async (height: number): Promise<{ height: string; message: string } | any> => {
+    try {
+        const response = await apiClient.post('/user/height/', { height });
+        return response.data;
+    } catch (error: any) {
+        if (error.response) {
+            return error.response.data;
+        }
+        return error.message || 'An unknown error occurred';
+    }
+}
+
+export const updateGender = async (gender: 'male' | 'female'): Promise<{ gender: string; message: string } | any> => {
+    try {
+        const response = await apiClient.post('/user/gender/', { gender });
+        return response.data;
+    } catch (error: any) {
+        if (error.response) {
+            return error.response.data;
+        }
+        return error.message || 'An unknown error occurred';
+    }
+}

@@ -2,8 +2,8 @@ import { googleLogin, register } from '@/api/Auth';
 import { useUserStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +15,8 @@ export default function RegisterScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [gender, setGender] = useState<string>('male');
+    const [height, setHeight] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     
@@ -67,7 +69,8 @@ export default function RegisterScreen() {
 
         setLoading(true);
         try {
-            const result = await register(email, password);
+            const heightValue = height ? parseFloat(height) : undefined;
+            const result = await register(email, password, gender, heightValue);
             
             if (typeof result === 'object' && result.access && result.refresh) {
                 await fetchUser();
@@ -149,12 +152,41 @@ export default function RegisterScreen() {
                     <View style={styles.separator} />
 
                     <TextInput 
-                        style={styles.inputBottom} 
+                        style={styles.inputMiddle} 
                         placeholder="Confirm Password" 
                         placeholderTextColor="#8E8E93"
                         value={confirmPassword} 
                         onChangeText={setConfirmPassword} 
                         secureTextEntry={!showPassword}
+                    />
+                    <View style={styles.separator} />
+
+                    <View style={styles.genderContainer}>
+                        <Text style={styles.genderLabel}>Gender</Text>
+                        <View style={styles.genderOptions}>
+                            <TouchableOpacity
+                                style={[styles.genderOption, gender === 'male' && styles.genderOptionSelected]}
+                                onPress={() => setGender('male')}
+                            >
+                                <Text style={[styles.genderOptionText, gender === 'male' && styles.genderOptionTextSelected]}>Male</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.genderOption, gender === 'female' && styles.genderOptionSelected]}
+                                onPress={() => setGender('female')}
+                            >
+                                <Text style={[styles.genderOptionText, gender === 'female' && styles.genderOptionTextSelected]}>Female</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                    <View style={styles.separator} />
+
+                    <TextInput 
+                        style={styles.inputBottom} 
+                        placeholder="Height (cm) - Optional" 
+                        placeholderTextColor="#8E8E93"
+                        value={height} 
+                        onChangeText={setHeight}
+                        keyboardType="numeric"
                     />
                 </View>
 
@@ -363,6 +395,43 @@ const styles = StyleSheet.create({
         fontSize: 15,
     },
     linkBold: {
+        color: '#0A84FF',
+        fontWeight: '600',
+    },
+    genderContainer: {
+        padding: 16,
+        backgroundColor: '#1C1C1E',
+    },
+    genderLabel: {
+        color: '#8E8E93',
+        fontSize: 13,
+        marginBottom: 12,
+        fontWeight: '500',
+    },
+    genderOptions: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    genderOption: {
+        flex: 1,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
+        alignItems: 'center',
+        backgroundColor: '#1C1C1E',
+    },
+    genderOptionSelected: {
+        borderColor: '#0A84FF',
+        backgroundColor: 'rgba(10, 132, 255, 0.1)',
+    },
+    genderOptionText: {
+        color: '#8E8E93',
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    genderOptionTextSelected: {
         color: '#0A84FF',
         fontWeight: '600',
     }

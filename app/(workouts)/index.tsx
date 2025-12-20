@@ -6,21 +6,27 @@ import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, Touchabl
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function Workouts() {
-    const { workouts, isLoading, fetchWorkouts } = useWorkoutStore();
+    const { workouts, isLoading, isLoadingMore, hasMore, fetchWorkouts, loadMoreWorkouts } = useWorkoutStore();
     const insets = useSafeAreaInsets();
     const [refreshing, setRefreshing] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
-            fetchWorkouts();
+            fetchWorkouts(true);
         }, [fetchWorkouts])
     );
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await fetchWorkouts();
+        await fetchWorkouts(true);
         setRefreshing(false);
     }, [fetchWorkouts]);
+
+    const handleLoadMore = useCallback(() => {
+        if (hasMore && !isLoadingMore && !isLoading) {
+            loadMoreWorkouts();
+        }
+    }, [hasMore, isLoadingMore, isLoading, loadMoreWorkouts]);
 
     // Sort workouts by datetime (most recent first)
     const sortedWorkouts = useMemo(() => {
@@ -173,6 +179,15 @@ export default function Workouts() {
                             tintColor="#0A84FF"
                             colors={["#0A84FF"]}
                         />
+                    }
+                    onEndReached={handleLoadMore}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={
+                        isLoadingMore ? (
+                            <View style={styles.footerLoader}>
+                                <ActivityIndicator size="small" color="#0A84FF" />
+                            </View>
+                        ) : null
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
@@ -338,5 +353,9 @@ const styles = StyleSheet.create({
         fontSize: 14,
         textAlign: 'center',
         lineHeight: 20,
+    },
+    footerLoader: {
+        paddingVertical: 20,
+        alignItems: 'center',
     }
 });

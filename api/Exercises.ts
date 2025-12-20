@@ -1,10 +1,12 @@
 import apiClient from './APIClient';
 
-export const getExercises = async (query: string = '') => {
+export const getExercises = async (query: string = '', page?: number, pageSize?: number) => {
     try {
-        const response = await apiClient.get(`/exercise/list/`, {
-            params: { search: query }
-        });
+        const params: any = {};
+        if (query) params.search = query;
+        if (page !== undefined) params.page = page;
+        if (pageSize !== undefined) params.page_size = pageSize;
+        const response = await apiClient.get(`/exercise/list/`, { params });
         return response.data;
     } catch (error: any) {
         return error.message || 'An unknown error occurred';
