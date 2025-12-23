@@ -1,8 +1,9 @@
 import { addUserSupplement, getSupplements, getUserSupplements, Supplement, UserSupplement } from '@/api/Supplements';
+import UnifiedHeader from '@/components/UnifiedHeader';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SupplementsScreen() {
@@ -81,52 +82,14 @@ export default function SupplementsScreen() {
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <Stack.Screen options={{ headerShown: false }} />
             
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#0A84FF" />
-                </TouchableOpacity>
-                <Text style={styles.title}>My Stack</Text>
-                <View style={{ width: 40 }} />
-            </View>
-
-            <FlatList
-                data={userSupplements}
-                renderItem={renderUserSupplement}
-                keyExtractor={item => item.id.toString()}
-                contentContainerStyle={styles.listContent}
-                ListEmptyComponent={
-                    <View style={styles.emptyState}>
-                        <Ionicons name="nutrition-outline" size={64} color="#8E8E93" />
-                        <Text style={styles.emptyText}>No supplements added yet</Text>
-                        <Text style={styles.emptySubtext}>Add supplements to track your intake</Text>
-                    </View>
-                }
-            />
-
-            <View style={[styles.fabContainer, { bottom: insets.bottom + 20 }]}>
-                <TouchableOpacity 
-                    style={styles.fabButton}
-                    onPress={() => setIsAddModalVisible(true)}
-                >
-                    <Ionicons name="add" size={32} color="#FFFFFF" />
-                </TouchableOpacity>
-            </View>
-
-            <Modal
-                visible={isAddModalVisible}
-                animationType="slide"
-                presentationStyle="pageSheet"
-                onRequestClose={() => setIsAddModalVisible(false)}
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Add Supplement</Text>
-                        <TouchableOpacity onPress={() => setIsAddModalVisible(false)}>
-                            <Text style={styles.closeButton}>Cancel</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <ScrollView style={styles.modalContent}>
+            <UnifiedHeader 
+                title="My Stack"
+                rightButton={{
+                    icon: "add",
+                    onPress: () => setIsAddModalVisible(true),
+                }}
+                modalContent={
+                    <ScrollView style={styles.modalScrollContent}>
                         {!selectedSupplement ? (
                             <>
                                 <Text style={styles.sectionTitle}>Select Supplement</Text>
@@ -202,8 +165,28 @@ export default function SupplementsScreen() {
                             </>
                         )}
                     </ScrollView>
-                </View>
-            </Modal>
+                }
+                modalVisible={isAddModalVisible}
+                onModalClose={() => {
+                    setIsAddModalVisible(false);
+                    resetForm();
+                }}
+            />
+
+            <FlatList
+                data={userSupplements}
+                renderItem={renderUserSupplement}
+                keyExtractor={item => item.id.toString()}
+                contentContainerStyle={[styles.listContent, { paddingTop: 60 }]}
+                ListEmptyComponent={
+                    <View style={styles.emptyState}>
+                        <Ionicons name="nutrition-outline" size={64} color="#8E8E93" />
+                        <Text style={styles.emptyText}>No supplements added yet</Text>
+                        <Text style={styles.emptySubtext}>Add supplements to track your intake</Text>
+                    </View>
+                }
+            />
+
         </View>
     );
 }
@@ -212,27 +195,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000000',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingBottom: 12,
-        backgroundColor: '#000000',
-        borderBottomWidth: 1,
-        borderBottomColor: '#2C2C2E',
-    },
-    backButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        minWidth: 40,
-        justifyContent: 'flex-start',
-    },
-    title: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: '#FFFFFF',
     },
     listContent: {
         padding: 16,
@@ -298,32 +260,6 @@ const styles = StyleSheet.create({
         color: '#8E8E93',
         marginTop: 4,
     },
-    fabContainer: {
-        position: 'absolute',
-        right: 20,
-        ...Platform.select({
-            web: {
-                boxShadow: '0px 4px 5px rgba(0, 0, 0, 0.3)',
-            },
-            default: {
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 4.65,
-                elevation: 8,
-            }
-        }),
-    },
-    fabButton: {
-        backgroundColor: '#1C1C1E',
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#2C2C2E',
-    },
     modalContainer: {
         flex: 1,
         backgroundColor: '#000000',
@@ -349,6 +285,9 @@ const styles = StyleSheet.create({
     },
     modalContent: {
         padding: 16,
+    },
+    modalScrollContent: {
+        maxHeight: 500,
     },
     sectionTitle: {
         fontSize: 13,

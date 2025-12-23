@@ -45,3 +45,4 @@ export const calculateBodyFatWomen = async (request: CalculateBodyFatWomenReques
         return error.message || 'An unknown error occurred';
     }
 };
+

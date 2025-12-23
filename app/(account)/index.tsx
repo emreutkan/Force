@@ -1,6 +1,7 @@
 
 import { clearTokens } from '@/api/Storage';
 import { updateGender, updateHeight } from '@/api/account';
+import UnifiedHeader from '@/components/UnifiedHeader';
 import { useUserStore } from '@/state/userStore'; // Use the store!
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -100,16 +101,13 @@ export default function AccountScreen() {
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             {/* iOS-style Navigation Bar */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#007AFF" />
-                    <Text style={styles.backText}>Home</Text>
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Account</Text>
-                <View style={{ width: 60 }} /> 
-            </View>
+            <UnifiedHeader 
+                title="Account"
+                onBackPress={() => router.push('/(home)')}
+                backButtonText="Home"
+            />
 
-            <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 40, paddingTop: 24 }}>
+            <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 40, paddingTop: 84 }}>
                 {/* Profile Card */}
                 <View style={styles.section}>
                     <View style={styles.profileCard}>
@@ -295,29 +293,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000000', // Black Background
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 8,
-        height: 44, 
-        backgroundColor: '#000000', 
-    },
-    backButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        minWidth: 80,
-    },
-    backText: {
-        color: '#0A84FF', // iOS Dark Mode Blue
-        fontSize: 17,
-        marginLeft: -4, 
-    },
-    headerTitle: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: '#FFFFFF',
     },
     content: {
         flex: 1,

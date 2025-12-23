@@ -5,3 +5,4 @@ export default function VolumeAnalysisLayout() {
         <Stack screenOptions={{ headerShown: false }} />
     );
 }
+

@@ -5,3 +5,4 @@ export default function KnowledgeBaseLayout() {
         <Stack screenOptions={{ headerShown: false }} />
     );
 }
+

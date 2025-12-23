@@ -1,17 +1,32 @@
-// Use your computer's local IP for phone access (192.168.1.9)
-// Change back to 127.0.0.1 for emulator/simulator
 import { Platform } from 'react-native';
 
-const LOCAL_IP = Platform.select({
-    web: '192.168.1.7',
-    default: '192.168.1.7'
+// Deployment API (no port) - ACTIVE
+const DEPLOYMENT_IP = '16.16.248.86';
+
+// Local API (with port 8000) - COMMENTED OUT
+// const LOCAL_IP = '192.168.1.7';
+
+const API_IP = Platform.select({
+    web: DEPLOYMENT_IP,
+    default: DEPLOYMENT_IP
+    // For local development, uncomment below and comment above:
+    // web: LOCAL_IP,
+    // default: LOCAL_IP
 });
 
-export const API_URL = `http://${LOCAL_IP}:8000/api`;
-export const BASE_URL = `http://${LOCAL_IP}:8000`; // Added base URL without /api
+// Deployment API (HTTP, no port) - ACTIVE
+export const API_URL = `http://${API_IP}/api`;
+export const BASE_URL = `http://${API_IP}`;
 
-export const LOGIN_URL = `${API_URL}/user/login/`;
-export const REGISTER_URL = `${API_URL}/user/register/`;
-export const GOOGLE_LOGIN_URL = `${BASE_URL}/auth/google/`; // Pointing to root/auth/google/
-export const REFRESH_URL = `${API_URL}/token/refresh/`;
-export const CREATE_WORKOUT_URL = `${API_URL}/workout/create/`;
+// Local API (HTTP with port 8000) - COMMENTED OUT
+// export const API_URL = `http://${API_IP}:8000/api`;
+// export const BASE_URL = `http://${API_IP}:8000`;
+
+// Relative URLs (will be combined with baseURL from APIClient)
+export const LOGIN_URL = `/user/login/`;
+export const REGISTER_URL = `/user/register/`;
+export const REFRESH_URL = `/token/refresh/`;
+export const CREATE_WORKOUT_URL = `/workout/create/`;
+
+// Full URL for Google login (uses BASE_URL, not API_URL)
+export const GOOGLE_LOGIN_URL = `${BASE_URL}/auth/google/`;

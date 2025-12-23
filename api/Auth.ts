@@ -33,14 +33,25 @@ export const register = async (email: string, password: string, gender?: string,
         if (height !== undefined && height !== null) {
             payload.height = height;
         }
+        console.log("Register payload:", JSON.stringify(payload));
         const response = await apiClient.post(REGISTER_URL, payload);
-        if (response.status == 200) {
-            await storeAccessToken(response.data.access);
-            await storeRefreshToken(response.data.refresh);
-            return { access: response.data.access, refresh: response.data.refresh };
+        console.log("Register response status:", response.status);
+        console.log("Register response data:", JSON.stringify(response.data));
+        
+        // Accept both 200 and 201 status codes
+        if (response.status === 200 || response.status === 201) {
+            if (response.data.access && response.data.refresh) {
+                await storeAccessToken(response.data.access);
+                await storeRefreshToken(response.data.refresh);
+                return { access: response.data.access, refresh: response.data.refresh };
+            } else {
+                return 'Response missing access or refresh token';
+            }
         }
         return response.data.detail || 'An unknown error occurred while storing tokens in the secure store';
     } catch (error: any) {
+        console.error("Register error:", error);
+        console.error("Register error response:", error.response?.data);
         if (error.response?.status === 401) {
             return error.response?.data?.detail || 'Invalid credentials';
         }

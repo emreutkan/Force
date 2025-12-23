@@ -20,3 +20,4 @@ export const getResearch = async (filters?: ResearchFilters): Promise<TrainingRe
         return error.message || 'An unknown error occurred';
     }
 };
+

@@ -1,50 +1,74 @@
-# Welcome to your Expo app 👋
+# uTrack - Personal Fitness Tracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A comprehensive mobile fitness app designed to help you track your workouts, monitor progress, and optimize your training.
 
-## Get started
+## Features
 
-1. Install dependencies
+### Workout Tracking
+- Create and log workouts with detailed exercise tracking
+- Track sets, reps, weight, and rest periods
+- Monitor active workouts in real-time with elapsed time
+- View workout history with pagination support
+- Organize workouts by date and filter through your training history
 
-   ```bash
-   npm install
-   ```
+### Exercise Library
+- Browse an extensive database of exercises
+- Search exercises by name, muscle group, or equipment
+- View exercise details including instructions and safety tips
+- Track exercise performance over time
 
-2. Start the app
+### Workout Templates
+- Create reusable workout templates
+- Quickly start workouts from saved templates
+- Organize your favorite training routines
 
-   ```bash
-   npx expo start
-   ```
+### Body Measurements & Analysis
+- Track body measurements (weight, waist, neck, hips)
+- Calculate body fat percentage using the US Navy Method
+- View measurement history and track progress over time
+- Automatic calculations based on your profile
 
-In the output, you'll find options to open the app in a
+### Volume Analysis
+- Analyze training volume per muscle group
+- View weekly breakdowns of your training volume
+- Track average, maximum, and minimum volume for each muscle group
+- Identify training patterns and imbalances
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Recovery Tracking
+- Monitor muscle recovery status
+- Track fatigue scores and recovery time
+- Get recommendations on which muscles need rest
+- Optimize training frequency based on recovery data
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Calendar & Activity
+- Weekly activity view showing workouts and rest days
+- Monthly calendar with detailed statistics
+- Track workout frequency and consistency
+- View total workouts, rest days, and activity patterns
 
-## Get a fresh project
+### Knowledge Base
+- Access research-backed training information
+- Filter by category, muscle group, or exercise type
+- Learn about training intensity, recovery, and best practices
+- Evidence-based guidance for your fitness journey
 
-When you're ready, run:
+### Supplements
+- Track your supplement intake
+- Set dosages and frequencies
+- Monitor your supplement stack
 
-```bash
-npm run reset-project
-```
+### Account Management
+- Personalize your profile with height and gender
+- Secure authentication
+- Data synced across devices
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Getting Started
 
-## Learn more
+1. Create an account or sign in
+2. Set your height and gender in account settings
+3. Start logging your workouts
+4. Track your progress and analyze your training data
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+**uTrack** - Your complete fitness companion for tracking, analyzing, and optimizing your training.

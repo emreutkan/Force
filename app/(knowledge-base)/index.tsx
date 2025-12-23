@@ -1,5 +1,6 @@
 import { getResearch } from '@/api/KnowledgeBase';
 import { ResearchFilters, TrainingResearch } from '@/api/types';
+import UnifiedHeader from '@/components/UnifiedHeader';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -126,89 +127,84 @@ export default function KnowledgeBaseScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#0A84FF" />
-                </TouchableOpacity>
-                <Text style={styles.title}>Knowledge Base</Text>
-                <View style={{ width: 40 }} />
+            <UnifiedHeader title="Knowledge Base" />
+
+            <View style={styles.filtersContainer}>
+                <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.filtersContent}
+                >
+                    <View style={styles.filterGroup}>
+                        <Text style={styles.filterLabel}>Category</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                            {CATEGORIES.map((cat) => (
+                                <TouchableOpacity
+                                    key={cat.value}
+                                    style={[
+                                        styles.filterPill,
+                                        filters.category === cat.value && styles.filterPillActive
+                                    ]}
+                                    onPress={() => setFilters({ ...filters, category: cat.value || undefined })}
+                                >
+                                    <Text style={[
+                                        styles.filterPillText,
+                                        filters.category === cat.value && styles.filterPillTextActive
+                                    ]}>
+                                        {cat.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+
+                    <View style={styles.filterGroup}>
+                        <Text style={styles.filterLabel}>Muscle Group</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                            {MUSCLE_GROUPS.map((mg) => (
+                                <TouchableOpacity
+                                    key={mg.value}
+                                    style={[
+                                        styles.filterPill,
+                                        filters.muscle_group === mg.value && styles.filterPillActive
+                                    ]}
+                                    onPress={() => setFilters({ ...filters, muscle_group: mg.value || undefined })}
+                                >
+                                    <Text style={[
+                                        styles.filterPillText,
+                                        filters.muscle_group === mg.value && styles.filterPillTextActive
+                                    ]}>
+                                        {mg.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+
+                    <View style={styles.filterGroup}>
+                        <Text style={styles.filterLabel}>Exercise Type</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                            {EXERCISE_TYPES.map((et) => (
+                                <TouchableOpacity
+                                    key={et.value}
+                                    style={[
+                                        styles.filterPill,
+                                        filters.exercise_type === et.value && styles.filterPillActive
+                                    ]}
+                                    onPress={() => setFilters({ ...filters, exercise_type: et.value || undefined })}
+                                >
+                                    <Text style={[
+                                        styles.filterPillText,
+                                        filters.exercise_type === et.value && styles.filterPillTextActive
+                                    ]}>
+                                        {et.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                </ScrollView>
             </View>
-
-            <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                style={styles.filtersContainer}
-                contentContainerStyle={styles.filtersContent}
-            >
-                <View style={styles.filterGroup}>
-                    <Text style={styles.filterLabel}>Category</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {CATEGORIES.map((cat) => (
-                            <TouchableOpacity
-                                key={cat.value}
-                                style={[
-                                    styles.filterPill,
-                                    filters.category === cat.value && styles.filterPillActive
-                                ]}
-                                onPress={() => setFilters({ ...filters, category: cat.value || undefined })}
-                            >
-                                <Text style={[
-                                    styles.filterPillText,
-                                    filters.category === cat.value && styles.filterPillTextActive
-                                ]}>
-                                    {cat.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-
-                <View style={styles.filterGroup}>
-                    <Text style={styles.filterLabel}>Muscle Group</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {MUSCLE_GROUPS.map((mg) => (
-                            <TouchableOpacity
-                                key={mg.value}
-                                style={[
-                                    styles.filterPill,
-                                    filters.muscle_group === mg.value && styles.filterPillActive
-                                ]}
-                                onPress={() => setFilters({ ...filters, muscle_group: mg.value || undefined })}
-                            >
-                                <Text style={[
-                                    styles.filterPillText,
-                                    filters.muscle_group === mg.value && styles.filterPillTextActive
-                                ]}>
-                                    {mg.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-
-                <View style={styles.filterGroup}>
-                    <Text style={styles.filterLabel}>Exercise Type</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {EXERCISE_TYPES.map((et) => (
-                            <TouchableOpacity
-                                key={et.value}
-                                style={[
-                                    styles.filterPill,
-                                    filters.exercise_type === et.value && styles.filterPillActive
-                                ]}
-                                onPress={() => setFilters({ ...filters, exercise_type: et.value || undefined })}
-                            >
-                                <Text style={[
-                                    styles.filterPillText,
-                                    filters.exercise_type === et.value && styles.filterPillTextActive
-                                ]}>
-                                    {et.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-            </ScrollView>
 
             <View style={styles.searchContainer}>
                 <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
@@ -235,7 +231,7 @@ export default function KnowledgeBaseScreen() {
                     data={filteredResearch}
                     renderItem={renderResearchCard}
                     keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={styles.listContent}
+                    contentContainerStyle={[styles.listContent, { paddingTop: 60 }]}
                     ListEmptyComponent={
                         <View style={styles.emptyState}>
                             <Ionicons name="library-outline" size={64} color="#8E8E93" />
@@ -254,47 +250,33 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#000000',
     },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingBottom: 12,
-        backgroundColor: '#000000',
-        borderBottomWidth: 1,
-        borderBottomColor: '#2C2C2E',
-    },
-    backButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        minWidth: 40,
-    },
-    title: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: '#FFFFFF',
-    },
     filtersContainer: {
         backgroundColor: '#1C1C1E',
         borderBottomWidth: 1,
         borderBottomColor: '#2C2C2E',
+        marginTop: 60,
     },
     filtersContent: {
-        paddingVertical: 12,
+        paddingVertical: 16,
     },
     filterGroup: {
-        marginRight: 16,
+        marginRight: 24,
+        minWidth: 200,
     },
     filterLabel: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: '600',
         color: '#8E8E93',
-        marginBottom: 8,
+        marginBottom: 10,
         marginLeft: 16,
         textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    filterScroll: {
+        flexGrow: 0,
     },
     filterPill: {
-        paddingHorizontal: 16,
+        paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 20,
         backgroundColor: '#2C2C2E',
@@ -448,3 +430,4 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
 });
+

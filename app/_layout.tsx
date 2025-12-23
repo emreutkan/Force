@@ -28,6 +28,7 @@ export default function RootLayout() {
           <Stack.Screen name="(add-workout)" />
           <Stack.Screen name="(workouts)" />
           <Stack.Screen name="(supplements)" />
+          <Stack.Screen name="(recovery-status)" />
 
         </Stack>
         <StatusBar style="light" />

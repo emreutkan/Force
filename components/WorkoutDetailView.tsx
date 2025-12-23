@@ -751,31 +751,31 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEd
                     </View>
 
                     <BlurView intensity={15} tint="dark" style={styles.WorkoutFooter}>
-                            <>
-            
-                     {isActive && onCompleteWorkout && hasSets ? (
-                                    <TouchableOpacity 
-                                        style={styles.completeWorkoutButton}
-                                        onPress={onCompleteWorkout}
+                        <View style={styles.footerContent}>
+                            {isActive && onCompleteWorkout && hasSets ? (
+                                <TouchableOpacity 
+                                    style={styles.completeWorkoutButton}
+                                    onPress={onCompleteWorkout}
+                                >
+                                    <Text style={styles.completeWorkoutButtonText}>Finish Workout</Text>
+                                </TouchableOpacity>
+                            ) : (
+                                <View style={{ flex: 1 }} />
+                            )}
+                            {(isActive || isEditMode) && !isViewOnly && onAddExercise && (
+                                <View style={styles.fabContainer}>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            closeCurrentSwipeable();
+                                            onAddExercise();
+                                        }}
+                                        style={styles.fabButton}
                                     >
-                                        <Text style={styles.completeWorkoutButtonText}>Finish Workout</Text>
+                                        <Ionicons name="add" size={32} color="white" />
                                     </TouchableOpacity>
-                                ) : null
-                   }
-                   {(isActive || isEditMode) && !isViewOnly && onAddExercise && (
-                        <View style={styles.fabContainer}>
-                            <TouchableOpacity
-                                onPress={() => {
-                                    closeCurrentSwipeable();
-                                    onAddExercise();
-                                }}
-                                style={styles.fabButton}
-                            >
-                                <Ionicons name="add" size={32} color="white" />
-                            </TouchableOpacity>
+                                </View>
+                            )}
                         </View>
-                    )}
-                        </>  
                     </BlurView>
         
                 
@@ -1239,9 +1239,6 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 10,
         borderRadius: 20,
@@ -1250,6 +1247,11 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: '#2C2C2E',
+    },
+    footerContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     fabContainer: {
         ...Platform.select({
@@ -1262,8 +1264,6 @@ const styles = StyleSheet.create({
                 elevation: 8,
             }
         }),
-
-
     },
     fabButton: {
         backgroundColor: '#0A84FF',

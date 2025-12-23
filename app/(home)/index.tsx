@@ -3,7 +3,8 @@ import { CalendarDay, CalendarStats, MuscleRecovery, RecoveryStatusResponse, Tem
 import { useWorkoutStore } from '@/state/userStore';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { router, useFocusEffect } from 'expo-router';
+import { BlurView } from 'expo-blur';
+import { router, useFocusEffect, usePathname } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Keyboard, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView as RNScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -33,6 +34,7 @@ export default function Home() {
     const [date, setDate] = useState(new Date());
     const [elapsedTime, setElapsedTime] = useState('00:00:00');
     const insets = useSafeAreaInsets();
+    const pathname = usePathname();
     const [modalCreateButtonText, setModalCreateButtonText] = useState('Create Workout');
     const [modalCreateButtonAction, setModalCreateButtonAction] = useState('createWorkout');
     const [keyboardHeight, setKeyboardHeight] = useState(300);
@@ -368,11 +370,6 @@ export default function Home() {
 
     return (
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.container, { paddingTop: insets.top }]}>
-            <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={() => router.push('/(account)')} hitSlop={10}>
-                    <Ionicons name="person-circle-outline" size={42} color="#FFFFFF" />
-                </TouchableOpacity>
-            </View>
 
             <RNScrollView
                 style={styles.scrollView}
@@ -387,16 +384,13 @@ export default function Home() {
                     />
                 }
             >
-                {/* Today's Activity Indicator */}
             {isLoadingToday ? (
                 <View style={{ width: '100%', paddingVertical: 20 }}>
                     <ActivityIndicator size="large" color="#0A84FF" />
                 </View>
             ) : todayStatus && (
                 <View style={{ width: '100%' }}>
-                    <View style={styles.contentContainer}>
-                        <Text style={styles.contentTitle}>Today's Activity</Text>
-                    </View>
+     
                     {todayStatus.error === "ACTIVE_WORKOUT_EXISTS" ? (
                         // Active Workout
                         <ReanimatedSwipeable
@@ -461,7 +455,23 @@ export default function Home() {
                                 )}
                             </TouchableOpacity>
                         </ReanimatedSwipeable>
-                    ) : null}
+                    ) : (
+                        // No workout today - show start workout card
+                        <TouchableOpacity 
+                            style={styles.startWorkoutCard} 
+                            onPress={() => {
+                                setModalCreateButtonText('Start Workout');
+                                setModalCreateButtonAction('createWorkout');
+                                setModalVisible(true);
+                            }}
+                            activeOpacity={0.8}
+                        >
+                            <View style={styles.cardHeader}>
+                                <Text style={styles.startWorkoutText}>Start your workout for today</Text>
+                                <Ionicons name="add-circle" size={24} color="#0A84FF" />
+                            </View>
+                        </TouchableOpacity>
+                    )}
                 </View>
             )}
 
@@ -533,15 +543,20 @@ export default function Home() {
 
             {/* Muscle Recovery Status */}
             <View style={{ width: '100%', paddingTop: 12 }}>
-                <View style={styles.contentContainer}>
-                    <Text style={styles.contentTitle}>Recovery Status</Text>
-                </View>
                 {isLoadingRecovery ? (
                     <View style={styles.recoveryLoadingContainer}>
                         <ActivityIndicator size="small" color="#0A84FF" />
                     </View>
                 ) : (
-                    <View style={styles.recoveryContainer}>
+                    <TouchableOpacity 
+                        style={styles.recoveryContainer}
+                        onPress={() => router.push('/(recovery-status)')}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.recoveryHeader}>
+                            <Text style={styles.recoveryTitle}>Recovery Status</Text>
+                            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                        </View>
                         {getRecoveringMuscles().length > 0 ? (
                             <>
                                 {getRecoveringMuscles().map(([muscle, status]) => (
@@ -577,11 +592,11 @@ export default function Home() {
                             </>
                         ) : (
                             <View style={styles.recoveryEmptyContainer}>
-                                <Ionicons name="checkmark-circle-outline" size={32} color="#32D74B" />
+                                <Ionicons name="checkmark-circle-outline" size={24} color="#32D74B" />
                                 <Text style={styles.recoveryEmptyText}>All muscles recovered</Text>
                             </View>
                         )}
-                    </View>
+                    </TouchableOpacity>
                 )}
             </View>
 
@@ -652,47 +667,54 @@ export default function Home() {
             </View>
             </RNScrollView>
 
-            {/* Layout Navigation Buttons */}
-            <View style={[styles.workoutsButtonContainer, { bottom: insets.bottom + 20 }]}>
-                <TouchableOpacity onPress={() => router.push('/(workouts)')} style={styles.fabButton}>
-                    <Ionicons name="reader-outline" size={32} color="#FFFFFF" />
-                </TouchableOpacity>
-            </View>
-
-            <View style={[styles.SupplementsButtonContainer, { bottom: insets.bottom + 20 }]}>
-                <TouchableOpacity onPress={() => router.push('/(supplements)')} style={styles.fabButton}>
-                    <MaterialIcons name="medication" size={32} color="#FFFFFF" />
-                </TouchableOpacity>
-            </View>
-
-            <View style={[styles.CalculationsButtonContainer, { bottom: insets.bottom + 20 }]}>
-                <TouchableOpacity onPress={() => router.push('/(calculations)')} style={styles.fabButton}>
-                    <Ionicons name="calculator-outline" size={32} color="#FFFFFF" />
-                </TouchableOpacity>
-            </View>
-
-            <View style={[styles.fabContainer, { bottom: insets.bottom + 20 }]}>
+            {/* Bottom Navigation Bar */}
+            <BlurView intensity={80} tint="dark" style={[styles.bottomNavContainer, { bottom: insets.bottom + 12 }]}>
                 <TouchableOpacity 
-                    style={styles.fabButton} 
-                    onPress={() => {
-                        Alert.alert("", "", [
-                            { text: "Start New Workout", onPress: () => { setModalCreateButtonText('Start Workout'); setModalCreateButtonAction('createWorkout'); setModalVisible(true); }},
-                            { text: "Add Previous Workout", onPress: () => { setModalCreateButtonText('Add Workout'); setModalCreateButtonAction('addPreviousWorkout'); setModalVisible(true); }},
-                            { text: "Add Rest Day", onPress: () => {
-                                Alert.alert("Add Rest Day", "This will create a rest day workout for today's date. You won't be able to add Workouts for today.", [
-                                    { text: "Cancel", style: "cancel" },
-                                    { text: "Add Rest Day", onPress: () => { 
-                                        addRestDay();
-                                     }}
-                                ]);
-                            }},
-                            { text: "Cancel", style: "cancel" }
-                        ]);
-                    }}
+                    onPress={() => router.push('/(workouts)')} 
+                    style={styles.bottomNavButton}
+                    activeOpacity={0.7}
                 >
-                    <Ionicons name="add" size={32} color="#FFFFFF" />
+                    <Ionicons name="reader-outline" size={24} color={pathname.startsWith('/(workouts)') ? "#0A84FF" : "#8E8E93"} />
+                    <Text style={[styles.bottomNavLabel, { color: pathname.startsWith('/(workouts)') ? "#0A84FF" : "#8E8E93" }]}>Workouts</Text>
                 </TouchableOpacity>
-            </View>
+
+                <TouchableOpacity 
+                    onPress={() => router.push('/(supplements)')} 
+                    style={styles.bottomNavButton}
+                    activeOpacity={0.7}
+                >
+                    <MaterialIcons name="medication" size={24} color={pathname.startsWith('/(supplements)') ? "#0A84FF" : "#8E8E93"} />
+                    <Text style={[styles.bottomNavLabel, { color: pathname.startsWith('/(supplements)') ? "#0A84FF" : "#8E8E93" }]}>Supplements</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                    onPress={() => router.push('/(calculations)')} 
+                    style={styles.bottomNavButton}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="calculator-outline" size={24} color={pathname.startsWith('/(calculations)') ? "#0A84FF" : "#8E8E93"} />
+                    <Text style={[styles.bottomNavLabel, { color: pathname.startsWith('/(calculations)') ? "#0A84FF" : "#8E8E93" }]}>Calculations</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                    onPress={() => router.push('/(recovery-status)')} 
+                    style={styles.bottomNavButton}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="fitness-outline" size={24} color={pathname.startsWith('/(recovery-status)') ? "#0A84FF" : "#8E8E93"} />
+                    <Text style={[styles.bottomNavLabel, { color: pathname.startsWith('/(recovery-status)') ? "#0A84FF" : "#8E8E93" }]}>Recovery</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                    onPress={() => router.push('/(account)')} 
+                    style={styles.bottomNavButton}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="person-circle-outline" size={24} color={pathname.startsWith('/(account)') ? "#0A84FF" : "#8E8E93"} />
+                    <Text style={[styles.bottomNavLabel, { color: pathname.startsWith('/(account)') ? "#0A84FF" : "#8E8E93" }]}>Account</Text>
+                </TouchableOpacity>
+            </BlurView>
+
 
             {/* Workout Modal */}
             <Modal visible={modalVisible} animationType="fade" transparent onRequestClose={closeModal}>
@@ -820,18 +842,16 @@ export default function Home() {
                             
                             <TouchableOpacity
                                 onPress={() => {
-                                    Alert.alert(
-                                        "Select Year",
-                                        "",
-                                        availableYears.map(year => ({
-                                            text: year.toString(),
-                                            onPress: () => {
-                                                setSelectedYear(year);
-                                                fetchCalendar(year, selectedMonth);
-                                                fetchCalendarStats(year, selectedMonth);
-                                            }
-                                        })).concat([{ text: "Cancel", style: "cancel" }])
-                                    );
+                                    const yearOptions: Array<{ text: string; onPress?: () => void; style?: "cancel" | "default" | "destructive" }> = availableYears.map(year => ({
+                                        text: year.toString(),
+                                        onPress: () => {
+                                            setSelectedYear(year);
+                                            fetchCalendar(year, selectedMonth);
+                                            fetchCalendarStats(year, selectedMonth);
+                                        }
+                                    }));
+                                    yearOptions.push({ text: "Cancel", style: "cancel" });
+                                    Alert.alert("Select Year", "", yearOptions);
                                 }}
                                 style={styles.calendarMonthYear}
                             >
@@ -876,7 +896,7 @@ export default function Home() {
                                     const startDate = new Date(firstDay);
                                     startDate.setDate(startDate.getDate() - startDate.getDay());
                                     
-                                    const days: JSX.Element[] = [];
+                                    const days: React.ReactElement[] = [];
                                     const today = new Date();
                                     
                                     for (let i = 0; i < 42; i++) {
@@ -937,9 +957,9 @@ const styles = StyleSheet.create({
         paddingBottom: 100,
     },
     contentContainer: { width: '100%', paddingHorizontal: 0, marginBottom: 8,},
-    WeeklyActivityContainer: { width: '100%', backgroundColor: 'white', borderRadius: 24, padding: 10, },
+    WeeklyActivityContainer: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 24, padding: 10, borderWidth: 1, borderColor: '#2C2C2E' },
     contentTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
-    WeeklyActivityContentTitle: { color: 'black', fontSize: 22, fontWeight: '700' },
+    WeeklyActivityContentTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
     calendarExpandButton: { padding: 4 },
     activeCard: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#2C2C2E' },
     completedCard: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#2C2C2E' },
@@ -953,11 +973,33 @@ const styles = StyleSheet.create({
     timerContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     timerText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600', fontVariant: ['tabular-nums'] },
     cardTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
-    workoutsButtonContainer: { position: 'absolute', left: 20 },
-    SupplementsButtonContainer: { position: 'absolute', left: 90 },
-    CalculationsButtonContainer: { position: 'absolute', left: 160 },
-    fabContainer: { position: 'absolute', right: 20 },
-    fabButton: { backgroundColor: '#1C1C1E', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#2C2C2E' },
+    startWorkoutCard: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#2C2C2E', marginVertical: 12 },
+    startWorkoutText: { color: '#FFFFFF', fontSize: 18, fontWeight: '600' },
+    bottomNavContainer: {
+        position: 'absolute',
+        left: 12,
+        right: 12,
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        height: 64,
+        borderRadius: 16,
+        overflow: 'hidden',
+        zIndex: 10,
+    },
+    bottomNavButton: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 8,
+    },
+    bottomNavLabel: {
+        fontSize: 11,
+        fontWeight: '500',
+        marginTop: 4,
+    },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', padding: 20 },
     modalCard: { backgroundColor: '#1C1C1E', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: '#2C2C2E' },
     modalInternalTitle: { fontSize: 20, fontWeight: '800', color: '#FFFFFF', marginBottom: 24, textAlign: 'center' },
@@ -978,7 +1020,7 @@ const styles = StyleSheet.create({
     doneText: { color: '#0A84FF', fontSize: 17, fontWeight: '600' },
     deleteAction: { backgroundColor: '#FF3B30', justifyContent: 'center', alignItems: 'center', width: 80, height: '100%', borderRadius: 16 },
     templateCard: {
-        height: 200,
+        height: 120,
         marginRight: 12,
         backgroundColor: '#1C1C1E',
         borderRadius: 16,
@@ -987,7 +1029,7 @@ const styles = StyleSheet.create({
         borderColor: '#2C2C2E',
     },
     addTemplateCardSmall: {
-        height: 200,
+        height: 120,
         backgroundColor: '#1C1C1E',
         borderRadius: 16,
         borderWidth: 1,
@@ -1049,7 +1091,7 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     weekDayHeaderText: {
-        color: 'black',
+        color: '#8E8E93',
         fontSize: 12,
         fontWeight: '600'
     },
@@ -1059,7 +1101,7 @@ const styles = StyleSheet.create({
         
     },
     weekDayNumber: {
-        color: 'black',
+        color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '600',
         padding: 12,
@@ -1068,7 +1110,6 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: '#2C2C2E',
         borderRadius: 100,
-
     },
     weekDayNumberToday: {
         color: '#0A84FF',
@@ -1140,6 +1181,17 @@ const styles = StyleSheet.create({
         borderColor: '#2C2C2E',
         marginBottom: 16,
     },
+    recoveryHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    recoveryTitle: {
+        color: '#FFFFFF',
+        fontSize: 22,
+        fontWeight: '700',
+    },
     recoveryItem: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -1187,13 +1239,15 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     recoveryEmptyContainer: {
-        padding: 24,
+        padding: 12,
         alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 8,
     },
     recoveryEmptyText: {
         color: '#8E8E93',
         fontSize: 14,
-        marginTop: 8,
     },
     // Calendar Modal Styles
     calendarModalContainer: {

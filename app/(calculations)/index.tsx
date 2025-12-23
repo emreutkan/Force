@@ -1,11 +1,12 @@
 import { calculateBodyFatMen, calculateBodyFatWomen, createMeasurement, getMeasurements } from '@/api/Measurements';
 import { updateHeight } from '@/api/account';
 import { BodyMeasurement, CalculateBodyFatResponse, CreateMeasurementRequest } from '@/api/types';
+import UnifiedHeader from '@/components/UnifiedHeader';
 import { useUserStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CalculationsScreen() {
@@ -240,13 +241,118 @@ export default function CalculationsScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#0A84FF" />
-                </TouchableOpacity>
-                <Text style={styles.title}>Body Measurements</Text>
-                <View style={{ width: 40 }} />
-            </View>
+            <UnifiedHeader 
+                title="Body Measurements"
+                rightButton={{
+                    icon: "add",
+                    onPress: () => handleOpenAddModal(),
+                }}
+                modalContent={
+                    <ScrollView style={styles.modalScrollContent}>
+                        <View style={styles.inputRow}>
+                            <Text style={styles.inputLabel}>Weight (kg) *</Text>
+                            <TextInput
+                                style={styles.inputRowInput}
+                                value={weight}
+                                onChangeText={setWeight}
+                                keyboardType="numeric"
+                                placeholder="75.5"
+                                placeholderTextColor="#8E8E93"
+                            />
+                        </View>
+
+                        <View style={styles.inputRow}>
+                            <Text style={styles.inputLabel}>Waist (cm) *</Text>
+                            <TextInput
+                                style={styles.inputRowInput}
+                                value={waist}
+                                onChangeText={setWaist}
+                                keyboardType="numeric"
+                                placeholder="85"
+                                placeholderTextColor="#8E8E93"
+                            />
+                        </View>
+
+                        <View style={styles.inputRow}>
+                            <Text style={styles.inputLabel}>Neck (cm) *</Text>
+                            <TextInput
+                                style={styles.inputRowInput}
+                                value={neck}
+                                onChangeText={setNeck}
+                                keyboardType="numeric"
+                                placeholder="38"
+                                placeholderTextColor="#8E8E93"
+                            />
+                        </View>
+
+                        {isFemale && (
+                            <View style={styles.inputRow}>
+                                <Text style={styles.inputLabel}>Hips (cm) *</Text>
+                                <TextInput
+                                    style={styles.inputRowInput}
+                                    value={hips}
+                                    onChangeText={setHips}
+                                    keyboardType="numeric"
+                                    placeholder="95"
+                                    placeholderTextColor="#8E8E93"
+                                />
+                            </View>
+                        )}
+
+                        <View style={styles.inputRow}>
+                            <Text style={styles.inputLabel}>Notes</Text>
+                            <TextInput
+                                style={styles.inputRowInput}
+                                value={notes}
+                                onChangeText={setNotes}
+                                placeholder="Optional"
+                                placeholderTextColor="#8E8E93"
+                            />
+                        </View>
+
+                        {previewResult && (
+                            <View style={styles.previewCard}>
+                                <Text style={styles.previewTitle}>Body Fat Estimate</Text>
+                                <Text style={styles.previewValue}>
+                                    {previewResult.body_fat_percentage.toFixed(2)}%
+                                </Text>
+                                <Text style={styles.previewMethod}>{previewResult.method}</Text>
+                            </View>
+                        )}
+
+                        <View style={styles.buttonRow}>
+                            <TouchableOpacity 
+                                style={[styles.button, styles.previewButton]}
+                                onPress={handlePreview}
+                                disabled={isCalculating}
+                            >
+                                {isCalculating ? (
+                                    <ActivityIndicator size="small" color="#0A84FF" />
+                                ) : (
+                                    <Text style={styles.previewButtonText}>Preview</Text>
+                                )}
+                            </TouchableOpacity>
+
+                            <TouchableOpacity 
+                                style={[styles.button, styles.saveButton]}
+                                onPress={handleSave}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={styles.saveButtonText}>Save</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </ScrollView>
+                }
+                modalVisible={isModalVisible}
+                onModalClose={() => {
+                    setIsModalVisible(false);
+                    resetForm();
+                }}
+            />
 
             {isLoading && measurements.length === 0 ? (
                 <View style={styles.loadingContainer}>
@@ -257,7 +363,7 @@ export default function CalculationsScreen() {
                     data={measurements}
                     renderItem={renderMeasurement}
                     keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={styles.listContent}
+                    contentContainerStyle={[styles.listContent, { paddingTop: 60 }]}
                     ListEmptyComponent={
                         <View style={styles.emptyState}>
                             <Ionicons name="body-outline" size={64} color="#8E8E93" />
@@ -267,15 +373,6 @@ export default function CalculationsScreen() {
                     }
                 />
             )}
-
-            <View style={[styles.fabContainer, { bottom: insets.bottom + 20 }]}>
-                <TouchableOpacity 
-                    style={styles.fabButton}
-                    onPress={handleOpenAddModal}
-                >
-                    <Ionicons name="add" size={32} color="#FFFFFF" />
-                </TouchableOpacity>
-            </View>
 
             {/* Height Modal */}
             <Modal
@@ -321,115 +418,6 @@ export default function CalculationsScreen() {
                 </View>
             </Modal>
 
-            {/* Add Measurement Modal */}
-            <Modal
-                visible={isModalVisible}
-                animationType="slide"
-                presentationStyle="pageSheet"
-                onRequestClose={() => setIsModalVisible(false)}
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Add Measurement</Text>
-                        <TouchableOpacity onPress={() => setIsModalVisible(false)}>
-                            <Text style={styles.closeButton}>Cancel</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <ScrollView style={styles.modalContent}>
-                        <Text style={styles.label}>Weight (kg) *</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={weight}
-                            onChangeText={setWeight}
-                            keyboardType="numeric"
-                            placeholder="75.5"
-                            placeholderTextColor="#8E8E93"
-                        />
-
-                        <Text style={styles.label}>Waist (cm) *</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={waist}
-                            onChangeText={setWaist}
-                            keyboardType="numeric"
-                            placeholder="85"
-                            placeholderTextColor="#8E8E93"
-                        />
-
-                        <Text style={styles.label}>Neck (cm) *</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={neck}
-                            onChangeText={setNeck}
-                            keyboardType="numeric"
-                            placeholder="38"
-                            placeholderTextColor="#8E8E93"
-                        />
-
-                        {isFemale && (
-                            <>
-                                <Text style={styles.label}>Hips (cm) *</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    value={hips}
-                                    onChangeText={setHips}
-                                    keyboardType="numeric"
-                                    placeholder="95"
-                                    placeholderTextColor="#8E8E93"
-                                />
-                            </>
-                        )}
-
-                        <Text style={styles.label}>Notes (Optional)</Text>
-                        <TextInput
-                            style={[styles.input, styles.textArea]}
-                            value={notes}
-                            onChangeText={setNotes}
-                            placeholder="e.g. Morning measurement"
-                            placeholderTextColor="#8E8E93"
-                            multiline
-                            numberOfLines={3}
-                        />
-
-                        {previewResult && (
-                            <View style={styles.previewCard}>
-                                <Text style={styles.previewTitle}>Body Fat Estimate</Text>
-                                <Text style={styles.previewValue}>
-                                    {previewResult.body_fat_percentage.toFixed(2)}%
-                                </Text>
-                                <Text style={styles.previewMethod}>{previewResult.method}</Text>
-                            </View>
-                        )}
-
-                        <View style={styles.buttonRow}>
-                            <TouchableOpacity 
-                                style={[styles.button, styles.previewButton]}
-                                onPress={handlePreview}
-                                disabled={isCalculating}
-                            >
-                                {isCalculating ? (
-                                    <ActivityIndicator size="small" color="#0A84FF" />
-                                ) : (
-                                    <Text style={styles.previewButtonText}>Preview</Text>
-                                )}
-                            </TouchableOpacity>
-
-                            <TouchableOpacity 
-                                style={[styles.button, styles.saveButton]}
-                                onPress={handleSave}
-                                disabled={isLoading}
-                            >
-                                {isLoading ? (
-                                    <ActivityIndicator size="small" color="#FFFFFF" />
-                                ) : (
-                                    <Text style={styles.saveButtonText}>Save</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    </ScrollView>
-                </View>
-            </Modal>
         </View>
     );
 }
@@ -438,26 +426,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000000',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingBottom: 12,
-        backgroundColor: '#000000',
-        borderBottomWidth: 1,
-        borderBottomColor: '#2C2C2E',
-    },
-    backButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        minWidth: 40,
-    },
-    title: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: '#FFFFFF',
     },
     loadingContainer: {
         flex: 1,
@@ -531,19 +499,8 @@ const styles = StyleSheet.create({
         color: '#8E8E93',
         marginTop: 4,
     },
-    fabContainer: {
-        position: 'absolute',
-        right: 20,
-    },
-    fabButton: {
-        backgroundColor: '#1C1C1E',
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#2C2C2E',
+    modalScrollContent: {
+        maxHeight: 500,
     },
     heightModalOverlay: {
         flex: 1,
@@ -643,6 +600,28 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         marginLeft: 4,
     },
+    inputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        gap: 12,
+    },
+    inputLabel: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#FFFFFF',
+        width: 120,
+    },
+    inputRowInput: {
+        flex: 1,
+        backgroundColor: '#2C2C2E',
+        padding: 12,
+        borderRadius: 10,
+        fontSize: 16,
+        color: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#3C3C43',
+    },
     input: {
         backgroundColor: '#1C1C1E',
         padding: 12,
@@ -711,3 +690,4 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
 });
+

@@ -16,7 +16,11 @@ export default apiClient;
 // 1. Request Interceptor: Automatically add the token to every request
 apiClient.interceptors.request.use(async (config) => {
     const accessToken = await getAccessToken();
-    console.log("Request to:", config.url);
+    // Construct full URL - if url already starts with http/https, use it as-is
+    const fullUrl = config.url?.startsWith('http') 
+        ? config.url 
+        : (config.baseURL ? `${config.baseURL}${config.url}` : config.url);
+    console.log("Request to:", fullUrl);
     if (accessToken) {
         console.log("Attaching Access Token:", accessToken.substring(0, 10) + "...");
         config.headers.Authorization = `Bearer ${accessToken}`;
@@ -47,6 +51,15 @@ apiClient.interceptors.response.use(
     (response) => response, // Return successful responses as is
     async (error) => {
         const originalRequest = error.config;
+
+        // Log network errors for debugging
+        if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+            const fullUrl = originalRequest.url?.startsWith('http')
+                ? originalRequest.url
+                : (originalRequest.baseURL ? `${originalRequest.baseURL}${originalRequest.url}` : originalRequest.url);
+            console.error("Network Error - Could not reach:", fullUrl);
+            console.error("Error details:", error.message, error.code);
+        }
 
         // Check if the error is 401 and we haven't already tried to refresh
         if (error.response?.status === 401 && !originalRequest._retry) {

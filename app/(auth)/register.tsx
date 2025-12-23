@@ -28,6 +28,7 @@ export default function RegisterScreen() {
     const [request, response, promptAsync] = Google.useAuthRequest({
         webClientId: '344903572266-72t0uji4lhh6htisqb3kq36sslq6jf7j.apps.googleusercontent.com',
         iosClientId: '344903572266-72t0uji4lhh6htisqb3kq36sslq6jf7j.apps.googleusercontent.com', // Using web client ID as placeholder to bypass error if running on simulator without native config
+        androidClientId: '344903572266-1kfttptioqaffsf58e5rq5uo2n9s2ho5.apps.googleusercontent.com',
     });
 
     useEffect(() => {
