@@ -4,23 +4,23 @@ import { Platform } from 'react-native';
 const DEPLOYMENT_IP = '16.16.248.86';
 
 // Local API (with port 8000) - COMMENTED OUT
-// const LOCAL_IP = '192.168.1.7';
+ const LOCAL_IP = '192.168.1.7';
 
 const API_IP = Platform.select({
-    web: DEPLOYMENT_IP,
-    default: DEPLOYMENT_IP
+    // web: DEPLOYMENT_IP,
+    // default: DEPLOYMENT_IP
     // For local development, uncomment below and comment above:
-    // web: LOCAL_IP,
-    // default: LOCAL_IP
+    web: LOCAL_IP,
+    default: LOCAL_IP
 });
 
 // Deployment API (HTTP, no port) - ACTIVE
-export const API_URL = `http://${API_IP}/api`;
-export const BASE_URL = `http://${API_IP}`;
+// export const API_URL = `http://${API_IP}/api`;
+// export const BASE_URL = `http://${API_IP}`;
 
 // Local API (HTTP with port 8000) - COMMENTED OUT
-// export const API_URL = `http://${API_IP}:8000/api`;
-// export const BASE_URL = `http://${API_IP}:8000`;
+export const API_URL = `http://${API_IP}:8000/api`;
+export const BASE_URL = `http://${API_IP}:8000`;
 
 // Relative URLs (will be combined with baseURL from APIClient)
 export const LOGIN_URL = `/user/login/`;

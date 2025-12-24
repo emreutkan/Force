@@ -1,4 +1,4 @@
-import { createWorkout } from "@/api/Workout";
+import { createWorkout, getActiveWorkout } from "@/api/Workout";
 import UnifiedHeader from "@/components/UnifiedHeader";
 import { useWorkoutStore } from "@/state/userStore";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,15 +17,34 @@ export default function Workouts() {
     const [date, setDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(300);
+    const [activeWorkout, setActiveWorkout] = useState<any>(null);
+
+    const fetchActiveWorkout = async () => {
+        try {
+            const workout = await getActiveWorkout();
+            if (workout && typeof workout === 'object' && 'id' in workout) {
+                setActiveWorkout(workout);
+            } else {
+                setActiveWorkout(null);
+            }
+        } catch (error) {
+            setActiveWorkout(null);
+        }
+    };
 
     useFocusEffect(
         useCallback(() => {
-            fetchWorkouts(true);
+            const loadData = async () => {
+                await fetchActiveWorkout();
+                await fetchWorkouts(true);
+            };
+            loadData();
         }, [fetchWorkouts])
     );
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
+        await fetchActiveWorkout();
         await fetchWorkouts(true);
         setRefreshing(false);
     }, [fetchWorkouts]);
@@ -36,15 +55,18 @@ export default function Workouts() {
         }
     }, [hasMore, isLoadingMore, isLoading, loadMoreWorkouts]);
 
-    // Sort workouts by datetime (most recent first)
+    // Sort workouts by datetime (most recent first), excluding active workout
     const sortedWorkouts = useMemo(() => {
-        return [...workouts].sort((a, b) => {
-            const dateA = a.datetime || a.created_at;
-            const dateB = b.datetime || b.created_at;
-            // Sort descending (newest first)
-            return new Date(dateB).getTime() - new Date(dateA).getTime();
-        });
-    }, [workouts]);
+        const activeWorkoutId = activeWorkout?.id;
+        return [...workouts]
+            .filter(workout => workout.id !== activeWorkoutId)
+            .sort((a, b) => {
+                const dateA = a.datetime || a.created_at;
+                const dateB = b.datetime || b.created_at;
+                // Sort descending (newest first)
+                return new Date(dateB).getTime() - new Date(dateA).getTime();
+            });
+    }, [workouts, activeWorkout]);
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -296,7 +318,7 @@ export default function Workouts() {
                     keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={[
                         styles.listContent,
-                        sortedWorkouts.length === 0 && styles.emptyListContent,
+                        sortedWorkouts.length === 0 && !activeWorkout && styles.emptyListContent,
                         { paddingTop: 60 }
                     ]}
                     showsVerticalScrollIndicator={false}
@@ -310,6 +332,80 @@ export default function Workouts() {
                     }
                     onEndReached={handleLoadMore}
                     onEndReachedThreshold={0.5}
+                    ListHeaderComponent={
+                        activeWorkout ? (
+                            <TouchableOpacity 
+                                style={styles.activeWorkoutCard} 
+                                onPress={() => router.push(`/(workouts)/${activeWorkout.id}`)}
+                                activeOpacity={0.7}
+                            >
+                                <View style={styles.cardHeader}>
+                                    <View style={styles.cardHeaderLeft}>
+                                        <View style={styles.activeBadge}>
+                                            <View style={styles.activeDot} />
+                                            <Text style={styles.activeText}>ACTIVE</Text>
+                                        </View>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                                </View>
+                                
+                                <Text style={styles.cardTitle} numberOfLines={1}>
+                                    {activeWorkout.title || 'Untitled Workout'}
+                                </Text>
+
+                                {(() => {
+                                    const duration = formatDuration(activeWorkout.duration);
+                                    const exerciseCount = getExerciseCount(activeWorkout);
+                                    const caloriesBurned = activeWorkout.calories_burned ? parseFloat(String(activeWorkout.calories_burned)) : null;
+                                    const hasStats = duration || activeWorkout.total_volume || exerciseCount > 0 || caloriesBurned;
+
+                                    return hasStats ? (
+                                        <View style={styles.cardStats}>
+                                            {duration && (
+                                                <View style={styles.statItem}>
+                                                    <Ionicons name="time-outline" size={14} color="#8E8E93" />
+                                                    <Text style={styles.statText}>{duration}</Text>
+                                                </View>
+                                            )}
+                                            {exerciseCount > 0 && (
+                                                <View style={styles.statItem}>
+                                                    <Ionicons name="barbell-outline" size={14} color="#8E8E93" />
+                                                    <Text style={styles.statText}>
+                                                        {exerciseCount} {exerciseCount === 1 ? 'exercise' : 'exercises'}
+                                                    </Text>
+                                                </View>
+                                            )}
+                                            {activeWorkout.total_volume && activeWorkout.total_volume > 0 && (
+                                                <View style={styles.statItem}>
+                                                    <Ionicons name="fitness-outline" size={14} color="#8E8E93" />
+                                                    <Text style={styles.statText}>{activeWorkout.total_volume.toFixed(0)} kg</Text>
+                                                </View>
+                                            )}
+                                            {caloriesBurned && caloriesBurned > 0 && (
+                                                <View style={styles.statItem}>
+                                                    <Ionicons name="flame-outline" size={14} color="#FF9500" />
+                                                    <Text style={styles.statText}>{caloriesBurned.toFixed(0)} kcal</Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                    ) : null;
+                                })()}
+
+                                {activeWorkout.primary_muscles_worked && activeWorkout.primary_muscles_worked.length > 0 && (
+                                    <View style={styles.muscleTagsContainer}>
+                                        {activeWorkout.primary_muscles_worked.slice(0, 3).map((muscle: string, idx: number) => (
+                                            <View key={idx} style={styles.muscleTag}>
+                                                <Text style={styles.muscleTagText}>{muscle}</Text>
+                                            </View>
+                                        ))}
+                                        {activeWorkout.primary_muscles_worked.length > 3 && (
+                                            <Text style={styles.moreMusclesText}>+{activeWorkout.primary_muscles_worked.length - 3}</Text>
+                                        )}
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                        ) : null
+                    }
                     ListFooterComponent={
                         isLoadingMore ? (
                             <View style={styles.footerLoader}>
@@ -318,13 +414,15 @@ export default function Workouts() {
                         ) : null
                     }
                     ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <Ionicons name="barbell-outline" size={64} color="#2C2C2E" />
-                            <Text style={styles.emptyTitle}>No workouts yet</Text>
-                            <Text style={styles.emptyText}>
-                                Complete your first workout to see it here
-                            </Text>
-                        </View>
+                        !activeWorkout ? (
+                            <View style={styles.emptyContainer}>
+                                <Ionicons name="barbell-outline" size={64} color="#2C2C2E" />
+                                <Text style={styles.emptyTitle}>No workouts yet</Text>
+                                <Text style={styles.emptyText}>
+                                    Complete your first workout to see it here
+                                </Text>
+                            </View>
+                        ) : null
                     }
                 />
             )}
@@ -359,6 +457,35 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         borderWidth: 1,
         borderColor: '#2C2C2E',
+    },
+    activeWorkoutCard: {
+        backgroundColor: '#1C1C1E',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 2,
+        borderColor: '#32D74B',
+    },
+    activeBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(50, 215, 75, 0.1)',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+    },
+    activeDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#32D74B',
+        marginRight: 6,
+    },
+    activeText: {
+        color: '#32D74B',
+        fontSize: 10,
+        fontWeight: '700',
+        textTransform: 'uppercase',
     },
     cardHeader: {
         flexDirection: 'row',

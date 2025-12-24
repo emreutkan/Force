@@ -14,6 +14,8 @@ interface UnifiedHeaderProps {
         icon: keyof typeof Ionicons.glyphMap;
         onPress: () => void;
     };
+    rightButtonText?: string;
+    onRightButtonPress?: () => void;
     modalContent?: ReactNode;
     modalVisible?: boolean;
     onModalClose?: () => void;
@@ -25,6 +27,8 @@ export default function UnifiedHeader({
     onBackPress,
     backButtonText,
     rightButton,
+    rightButtonText,
+    onRightButtonPress,
     modalContent,
     modalVisible = false,
     onModalClose,
@@ -87,7 +91,14 @@ export default function UnifiedHeader({
                 
                 <Text style={styles.headerTitle}>{title}</Text>
                 
-                {rightButton ? (
+                {rightButtonText && onRightButtonPress ? (
+                    <TouchableOpacity 
+                        onPress={onRightButtonPress}
+                        style={styles.rightButton}
+                    >
+                        <Text style={styles.rightButtonText}>{rightButtonText}</Text>
+                    </TouchableOpacity>
+                ) : rightButton ? (
                     <TouchableOpacity 
                         onPress={rightButton.onPress}
                         style={styles.rightButton}
@@ -170,8 +181,14 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     rightButton: {
-        width: 40,
+        minWidth: 40,
         alignItems: 'flex-end',
+        justifyContent: 'center',
+    },
+    rightButtonText: {
+        color: '#34C759',
+        fontSize: 17,
+        fontWeight: '600',
     },
     modalBackdrop: {
         position: 'absolute',

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { API_URL, REFRESH_URL } from './ApiBase';
-import { getAccessToken, getRefreshToken, storeAccessToken } from './Storage';
+import { getAccessToken, getRefreshToken, storeAccessToken, storeRefreshToken, clearTokens } from './Storage';
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -79,40 +79,46 @@ apiClient.interceptors.response.use(
 
             try {
                 const refreshToken = await getRefreshToken();
-                if (refreshToken) {
-                    // Call the refresh endpoint
-                    // We use axios directly to avoid infinite loops with the interceptor
-                    const response = await axios.post(REFRESH_URL, { refresh: refreshToken });
-                    
-                    if (response.status === 200) {
-                        const newAccessToken = response.data.access;
-                        const newRefreshToken = response.data.refresh; // Capture new refresh token if rotated
+                if (!refreshToken) {
+                    // No refresh token at all - logout immediately
+                    console.log("No refresh token found - logging out");
+                    await clearTokens();
+                    // Trigger logout by rejecting with a specific error
+                    throw new Error("NO_REFRESH_TOKEN");
+                }
 
-                        await storeAccessToken(newAccessToken);
-                        if (newRefreshToken) {
-                            await storeRefreshToken(newRefreshToken); // Save the new refresh token
-                        }
-                        
-                        // Update the header of the original request
-                        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-                        
-                        processQueue(null, newAccessToken);
-                        isRefreshing = false;
+                // Call the refresh endpoint
+                // We use axios directly to avoid infinite loops with the interceptor
+                const response = await axios.post(REFRESH_URL, { refresh: refreshToken });
+                
+                if (response.status === 200) {
+                    const newAccessToken = response.data.access;
+                    const newRefreshToken = response.data.refresh; // Capture new refresh token if rotated
 
-                        // Retry the original request
-                        return apiClient(originalRequest);
+                    await storeAccessToken(newAccessToken);
+                    if (newRefreshToken) {
+                        await storeRefreshToken(newRefreshToken); // Save the new refresh token
                     }
+                    
+                    // Update the header of the original request
+                    originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+                    
+                    processQueue(null, newAccessToken);
+                    isRefreshing = false;
+
+                    // Retry the original request
+                    return apiClient(originalRequest);
                 }
                 
-                throw new Error("No refresh token or refresh failed");
-            } catch (refreshError) {
-                // Refresh failed (token expired or invalid)
-                // You might want to clear tokens here or redirect to login
-                console.log("Refresh token expired or invalid");
+                throw new Error("Refresh failed");
+            } catch (refreshError: any) {
+                // Refresh failed (token expired or invalid) - logout immediately
+                console.log("Refresh token expired or invalid - logging out");
+                await clearTokens();
                 isRefreshing = false;
                 processQueue(refreshError, null);
-                // Optional: clearTokens(); 
-                return Promise.reject(refreshError);
+                // Reject with a specific error that can be caught by components if needed
+                return Promise.reject(new Error("REFRESH_TOKEN_EXPIRED"));
             }
         }
 

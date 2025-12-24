@@ -1,7 +1,8 @@
 import { addSetToExercise, deleteSet, getExercises, removeExerciseFromWorkout } from '@/api/Exercises';
 import { Workout } from '@/api/types';
-import { addExerciseToPastWorkout, getWorkout } from '@/api/Workout';
+import { addExerciseToPastWorkout, deleteWorkout, getWorkout } from '@/api/Workout';
 import WorkoutDetailView from '@/components/WorkoutDetailView';
+import UnifiedHeader from '@/components/UnifiedHeader';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -13,6 +14,7 @@ export default function WorkoutDetailScreen() {
     const [workout, setWorkout] = useState<Workout | null>(null);
     const [isEditMode, setIsEditMode] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const [isMenuModalVisible, setIsMenuModalVisible] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [exercises, setExercises] = useState<any[]>([]);
     const [isLoadingExercises, setIsLoadingExercises] = useState(false);
@@ -117,6 +119,40 @@ export default function WorkoutDetailScreen() {
         }
     };
 
+    const handleEditPress = () => {
+        setIsMenuModalVisible(false);
+        setIsEditMode(true);
+    };
+
+    const handleDeletePress = () => {
+        setIsMenuModalVisible(false);
+        Alert.alert(
+            "Delete Workout",
+            "This action cannot be undone.",
+            [
+                { text: "Cancel", style: "cancel" },
+                { 
+                    text: "Delete", 
+                    style: "destructive", 
+                    onPress: async () => {
+                        if (workout?.id) {
+                            try {
+                                await deleteWorkout(workout.id);
+                                router.back();
+                            } catch (error) {
+                                Alert.alert("Error", "Failed to delete workout.");
+                            }
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleDonePress = () => {
+        setIsEditMode(false);
+    };
+
     const renderAddExerciseModal = () => {
         return (
             <Modal
@@ -177,28 +213,46 @@ export default function WorkoutDetailScreen() {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            {/* COMPACT HEADER */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-                    <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-                
-            
-
-                <TouchableOpacity
-                    onPress={() => setIsEditMode(!isEditMode)}
-                    style={styles.headerButton}
-                >
-                    <Text style={[styles.editBtnText, isEditMode && styles.doneBtnText]}>
-                        {isEditMode ? "Done" : "Edit"}
-                    </Text>
-                </TouchableOpacity>
-            </View>
+        <View style={styles.container}>
+            <UnifiedHeader
+                title={workout?.title || 'Workout'}
+                rightButton={
+                    isEditMode
+                        ? undefined
+                        : {
+                              icon: 'ellipsis-horizontal' as keyof typeof Ionicons.glyphMap,
+                              onPress: () => setIsMenuModalVisible(true),
+                          }
+                }
+                rightButtonText={isEditMode ? 'Done' : undefined}
+                onRightButtonPress={isEditMode ? handleDonePress : undefined}
+                modalContent={
+                    <>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={handleEditPress}
+                        >
+                            <Ionicons name="create-outline" size={24} color="#FFFFFF" />
+                            <Text style={styles.menuItemText}>Edit</Text>
+                            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={handleDeletePress}
+                        >
+                            <Ionicons name="trash-outline" size={24} color="#FF3B30" />
+                            <Text style={[styles.menuItemText, styles.deleteText]}>Delete</Text>
+                            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                        </TouchableOpacity>
+                    </>
+                }
+                modalVisible={isMenuModalVisible}
+                onModalClose={() => setIsMenuModalVisible(false)}
+            />
             
             <ScrollView 
                 style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 80 }]}
                 showsVerticalScrollIndicator={false}
             >
                 <WorkoutDetailView 
@@ -226,27 +280,20 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#000000',
     },
-    header: {
+    menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 8,
-        backgroundColor: '#000000',
+        paddingVertical: 16,
+        gap: 12,
     },
-    headerButton: {
-        paddingHorizontal: 8,
-        justifyContent: 'center',
-    },
-
-    editBtnText: {
+    menuItemText: {
+        flex: 1,
         color: '#FFFFFF',
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: '500',
-        textAlign: 'right',
     },
-    doneBtnText: {
-        color: '#34C759',
-        fontWeight: '700',
+    deleteText: {
+        color: '#FF3B30',
     },
     scrollView: {
         flex: 1,
