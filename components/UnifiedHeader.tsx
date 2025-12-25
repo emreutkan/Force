@@ -35,10 +35,17 @@ export default function UnifiedHeader({
 }: UnifiedHeaderProps) {
     const insets = useSafeAreaInsets();
     const slideAnim = useRef(new Animated.Value(0)).current;
+    const rotateAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         if (modalVisible) {
             Animated.spring(slideAnim, {
+                toValue: 1,
+                useNativeDriver: true,
+                tension: 50,
+                friction: 8,
+            }).start();
+            Animated.spring(rotateAnim, {
                 toValue: 1,
                 useNativeDriver: true,
                 tension: 50,
@@ -50,8 +57,13 @@ export default function UnifiedHeader({
                 duration: 200,
                 useNativeDriver: true,
             }).start();
+            Animated.timing(rotateAnim, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }).start();
         }
-    }, [modalVisible, slideAnim]);
+    }, [modalVisible, slideAnim, rotateAnim]);
 
     const handleBackPress = () => {
         if (onBackPress) {
@@ -61,9 +73,9 @@ export default function UnifiedHeader({
         }
     };
 
-    const headerTop = insets.top + 12;
-    const headerHeight = 56;
-    const modalTop = headerTop + headerHeight + 8;
+    const headerTop = insets.top ;
+    const headerHeight = 58;
+    const modalTop = headerTop + headerHeight ;
 
     const translateY = slideAnim.interpolate({
         inputRange: [0, 1],
@@ -75,10 +87,28 @@ export default function UnifiedHeader({
         outputRange: [0, 1],
     });
 
+    const rotation = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '45deg'],
+    });
+
+    const handleRightButtonPress = () => {
+        if (modalVisible && onModalClose) {
+            onModalClose();
+        } else if (rightButton?.onPress) {
+            rightButton.onPress();
+        } else if (onRightButtonPress) {
+            onRightButtonPress();
+        }
+    };
+
+    const isAddButton = rightButton?.icon === 'add';
+    const iconStyle = isAddButton ? { transform: [{ rotate: rotation }] } : {};
+
     return (
         <>
             {Platform.OS === 'ios' ? (
-                <BlurView intensity={80} tint="dark" style={[styles.header, { top: headerTop }]}>
+                <BlurView intensity={80} tint="dark" style={[styles.header, { top: headerTop }, modalVisible && styles.haeder_with_modal]}>
                     {showBackButton ? (
                         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
                             <Ionicons name="chevron-back" size={24} color="#0A84FF" />
@@ -94,24 +124,26 @@ export default function UnifiedHeader({
                     
                     {rightButtonText && onRightButtonPress ? (
                         <TouchableOpacity 
-                            onPress={onRightButtonPress}
+                            onPress={handleRightButtonPress}
                             style={styles.rightButton}
                         >
                             <Text style={styles.rightButtonText}>{rightButtonText}</Text>
                         </TouchableOpacity>
                     ) : rightButton ? (
                         <TouchableOpacity 
-                            onPress={rightButton.onPress}
+                            onPress={handleRightButtonPress}
                             style={styles.rightButton}
                         >
-                            <Ionicons name={rightButton.icon} size={24} color="#0A84FF" />
+                            <Animated.View style={iconStyle}>
+                                <Ionicons name={rightButton.icon} size={24} color="#0A84FF" />
+                            </Animated.View>
                         </TouchableOpacity>
                     ) : (
                         <View style={styles.rightButton} />
                     )}
                 </BlurView>
             ) : (
-                <View style={[styles.header, { top: headerTop, backgroundColor: 'rgba(28, 28, 30, 0.95)' }]}>
+                <View style={[styles.header, { top: headerTop, backgroundColor: 'rgba(28, 28, 30, 0.95)' }, modalVisible && styles.haeder_with_modal]}>
                     {showBackButton ? (
                         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
                             <Ionicons name="chevron-back" size={24} color="#0A84FF" />
@@ -127,17 +159,19 @@ export default function UnifiedHeader({
                     
                     {rightButtonText && onRightButtonPress ? (
                         <TouchableOpacity 
-                            onPress={onRightButtonPress}
+                            onPress={handleRightButtonPress}
                             style={styles.rightButton}
                         >
                             <Text style={styles.rightButtonText}>{rightButtonText}</Text>
                         </TouchableOpacity>
                     ) : rightButton ? (
                         <TouchableOpacity 
-                            onPress={rightButton.onPress}
+                            onPress={handleRightButtonPress}
                             style={styles.rightButton}
                         >
-                            <Ionicons name={rightButton.icon} size={24} color="#0A84FF" />
+                            <Animated.View style={iconStyle}>
+                                <Ionicons name={rightButton.icon} size={24} color="#0A84FF" />
+                            </Animated.View>
                         </TouchableOpacity>
                     ) : (
                         <View style={styles.rightButton} />
@@ -205,11 +239,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        paddingVertical: 12,
-        height: 56,
+        height: 58,
         borderRadius: 16,
         overflow: 'hidden',
         zIndex: 10,
+    },
+    haeder_with_modal: {
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
     },
     backButton: {
         flexDirection: 'row',
@@ -253,10 +290,10 @@ const styles = StyleSheet.create({
         zIndex: 11,
     },
     modalBlur: {
-        borderRadius: 16,
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
         overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: '#2C2C2E',
+    
     },
     modalContent: {
         padding: 24,

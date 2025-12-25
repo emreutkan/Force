@@ -12,7 +12,6 @@ export default function SupplementsScreen() {
     const [availableSupplements, setAvailableSupplements] = useState<Supplement[]>([]);
     const [todayLogsMap, setTodayLogsMap] = useState<Map<number, boolean>>(new Map()); // Map of user_supplement_id -> isLoggedToday
     const [viewingLogs, setViewingLogs] = useState<SupplementLog[]>([]); // For the logs modal
-    const [isLoadingTodayLogs, setIsLoadingTodayLogs] = useState(false);
     const [isAddModalVisible, setIsAddModalVisible] = useState(false);
     const [isLogModalVisible, setIsLogModalVisible] = useState(false);
     const [isLogsModalVisible, setIsLogsModalVisible] = useState(false);
@@ -29,6 +28,7 @@ export default function SupplementsScreen() {
 
     useEffect(() => {
         loadData();
+        loadTodayLogsStatus();
     }, []);
 
     useFocusEffect(
@@ -50,14 +50,13 @@ export default function SupplementsScreen() {
     };
 
     const loadTodayLogsStatus = async () => {
-        setIsLoadingTodayLogs(true);
         try {
             const todayLogsResponse = await getTodayLogs();
             if (todayLogsResponse && todayLogsResponse.logs) {
                 // Create a map of user_supplement_id -> true for all supplements logged today
                 const loggedTodayMap = new Map<number, boolean>();
                 todayLogsResponse.logs.forEach(log => {
-                    loggedTodayMap.set(log.user_supplement_id, true);
+                    loggedTodayMap.set(log.id, true);
                 });
                 setTodayLogsMap(loggedTodayMap);
             } else {
@@ -66,9 +65,7 @@ export default function SupplementsScreen() {
         } catch (error) {
             console.error('Error loading today logs:', error);
             setTodayLogsMap(new Map());
-        } finally {
-            setIsLoadingTodayLogs(false);
-        }
+        } 
     };
 
     const loadLogsForSupplement = async (userSupplementId: number) => {
@@ -253,7 +250,7 @@ export default function SupplementsScreen() {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles.container, { paddingTop: insets.top + 10}]}>
             <Stack.Screen options={{ headerShown: false }} />
             
             <UnifiedHeader 

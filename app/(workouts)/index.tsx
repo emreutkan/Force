@@ -229,7 +229,7 @@ export default function Workouts() {
     return (
         <KeyboardAvoidingView 
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-            style={[styles.container, {  }]}
+            style={[styles.container, { paddingTop: insets.top + 10}]}
         >
             {/* Header */}
             <UnifiedHeader
