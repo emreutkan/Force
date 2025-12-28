@@ -1,4 +1,5 @@
 import { checkToday, createWorkout, deleteWorkout, getActiveWorkout, getAvailableYears, getCalendar, getCalendarStats, getRecoveryStatus, getTemplateWorkouts, startTemplateWorkout } from '@/api/Workout';
+import { healthService } from '@/api/Health';
 import { CalendarDay, CalendarStats, MuscleRecovery, RecoveryStatusResponse, TemplateWorkout } from '@/api/types';
 import { useWorkoutStore } from '@/state/userStore';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -58,7 +59,27 @@ export default function Home() {
     const screenWidth = Dimensions.get('window').width;
     const templateCardWidth = screenWidth * 0.6;
     const addTemplateCardWidth = screenWidth * 0.34;
+    const [todaySteps, setTodaySteps] = useState<number | null>(null);
+    const [isLoadingSteps, setIsLoadingSteps] = useState(false);
 
+
+    const fetchSteps = useCallback(async () => {
+        setIsLoadingSteps(true);
+        try {
+            const initialized = await healthService.initialize();
+            if (!initialized) {
+                setTodaySteps(null);
+                return;
+            }
+            const steps = await healthService.getTodaySteps();
+            setTodaySteps(steps);
+        } catch (error) {
+            console.log('Error fetching steps:', error);
+            setTodaySteps(null);
+        } finally {
+            setIsLoadingSteps(false);
+        }
+    }, []);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -70,6 +91,7 @@ export default function Home() {
                 fetchTemplates(),
                 fetchAvailableYears(),
                 fetchRecoveryStatus(),
+                fetchSteps(),
             ]);
             const now = new Date();
             await Promise.all([
@@ -79,7 +101,7 @@ export default function Home() {
         } finally {
             setRefreshing(false);
         }
-    }, [fetchWorkouts]);
+    }, [fetchWorkouts, fetchSteps]);
 
 
     
@@ -218,10 +240,11 @@ export default function Home() {
             fetchTemplates();
             fetchAvailableYears();
             fetchRecoveryStatus(); // Refresh recovery status when screen comes into focus
+            fetchSteps();
             const now = new Date();
             fetchCalendar(now.getFullYear(), now.getMonth() + 1);
             fetchCalendarStats(now.getFullYear(), now.getMonth() + 1);
-        }, [fetchWorkouts])
+        }, [fetchWorkouts, fetchSteps])
     );
 
     useEffect(() => {
@@ -491,6 +514,23 @@ export default function Home() {
                 }
             >
             {renderWorkoutSlack()}
+
+            {/* Steps Display - Only show if health service is initialized and steps are available */}
+            {todaySteps !== null && todaySteps >= 0 && (
+                <View style={styles.stepsContainer}>
+                    <View style={styles.stepsCard}>
+                        <View style={styles.stepsHeader}>
+                            <Ionicons name="footsteps-outline" size={24} color="#0A84FF" />
+                            <Text style={styles.stepsTitle}>Today's Steps</Text>
+                        </View>
+                        {isLoadingSteps ? (
+                            <ActivityIndicator size="small" color="#0A84FF" style={{ marginTop: 8 }} />
+                        ) : (
+                            <Text style={styles.stepsCount}>{todaySteps.toLocaleString()}</Text>
+                        )}
+                    </View>
+                </View>
+            )}
 
             {/* Calendar Week View */}
             <View style={[styles.WeeklyActivityContainer]}>
@@ -1081,6 +1121,11 @@ const styles = StyleSheet.create({
     contentContainer: { width: '100%', paddingHorizontal: 0, marginBottom: 8,},
     WeeklyActivityContainer: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 24, padding: 10, borderWidth: 1, borderColor: '#2C2C2E' },
     contentTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
+    stepsContainer: { width: '100%', marginVertical: 12 },
+    stepsCard: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#2C2C2E' },
+    stepsHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+    stepsTitle: { color: '#FFFFFF', fontSize: 17, fontWeight: '600' },
+    stepsCount: { color: '#0A84FF', fontSize: 32, fontWeight: '700', fontVariant: ['tabular-nums'] },
     activeCard: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#2C2C2E' },
     completedCard: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#2C2C2E' },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

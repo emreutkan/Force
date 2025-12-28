@@ -543,6 +543,56 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
                                 <Text style={styles.menuItemText}>Statistics</Text>
                             </TouchableOpacity>
                             
+                            {!isViewOnly && onToggleLock && (
+                                <TouchableOpacity
+                                    style={styles.menuItem}
+                                    onPress={() => {
+                                        setShowMenu(false);
+                                        onToggleLock(idToLock);
+                                    }}
+                                >
+                                    <Ionicons 
+                                        name={isLocked ? "lock-open-outline" : "lock-closed-outline"} 
+                                        size={22} 
+                                        color={isLocked ? "#FF9F0A" : "#FFFFFF"} 
+                                    />
+                                    <Text style={styles.menuItemText}>
+                                        {isLocked ? "Unlock" : "Lock"}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                            
+                            {!isViewOnly && sets.length > 0 && onDeleteSet && (
+                                <TouchableOpacity
+                                    style={[styles.menuItem, styles.menuItemDelete]}
+                                    onPress={() => {
+                                        setShowMenu(false);
+                                        Alert.alert(
+                                            "Delete All Sets",
+                                            `Are you sure you want to delete all ${sets.length} set${sets.length > 1 ? 's' : ''}?`,
+                                            [
+                                                { text: "Cancel", style: "cancel" },
+                                                {
+                                                    text: "Delete All",
+                                                    style: "destructive",
+                                                    onPress: async () => {
+                                                        // Delete all sets
+                                                        for (const set of sets) {
+                                                            if (set.id) {
+                                                                await onDeleteSet(set.id);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        );
+                                    }}
+                                >
+                                    <Ionicons name="trash-outline" size={22} color="#FF3B30" />
+                                    <Text style={[styles.menuItemText, styles.menuItemTextDelete]}>Delete All Sets</Text>
+                                </TouchableOpacity>
+                            )}
+                            
                             {(isActive || isEditMode) && onRemove && (
                                 <TouchableOpacity
                                     style={[styles.menuItem, styles.menuItemDelete]}
@@ -563,7 +613,7 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
                                     }}
                                 >
                                     <Ionicons name="trash-outline" size={22} color="#FF3B30" />
-                                    <Text style={[styles.menuItemText, styles.menuItemTextDelete]}>Delete</Text>
+                                    <Text style={[styles.menuItemText, styles.menuItemTextDelete]}>Delete Exercise</Text>
                                 </TouchableOpacity>
                             )}
                         </View>

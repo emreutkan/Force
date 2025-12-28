@@ -1,6 +1,6 @@
 
 import { clearTokens } from '@/api/Storage';
-import { updateGender, updateHeight, changePassword } from '@/api/account';
+import { changePassword, updateGender, updateHeight } from '@/api/account';
 import UnifiedHeader from '@/components/UnifiedHeader';
 import { useUserStore } from '@/state/userStore'; // Use the store!
 import { Ionicons } from '@expo/vector-icons';
@@ -197,6 +197,20 @@ export default function AccountScreen() {
                         <View style={styles.menuItemLeft}>
                             <Ionicons name="lock-closed-outline" size={20} color="#0A84FF" style={styles.menuIcon} />
                             <Text style={styles.menuLabel}>Change Password</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Permissions */}
+                <View style={[styles.section, { marginTop: 12 }]}>
+                    <TouchableOpacity 
+                        style={styles.menuItem}
+                        onPress={() => router.push('/(permissions)')}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <Ionicons name="shield-checkmark-outline" size={20} color="#0A84FF" style={styles.menuIcon} />
+                            <Text style={styles.menuLabel}>Permissions</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
                     </TouchableOpacity>

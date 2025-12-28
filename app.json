@@ -15,7 +15,9 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
+        },
+        "NSHealthShareUsageDescription": "This app needs access to your step count to display your daily activity.",
+        "NSHealthUpdateUsageDescription": "This app needs access to update your health data."
       }
     },
     "android": {
@@ -58,6 +60,8 @@
         }
       ],
       "./plugins/withImmersiveMode",
+      "./plugins/withHealthKit",
+      "./plugins/withGoogleFit",
       "expo-secure-store",
       "expo-web-browser"
     ],
