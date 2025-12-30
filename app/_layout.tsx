@@ -34,7 +34,6 @@ export default function RootLayout() {
             <Stack.Screen name="(knowledge-base)" />
             <Stack.Screen name="(templates)" />
             <Stack.Screen name="(volume-analysis)" />
-            <Stack.Screen name="(storybook)" />
           </Stack>
           <StatusBar style="light" />
         </ThemeProvider>

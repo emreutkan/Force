@@ -95,13 +95,6 @@ export default function DebugView() {
                     >
                         <Text style={styles.buttonText}>Debug Login</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                        style={[styles.button, { marginTop: 12, backgroundColor: '#FF9500' }]}
-                        onPress={() => router.push('/(storybook)')}
-                    >
-                        <Ionicons name="book-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                        <Text style={styles.buttonText}>Storybook</Text>
-                    </TouchableOpacity>
                 </View>
 
                 <View style={styles.section}>
@@ -179,7 +172,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 16,
         borderBottomWidth: 1,
         borderBottomColor: '#2C2C2E',
     },
@@ -187,7 +180,7 @@ const styles = StyleSheet.create({
         marginRight: 16,
     },
     title: {
-        fontSize: 20,
+        fontSize: 24,
         fontWeight: '700',
         color: '#FFFFFF',
     },
@@ -200,39 +193,49 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 18,
-        fontWeight: '600',
+        fontWeight: '500',
         color: '#FFFFFF',
-        marginBottom: 8,
+        marginBottom: 16,
     },
     sectionDescription: {
-        fontSize: 14,
+        fontSize: 17,
         color: '#8E8E93',
         marginBottom: 16,
     },
     button: {
         backgroundColor: '#0A84FF',
-        borderRadius: 12,
+        borderRadius: 22,
         height: 56,
         justifyContent: 'center',
         alignItems: 'center',
         flexDirection: 'row',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 16,
+        elevation: 2,
     },
     buttonText: {
         color: '#FFFFFF',
         fontSize: 17,
-        fontWeight: '600',
+        fontWeight: '400',
     },
     backendButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         backgroundColor: '#1C1C1E',
-        borderRadius: 12,
+        borderRadius: 22,
         height: 56,
         paddingHorizontal: 16,
-        marginBottom: 12,
+        marginBottom: 16,
         borderWidth: 1,
         borderColor: '#2C2C2E',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 16,
+        elevation: 2,
     },
     backendButtonActive: {
         borderColor: '#0A84FF',
@@ -240,12 +243,12 @@ const styles = StyleSheet.create({
     },
     backendButtonText: {
         color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '500',
+        fontSize: 17,
+        fontWeight: '400',
     },
     backendButtonTextActive: {
         color: '#0A84FF',
-        fontWeight: '600',
+        fontWeight: '400',
     },
 });
 

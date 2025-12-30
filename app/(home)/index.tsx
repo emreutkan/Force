@@ -88,7 +88,6 @@ export default function Home() {
                 fetchTodayStatus(),
                 fetchActiveWorkout(),
                 fetchTemplates(),
-                fetchAvailableYears(),
                 fetchRecoveryStatus(),
                 fetchSteps(),
             ]);
@@ -249,7 +248,6 @@ export default function Home() {
             fetchTodayStatus();
             fetchActiveWorkout();
             fetchTemplates();
-            fetchAvailableYears();
             fetchRecoveryStatus(); // Refresh recovery status when screen comes into focus
             fetchSteps();
             const now = new Date();
@@ -266,6 +264,7 @@ export default function Home() {
             const now = new Date();
             setSelectedYear(now.getFullYear());
             setSelectedMonth(now.getMonth() + 1);
+            fetchAvailableYears();
             fetchCalendar(now.getFullYear(), now.getMonth() + 1);
             fetchCalendarStats(now.getFullYear(), now.getMonth() + 1);
         }
@@ -1026,7 +1025,18 @@ export default function Home() {
                             
                             <TouchableOpacity
                                 onPress={() => {
-                                    const yearOptions: Array<{ text: string; onPress?: () => void; style?: "cancel" | "default" | "destructive" }> = availableYears.map(year => ({
+                                    // Ensure current year is in the list if availableYears is empty or doesn't include it
+                                    const yearsToShow = availableYears.length > 0 
+                                        ? availableYears 
+                                        : [new Date().getFullYear()];
+                                    
+                                    // Add current selected year if not already in the list
+                                    if (!yearsToShow.includes(selectedYear)) {
+                                        yearsToShow.push(selectedYear);
+                                        yearsToShow.sort((a, b) => b - a); // Sort descending
+                                    }
+                                    
+                                    const yearOptions: Array<{ text: string; onPress?: () => void; style?: "cancel" | "default" | "destructive" }> = yearsToShow.map(year => ({
                                         text: year.toString(),
                                         onPress: () => {
                                             setSelectedYear(year);
@@ -1130,37 +1140,37 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, alignItems: 'center', padding: 2, backgroundColor: '#000000' },
-    headerContainer: { paddingHorizontal: 4, alignItems: 'flex-end', width: '100%', marginBottom: 8, zIndex: 10, position: 'relative' },
+    container: { flex: 1, alignItems: 'center', padding: 8, backgroundColor: '#000000' },
+    headerContainer: { paddingHorizontal: 16, alignItems: 'flex-end', width: '100%', marginBottom: 16, zIndex: 10, position: 'relative' },
     scrollView: {
         flex: 1,
         width: '100%',
     },
     scrollContent: {
         alignItems: 'center',
-        paddingBottom: 100,
+        paddingBottom: 96,
     },
-    contentContainer: { width: '100%', paddingHorizontal: 0, marginBottom: 8,},
-    WeeklyActivityContainer: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 24, padding: 10, borderWidth: 1, borderColor: '#2C2C2E' },
-    contentTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
-    stepsContainer: { width: '100%', marginVertical: 12 },
-    stepsCard: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#2C2C2E' },
-    stepsHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-    stepsTitle: { color: '#FFFFFF', fontSize: 17, fontWeight: '600' },
-    stepsCount: { color: '#0A84FF', fontSize: 32, fontWeight: '700', fontVariant: ['tabular-nums'] },
-    activeCard: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#2C2C2E' },
-    completedCard: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#2C2C2E' },
+    contentContainer: { width: '100%', paddingHorizontal: 0, marginBottom: 16,},
+    WeeklyActivityContainer: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 22, padding: 16, borderWidth: 1, borderColor: '#2C2C2E', shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 16, elevation: 2 },
+    contentTitle: { color: '#FFFFFF', fontSize: 24, fontWeight: '700' },
+    stepsContainer: { width: '100%', marginVertical: 16 },
+    stepsCard: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 22, padding: 16, borderWidth: 1, borderColor: '#2C2C2E', shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 16, elevation: 2 },
+    stepsHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
+    stepsTitle: { color: '#FFFFFF', fontSize: 17, fontWeight: '400' },
+    stepsCount: { color: '#0A84FF', fontSize: 34, fontWeight: '700', fontVariant: ['tabular-nums'] },
+    activeCard: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 22, padding: 16, borderWidth: 1, borderColor: '#2C2C2E', shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 16, elevation: 2 },
+    completedCard: { width: '100%', backgroundColor: '#1C1C1E', borderRadius: 22, padding: 16, borderWidth: 1, borderColor: '#2C2C2E', shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 16, elevation: 2 },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    liveBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(50, 215, 75, 0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-    liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#32D74B', marginRight: 6 },
-    liveText: { color: '#32D74B', fontSize: 12, fontWeight: '700' },
-    completedBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(138, 92, 246, 0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-    completedDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#8B5CF6', marginRight: 6 },
-    completedText: { color: '#8B5CF6', fontSize: 12, fontWeight: '700' },
+    liveBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(50, 215, 75, 0.1)', paddingHorizontal: 8, paddingVertical: 8, borderRadius: 8 },
+    liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#32D74B', marginRight: 8 },
+    liveText: { color: '#32D74B', fontSize: 13, fontWeight: '300' },
+    completedBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(138, 92, 246, 0.1)', paddingHorizontal: 8, paddingVertical: 8, borderRadius: 8 },
+    completedDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#8B5CF6', marginRight: 8 },
+    completedText: { color: '#8B5CF6', fontSize: 13, fontWeight: '300' },
     timerContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    timerText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600', fontVariant: ['tabular-nums'] },
-    cardTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
-    startWorkoutCard: {  backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#2C2C2E', marginVertical: 12 },
+    timerText: { color: '#FFFFFF', fontSize: 17, fontWeight: '400', fontVariant: ['tabular-nums'] },
+    cardTitle: { color: '#FFFFFF', fontSize: 24, fontWeight: '700' },
+    startWorkoutCard: {  backgroundColor: '#1C1C1E', borderRadius: 22, padding: 16, borderWidth: 1, borderColor: '#2C2C2E', marginVertical: 16, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 16, elevation: 2 },
     menuBackdrop: {
         position: 'absolute',
         top: 140,
@@ -1175,23 +1185,28 @@ const styles = StyleSheet.create({
         zIndex: 101,
     },
     menuBlur: {
-        borderRadius: 16,
+        borderRadius: 22,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: '#2C2C2E',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 24,
+        elevation: 4,
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 16,
         paddingHorizontal: 16,
-        gap: 12,
+        gap: 16,
     },
     menuItemText: {
         flex: 1,
         color: '#FFFFFF',
         fontSize: 17,
-        fontWeight: '500',
+        fontWeight: '400',
     },
     menuDivider: {
         height: StyleSheet.hairlineWidth,
@@ -1200,17 +1215,22 @@ const styles = StyleSheet.create({
     },
     bottomNavContainer: {
         position: 'absolute',
-        left: 12,
-        right: 12,
+        left: 16,
+        right: 16,
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
-        paddingVertical: 12,
+        paddingVertical: 16,
         paddingHorizontal: 16,
         height: 64,
-        borderRadius: 16,
+        borderRadius: 22,
         overflow: 'hidden',
         zIndex: 10,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 16,
+        elevation: 2,
     },
     bottomNavButton: {
         flex: 1,
@@ -1219,42 +1239,47 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
     },
     bottomNavLabel: {
-        fontSize: 11,
-        fontWeight: '500',
-        marginTop: 4,
+        fontSize: 13,
+        fontWeight: '300',
+        marginTop: 8,
     },
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', padding: 20 },
-    modalCard: { backgroundColor: '#1C1C1E', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: '#2C2C2E' },
-    modalInternalTitle: { fontSize: 20, fontWeight: '800', color: '#FFFFFF', marginBottom: 24, textAlign: 'center' },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', padding: 24 },
+    modalCard: { backgroundColor: '#1C1C1E', borderRadius: 22, padding: 24, borderWidth: 1, borderColor: '#2C2C2E', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 4 },
+    modalInternalTitle: { fontSize: 24, fontWeight: '700', color: '#FFFFFF', marginBottom: 24, textAlign: 'center' },
     inputWrapper: { position: 'relative', marginBottom: 16 },
-    modalInput: { backgroundColor: '#2C2C2E', borderRadius: 14, padding: 18, color: '#FFFFFF', fontSize: 17, fontWeight: '500' },
-    clearIcon: { position: 'absolute', right: 14, top: 18 },
-    dateSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2C2C2E', padding: 16, borderRadius: 14, marginBottom: 24, gap: 10 },
-    dateText: { color: '#0A84FF', fontSize: 16, fontWeight: '600' },
-    modalBtnStack: { gap: 12 },
-    primaryBtn: { backgroundColor: '#0A84FF', borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
-    primaryBtnText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
-    secondaryBtn: { paddingVertical: 12, alignItems: 'center' },
-    secondaryBtnText: { color: '#FF3B30', fontSize: 16, fontWeight: '600' },
+    modalInput: { backgroundColor: '#2C2C2E', borderRadius: 22, padding: 16, color: '#FFFFFF', fontSize: 17, fontWeight: '400' },
+    clearIcon: { position: 'absolute', right: 16, top: 16 },
+    dateSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2C2C2E', padding: 16, borderRadius: 22, marginBottom: 24, gap: 16 },
+    dateText: { color: '#0A84FF', fontSize: 17, fontWeight: '400' },
+    modalBtnStack: { gap: 16 },
+    primaryBtn: { backgroundColor: '#0A84FF', borderRadius: 22, paddingVertical: 16, alignItems: 'center' },
+    primaryBtnText: { color: '#FFFFFF', fontSize: 17, fontWeight: '400' },
+    secondaryBtn: { paddingVertical: 16, alignItems: 'center' },
+    secondaryBtnText: { color: '#FF3B30', fontSize: 17, fontWeight: '400' },
     sheetOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'flex-end', zIndex: 9999 },
     sheetBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
-    bottomSheet: { backgroundColor: '#1C1C1E', borderTopLeftRadius: 20, borderTopRightRadius: 20, width: '100%', overflow: 'hidden' },
-    sheetHeader: { height: 50, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#2C2C2E' },
-    doneText: { color: '#0A84FF', fontSize: 17, fontWeight: '600' },
-    deleteAction: { backgroundColor: '#FF3B30', justifyContent: 'center', alignItems: 'center', width: 80, height: '100%', borderRadius: 16 },
+    bottomSheet: { backgroundColor: '#1C1C1E', borderTopLeftRadius: 22, borderTopRightRadius: 22, width: '100%', overflow: 'hidden' },
+    sheetHeader: { height: 56, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 24, borderBottomWidth: 1, borderBottomColor: '#2C2C2E' },
+    doneText: { color: '#0A84FF', fontSize: 17, fontWeight: '400' },
+    deleteAction: { backgroundColor: '#FF3B30', justifyContent: 'center', alignItems: 'center', width: 80, height: '100%', borderRadius: 22 },
     templateCard: {
         height: 120,
-        marginRight: 12,
+        marginRight: 16,
         backgroundColor: '#1C1C1E',
-        borderRadius: 16,
+        borderRadius: 22,
         padding: 16,
         borderWidth: 1,
         borderColor: '#2C2C2E',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 16,
+        elevation: 2,
     },
     addTemplateCardSmall: {
         height: 120,
         backgroundColor: '#1C1C1E',
-        borderRadius: 16,
+        borderRadius: 22,
         borderWidth: 1,
         borderColor: '#2C2C2E',
         flexDirection: 'row',
@@ -1270,35 +1295,35 @@ const styles = StyleSheet.create({
     templateTitle: {
         color: '#FFFFFF',
         fontSize: 18,
-        fontWeight: '700',
-        marginBottom: 4
+        fontWeight: '500',
+        marginBottom: 8
     },
     templateExercises: {
         color: '#8E8E93',
-        fontSize: 14,
-        marginBottom: 8
+        fontSize: 17,
+        marginBottom: 16
     },
     muscleGroupsContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 6
+        gap: 8
     },
     muscleTag: {
         backgroundColor: '#2C2C2E',
         paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 6
+        paddingVertical: 8,
+        borderRadius: 8
     },
     muscleTagText: {
         color: '#A1A1A6',
-        fontSize: 12,
-        fontWeight: '400'
+        fontSize: 13,
+        fontWeight: '300'
     },
    
     addTemplateText: {
         color: '#8E8E93',
-        fontSize: 16,
-        fontWeight: '500'
+        fontSize: 17,
+        fontWeight: '400'
     },
     // Calendar Styles
     weekCalendarContainer: {
@@ -1324,9 +1349,9 @@ const styles = StyleSheet.create({
     },
     weekDayNumber: {
         color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
-        padding: 12,
+        fontSize: 17,
+        fontWeight: '400',
+        padding: 16,
         textAlign: 'center',
         textAlignVertical: 'center',
         borderWidth: 2,
@@ -1341,19 +1366,19 @@ const styles = StyleSheet.create({
     },
     weekDayDots: {
         flexDirection: 'row',
-        gap: 3,
+        gap: 8,
         justifyContent: 'center'
     },
     workoutDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
         backgroundColor: '#0A84FF'
     },
     restDayDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
         backgroundColor: '#8B5CF6'
     },
     weekStatsRow: {
@@ -1361,9 +1386,9 @@ const styles = StyleSheet.create({
         justifyContent: 'space-around',
         borderWidth: 1,
         borderColor: '#2C2C2E',
-        borderRadius: 16,
-        padding: 8,
-        marginVertical: 8,
+        borderRadius: 22,
+        padding: 16,
+        marginVertical: 16,
         marginBottom: 16,
     },
     statBadge: {
@@ -1371,89 +1396,94 @@ const styles = StyleSheet.create({
     },
     statBadgeLabel: {
         color: 'white',
-        fontSize: 11,
-        fontWeight: '500',
-        marginBottom: 4
+        fontSize: 13,
+        fontWeight: '300',
+        marginBottom: 8
     },
     statBadgeValue: {
         color: 'white',
         fontSize: 18,
-        fontWeight: '700'
+        fontWeight: '500'
     },
     caloriesContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
-        marginTop: 8,
+        gap: 8,
+        marginTop: 16,
     },
     caloriesText: {
         color: '#FF9500',
-        fontSize: 14,
-        fontWeight: '600',
+        fontSize: 17,
+        fontWeight: '400',
     },
     recoveryLoadingContainer: {
-        padding: 20,
+        padding: 24,
         alignItems: 'center',
     },
     recoveryContainer: {
         backgroundColor: '#1C1C1E',
-        borderRadius: 16,
+        borderRadius: 22,
         padding: 16,
         borderWidth: 1,
         borderColor: '#2C2C2E',
         marginBottom: 16,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 16,
+        elevation: 2,
     },
     recoveryHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 16,
     },
     recoveryItem: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 12,
+        paddingVertical: 16,
         borderBottomWidth: 1,
         borderBottomColor: '#2C2C2E',
     },
     recoveryItemLeft: {
         flex: 1,
-        marginRight: 12,
+        marginRight: 16,
     },
     recoveryMuscleName: {
         color: '#FFFFFF',
-        fontSize: 15,
-        fontWeight: '600',
-        marginBottom: 6,
+        fontSize: 17,
+        fontWeight: '400',
+        marginBottom: 8,
         textTransform: 'capitalize',
     },
     recoveryBarContainer: {
         width: '100%',
     },
     recoveryBarBackground: {
-        height: 6,
+        height: 8,
         backgroundColor: '#2C2C2E',
-        borderRadius: 3,
+        borderRadius: 8,
         overflow: 'hidden',
     },
     recoveryBarFill: {
         height: '100%',
-        borderRadius: 3,
+        borderRadius: 8,
     },
     recoveryItemRight: {
         alignItems: 'flex-end',
     },
     recoveryTime: {
         color: '#8E8E93',
-        fontSize: 12,
-        fontWeight: '500',
-        marginBottom: 4,
+        fontSize: 13,
+        fontWeight: '300',
+        marginBottom: 8,
     },
     recoveryPercentage: {
         color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '700',
+        fontSize: 17,
+        fontWeight: '400',
     },
     recoveryEmptyContainer: {
         alignItems: 'center',
@@ -1463,7 +1493,7 @@ const styles = StyleSheet.create({
     },
     recoveryEmptyText: {
         color: '#32D74B',
-        fontSize: 14,
+        fontSize: 17,
     },
     // Calendar Modal Styles
     calendarModalContainer: {
@@ -1473,27 +1503,27 @@ const styles = StyleSheet.create({
     },
     calendarModalContent: {
         backgroundColor: '#1C1C1E',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
+        borderTopLeftRadius: 22,
+        borderTopRightRadius: 22,
         maxHeight: '90%',
-        padding: 20
+        padding: 24
     },
     calendarModalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 20
+        marginBottom: 24
     },
     calendarModalTitle: {
         color: '#FFFFFF',
-        fontSize: 20,
+        fontSize: 24,
         fontWeight: '700'
     },
     calendarControls: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 20
+        marginBottom: 24
     },
     calendarNavButton: {
         padding: 8
@@ -1505,13 +1535,13 @@ const styles = StyleSheet.create({
     calendarMonthYearText: {
         color: '#FFFFFF',
         fontSize: 18,
-        fontWeight: '600'
+        fontWeight: '500'
     },
     calendarStatsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        marginBottom: 20,
-        paddingBottom: 20,
+        marginBottom: 24,
+        paddingBottom: 24,
         borderBottomWidth: 1,
         borderBottomColor: '#2C2C2E'
     },
@@ -1522,19 +1552,19 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 24,
         fontWeight: '700',
-        marginBottom: 4
+        marginBottom: 8
     },
     calendarStatLabel: {
         color: '#8E8E93',
         fontSize: 13,
-        fontWeight: '500'
+        fontWeight: '300'
     },
     calendarGridContainer: {
-        marginTop: 10
+        marginTop: 16
     },
     calendarWeekHeader: {
         flexDirection: 'row',
-        marginBottom: 8
+        marginBottom: 16
     },
     calendarDayHeader: {
         flex: 1,
@@ -1544,7 +1574,7 @@ const styles = StyleSheet.create({
     calendarDayHeaderText: {
         color: '#8E8E93',
         fontSize: 13,
-        fontWeight: '600'
+        fontWeight: '300'
     },
     calendarDaysGrid: {
         flexDirection: 'row',
@@ -1555,7 +1585,7 @@ const styles = StyleSheet.create({
         aspectRatio: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 4
+        padding: 8
     },
     calendarDayCellOtherMonth: {
         opacity: 0.3
@@ -1566,8 +1596,8 @@ const styles = StyleSheet.create({
     },
     calendarDayNumber: {
         color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '500'
+        fontSize: 17,
+        fontWeight: '400'
     },
     calendarDayNumberOtherMonth: {
         color: '#8E8E93'

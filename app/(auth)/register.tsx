@@ -272,25 +272,30 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     title: {
-        fontSize: 32,
+        fontSize: 34,
         fontWeight: '700',
         color: '#FFFFFF',
-        marginBottom: 8,
+        marginBottom: 16,
         textAlign: 'center',
-        marginTop: 10, // Space for back button if needed, or visual balance
+        marginTop: 16, // Space for back button if needed, or visual balance
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: 17,
         color: '#8E8E93',
         textAlign: 'center',
     },
     inputGroup: {
         backgroundColor: '#1C1C1E',
-        borderRadius: 12,
+        borderRadius: 22,
         overflow: 'hidden',
         marginBottom: 24,
         borderWidth: 1,
         borderColor: '#2C2C2E',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 16,
+        elevation: 2,
     },
     inputTop: {
         height: 56,
@@ -341,15 +346,20 @@ const styles = StyleSheet.create({
     },
     registerButton: {
         backgroundColor: '#0A84FF',
-        borderRadius: 12,
+        borderRadius: 22,
         height: 56,
         justifyContent: 'center',
         alignItems: 'center',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 16,
+        elevation: 2,
     },
     registerButtonText: {
         color: '#FFFFFF',
         fontSize: 17,
-        fontWeight: '600',
+        fontWeight: '400',
     },
     dividerContainer: {
         flexDirection: 'row',
@@ -365,6 +375,7 @@ const styles = StyleSheet.create({
         color: '#8E8E93',
         fontSize: 13,
         marginHorizontal: 16,
+        fontWeight: '300',
     },
     socialContainer: {
         flexDirection: 'row',
@@ -377,27 +388,32 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#1C1C1E',
-        height: 50,
-        borderRadius: 12,
+        height: 56,
+        borderRadius: 22,
         borderWidth: 1,
         borderColor: '#2C2C2E',
         gap: 8,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 16,
+        elevation: 2,
     },
     socialButtonText: {
         color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '500',
+        fontSize: 17,
+        fontWeight: '400',
     },
     footer: {
         alignItems: 'center',
     },
     linkText: {
         color: '#8E8E93',
-        fontSize: 15,
+        fontSize: 17,
     },
     linkBold: {
         color: '#0A84FF',
-        fontWeight: '600',
+        fontWeight: '400',
     },
     genderContainer: {
         padding: 16,
@@ -406,16 +422,16 @@ const styles = StyleSheet.create({
     genderLabel: {
         color: '#8E8E93',
         fontSize: 13,
-        marginBottom: 12,
-        fontWeight: '500',
+        marginBottom: 16,
+        fontWeight: '300',
     },
     genderOptions: {
         flexDirection: 'row',
-        gap: 12,
+        gap: 16,
     },
     genderOption: {
         flex: 1,
-        paddingVertical: 12,
+        paddingVertical: 16,
         paddingHorizontal: 16,
         borderRadius: 8,
         borderWidth: 1,
@@ -429,11 +445,11 @@ const styles = StyleSheet.create({
     },
     genderOptionText: {
         color: '#8E8E93',
-        fontSize: 16,
-        fontWeight: '500',
+        fontSize: 17,
+        fontWeight: '400',
     },
     genderOptionTextSelected: {
         color: '#0A84FF',
-        fontWeight: '600',
+        fontWeight: '400',
     }
 });

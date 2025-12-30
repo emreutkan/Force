@@ -233,16 +233,21 @@ export default function UnifiedHeader({
 const styles = StyleSheet.create({
     header: {
         position: 'absolute',
-        left: 12,
-        right: 12,
+        left: 16,
+        right: 16,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        height: 58,
-        borderRadius: 16,
+        height: 56,
+        borderRadius: 22,
         overflow: 'hidden',
         zIndex: 10,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 16,
+        elevation: 2,
     },
     haeder_with_modal: {
         borderBottomLeftRadius: 0,
@@ -256,11 +261,11 @@ const styles = StyleSheet.create({
     backButtonText: {
         color: '#0A84FF',
         fontSize: 17,
-        marginLeft: -4,
+        marginLeft: 8,
     },
     headerTitle: {
         fontSize: 17,
-        fontWeight: '600',
+        fontWeight: '400',
         color: '#FFFFFF',
         flex: 1,
         textAlign: 'center',
@@ -273,7 +278,7 @@ const styles = StyleSheet.create({
     rightButtonText: {
         color: '#34C759',
         fontSize: 17,
-        fontWeight: '600',
+        fontWeight: '400',
     },
     modalBackdrop: {
         position: 'absolute',
@@ -290,10 +295,9 @@ const styles = StyleSheet.create({
         zIndex: 11,
     },
     modalBlur: {
-        borderBottomLeftRadius: 16,
-        borderBottomRightRadius: 16,
+        borderBottomLeftRadius: 22,
+        borderBottomRightRadius: 22,
         overflow: 'hidden',
-    
     },
     modalContent: {
         padding: 24,

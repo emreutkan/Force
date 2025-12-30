@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     },
     placeholderText: {
         color: '#8E8E93',
-        fontSize: 16,
+        fontSize: 17,
         textAlign: 'center',
     },
     modalContainer: {
@@ -264,12 +264,12 @@ const styles = StyleSheet.create({
         borderBottomColor: '#1C1C1E',
     },
     modalTitle: {
-        fontSize: 20,
+        fontSize: 24,
         fontWeight: '700',
         color: '#FFFFFF',
     },
     modalCloseButton: {
-        padding: 4,
+        padding: 8,
     },
     modalContent: {
         flex: 1,
@@ -281,37 +281,38 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     infoSectionTitle: {
-        fontSize: 17,
-        fontWeight: '600',
+        fontSize: 18,
+        fontWeight: '500',
         color: '#FFFFFF',
-        marginBottom: 8,
+        marginBottom: 16,
     },
     infoSectionText: {
-        fontSize: 15,
+        fontSize: 17,
         color: '#8E8E93',
-        lineHeight: 22,
+        lineHeight: 24,
     },
     infoRow: {
         flexDirection: 'row',
-        gap: 12,
-        marginTop: 8,
+        gap: 16,
+        marginTop: 16,
     },
     infoBadge: {
         backgroundColor: '#1C1C1E',
-        paddingHorizontal: 12,
+        paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 8,
     },
     infoBadgeLabel: {
-        fontSize: 11,
+        fontSize: 13,
         color: '#8E8E93',
         textTransform: 'uppercase',
-        marginBottom: 4,
+        marginBottom: 8,
+        fontWeight: '300',
     },
     infoBadgeValue: {
-        fontSize: 14,
+        fontSize: 17,
         color: '#FFFFFF',
-        fontWeight: '600',
+        fontWeight: '400',
     },
 });
 

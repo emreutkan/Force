@@ -101,18 +101,18 @@ export default function RestTimerBar({ lastSetTimestamp, category }: RestTimerBa
 const styles = StyleSheet.create({
     restTimerContainer: {
         paddingBottom: 16,
-        paddingTop: 12,
+        paddingTop: 16,
     },
     restTimerBarBg: {
-        height: 6,
+        height: 8,
         backgroundColor: '#2C2C2E',
-        borderRadius: 3,
-        marginBottom: 8,
+        borderRadius: 8,
+        marginBottom: 16,
         overflow: 'hidden',
     },
     restTimerBarFill: {
         height: '100%',
-        borderRadius: 3,
+        borderRadius: 8,
     },
     restTimerInfo: {
         flexDirection: 'row',
@@ -120,13 +120,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     restTimerLabel: {
-        fontSize: 14,
-        fontWeight: '500',
+        fontSize: 17,
+        fontWeight: '400',
     },
     restTimerValue: {
         color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '600',
+        fontSize: 17,
+        fontWeight: '400',
         fontVariant: ['tabular-nums'],
     },
 });

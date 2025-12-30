@@ -309,9 +309,9 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingVertical: 16,
         borderRadius: 50,
-        marginHorizontal: 10,
+        marginHorizontal: 16,
         overflow: 'hidden',
     },
     footerContent: {
@@ -322,23 +322,27 @@ const styles = StyleSheet.create({
 
     fabButton: {
         backgroundColor: '#0A84FF',
-        padding: 10,
-        borderRadius: 20,
-
+        padding: 16,
+        borderRadius: 24,
         alignItems: 'center',
         justifyContent: 'center',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 16,
+        elevation: 2,
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 16,
-        gap: 12,
+        gap: 16,
     },
     menuItemText: {
         flex: 1,
         color: '#FFFFFF',
         fontSize: 17,
-        fontWeight: '500',
+        fontWeight: '400',
     },
     deleteText: {
         color: '#FF3B30',
@@ -350,8 +354,8 @@ const styles = StyleSheet.create({
     },
     modalContent: {
         backgroundColor: '#1C1C1E', // Dark gray card
-        borderTopLeftRadius: 15,
-        borderTopRightRadius: 15,
+        borderTopLeftRadius: 22,
+        borderTopRightRadius: 22,
         height: '85%',
         paddingTop: 16,
     },
@@ -359,21 +363,21 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
+        paddingHorizontal: 24,
         marginBottom: 16,
     },
     modalTitle: {
         color: '#FFFFFF',
         fontSize: 18,
-        fontWeight: '700',
+        fontWeight: '500',
     },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#2C2C2E',
-        borderRadius: 10,
-        marginHorizontal: 20,
-        paddingHorizontal: 12,
+        borderRadius: 22,
+        marginHorizontal: 24,
+        paddingHorizontal: 16,
         marginBottom: 16,
     },
     searchIcon: {
@@ -381,9 +385,9 @@ const styles = StyleSheet.create({
     },
     searchInput: {
         flex: 1,
-        paddingVertical: 10,
+        paddingVertical: 16,
         color: '#FFFFFF',
-        fontSize: 16,
+        fontSize: 17,
     },
     loadingContainer: {
         flex: 1,
@@ -391,11 +395,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     listContent: {
-        paddingHorizontal: 20,
+        paddingHorizontal: 24,
         paddingBottom: 40,
     },
     exerciseCard: {
-        paddingVertical: 12,
+        paddingVertical: 16,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -410,12 +414,13 @@ const styles = StyleSheet.create({
     },
     exerciseName: {
         color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '500',
-        marginBottom: 2,
+        fontSize: 17,
+        fontWeight: '400',
+        marginBottom: 8,
     },
     exerciseDetail: {
         color: '#8E8E93',
         fontSize: 13,
+        fontWeight: '300',
     },
 });

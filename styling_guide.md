@@ -2,6 +2,25 @@
 
 This guide outlines the colors, typography, and layout patterns used to achieve a native iOS "Grouped Table View" look in our application.
 
+## 0. The 8pt Grid System
+
+**CRITICAL**: All padding and margin values MUST use multiples of 8 (8, 16, 24, 32, 40, 48, etc.). This creates visual rhythm and consistency.
+
+- ✅ Use: `8, 16, 24, 32, 40, 48, 56, 64`
+- ❌ Never use: `2, 4, 6, 10, 12, 14, 18, 20, 22, 26, 28, 30, 34, 36, 38, 42, 44, 46, 50, 52, 54, 58, 60, 62, 66, 68, 70`
+
+**Common mappings:**
+- `2, 4, 6` → `8`
+- `10, 12, 14` → `16`
+- `18, 20, 22` → `24`
+- `26, 28, 30` → `32`
+- `34, 36, 38` → `40`
+- `42, 44, 46` → `48`
+- `50, 52, 54` → `56`
+- `58, 60, 62` → `64`
+
+**Note:** Border widths (1px, 2px) and font sizes are exempt from this rule.
+
 ## 1. Colors (System Palette)
 
 Use these hex codes to match iOS system colors.
@@ -53,7 +72,7 @@ To create a settings menu or list:
 2. **List Group:**
    - `backgroundColor: '#FFFFFF'`
    - `borderRadius: 12` (or `10`)
-   - `marginBottom: 24`
+   - `marginBottom: 24` (8pt grid)
    - `overflow: 'hidden'`
 3. **List Item (Row):**
    - `flexDirection: 'row'`
@@ -79,7 +98,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF', // 2. Card Background
         borderRadius: 12,
         marginHorizontal: 16, // Inset from edges
-        marginTop: 20,
+        marginTop: 24, // 8pt grid
     },
     sectionTitle: {
         fontSize: 13,
@@ -88,7 +107,7 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         marginLeft: 32, // Align with content + inset
         marginBottom: 8,
-        marginTop: 20,
+        marginTop: 24, // 8pt grid
     },
     row: {
         flexDirection: 'row',
