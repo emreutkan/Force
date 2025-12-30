@@ -58,6 +58,15 @@ export const completeWorkout = async (workoutID: number, data?: { duration?: str
     }
 }
 
+export const getWorkoutSummary = async (workoutID: number): Promise<any> => {
+    try {
+        const response = await apiClient.get(`/workout/${workoutID}/summary/`);
+        return response.data;
+    } catch (error: any) {
+        return error.message || 'An unknown error occurred';
+    }
+}
+
 export const deleteWorkout = async (workoutID: number): Promise<any> => {
     try {
         const response = await apiClient.delete(`/workout/${workoutID}/delete/`);

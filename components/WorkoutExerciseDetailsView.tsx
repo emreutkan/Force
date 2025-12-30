@@ -18,6 +18,7 @@ interface WorkoutExerciseDetailsViewProps {
     onRemoveExercise?: (exerciseId: number) => void;
     onAddSet?: (exerciseId: number, data: any) => void;
     onDeleteSet?: (setId: number) => void;
+    onUpdateSet?: (setId: number, updatedSet: any) => void;
     onShowStatistics?: (exerciseId: number) => void;
     onInputFocus?: (index: number) => void;
 }
@@ -32,6 +33,7 @@ export default function WorkoutExerciseDetailsView({
     onRemoveExercise,
     onAddSet,
     onDeleteSet,
+    onUpdateSet,
     onShowStatistics,
     onInputFocus
 }: WorkoutExerciseDetailsViewProps) {
@@ -97,7 +99,7 @@ export default function WorkoutExerciseDetailsView({
         onAddSet?.(exerciseId, data);
     };
 
-    const handleUpdateSet = (setId: number, updatedSet: any) => {
+    const handleUpdateSet = async (setId: number, updatedSet: any) => {
         // Update the exercises state with the updated set
         const updatedExercises = exercises.map((exercise: any) => ({
             ...exercise,
@@ -106,6 +108,11 @@ export default function WorkoutExerciseDetailsView({
             ) || []
         }));
         setExercises(updatedExercises);
+        
+        // Also call parent's onUpdateSet if provided (for active workout to refresh from backend)
+        if (onUpdateSet) {
+            onUpdateSet(setId, updatedSet);
+        }
     };
 
     // Check if there's at least one exercise with at least one set

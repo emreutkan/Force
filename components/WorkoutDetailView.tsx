@@ -18,11 +18,12 @@ interface WorkoutDetailViewProps {
     onRemoveExercise?: (exerciseId: number) => void;
     onAddSet?: (exerciseId: number, data: any) => void;
     onDeleteSet?: (setId: number) => void;
+    onUpdateSet?: (setId: number, updatedSet: any) => void;
     onCompleteWorkout?: () => void;
     onShowStatistics?: (exerciseId: number) => void;
 }
 
-export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEditMode = false, isViewOnly = false, onAddExercise, onRemoveExercise, onAddSet, onDeleteSet, onCompleteWorkout, onShowStatistics }: WorkoutDetailViewProps) {
+export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEditMode = false, isViewOnly = false, onAddExercise, onRemoveExercise, onAddSet, onDeleteSet, onUpdateSet, onCompleteWorkout, onShowStatistics }: WorkoutDetailViewProps) {
     const insets = useSafeAreaInsets();
     const [exercises, setExercises] = useState(workout?.exercises || []);
     
@@ -106,6 +107,7 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEd
                         onRemoveExercise={onRemoveExercise}
                         onAddSet={handleAddSet}
                         onDeleteSet={onDeleteSet}
+                        onUpdateSet={onUpdateSet}
                         onShowStatistics={onShowStatistics}
                         onInputFocus={handleInputFocus}
                     />

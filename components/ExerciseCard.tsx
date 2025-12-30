@@ -346,9 +346,19 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
 
 // AddSetRow Component
 // Reps Picker Component
-const RepsPicker = ({ value, onValueChange, onFocus }: { value: number | null, onValueChange: (value: number) => void, onFocus: () => void }) => {
+const RepsPicker = ({ value, onValueChange, onFocus, editable = true }: { value: number | null, onValueChange: (value: number) => void, onFocus: () => void, editable?: boolean }) => {
     const [showPicker, setShowPicker] = useState(false);
     const repsOptions = Array.from({ length: 100 }, (_, i) => i + 1); // 1-100
+
+    if (!editable) {
+        return (
+            <View style={[styles.setInput, styles.addSetInput, styles.pickerInput, { opacity: 0.6 }]}>
+                <Text style={[styles.setText, { color: value !== null && value !== undefined ? '#FFFFFF' : '#8E8E93' }]}>
+                    {value !== null && value !== undefined ? value.toString() : '-'}
+                </Text>
+            </View>
+        );
+    }
 
     return (
         <>
@@ -411,7 +421,7 @@ const RepsPicker = ({ value, onValueChange, onFocus }: { value: number | null, o
 };
 
 // RIR Picker Component
-const RIRPicker = ({ value, onValueChange, onFocus }: { value: number | null, onValueChange: (value: number) => void, onFocus: () => void }) => {
+const RIRPicker = ({ value, onValueChange, onFocus, editable = true }: { value: number | null, onValueChange: (value: number) => void, onFocus: () => void, editable?: boolean }) => {
     const [showPicker, setShowPicker] = useState(false);
     const rirOptions = Array.from({ length: 11 }, (_, i) => i); // 0-10
 
@@ -476,7 +486,7 @@ const RIRPicker = ({ value, onValueChange, onFocus }: { value: number | null, on
 };
 
 // Rest Time Picker Component
-const RestTimePicker = ({ value, onValueChange, onFocus }: { value: { minutes: number, seconds: number } | null, onValueChange: (value: { minutes: number, seconds: number }) => void, onFocus: () => void }) => {
+const RestTimePicker = ({ value, onValueChange, onFocus, editable = true }: { value: { minutes: number, seconds: number } | null, onValueChange: (value: { minutes: number, seconds: number }) => void, onFocus: () => void, editable?: boolean }) => {
     const [showPicker, setShowPicker] = useState(false);
     const [tempMinutes, setTempMinutes] = useState(value?.minutes || 0);
     const [tempSeconds, setTempSeconds] = useState(value?.seconds || 0);
@@ -487,6 +497,16 @@ const RestTimePicker = ({ value, onValueChange, onFocus }: { value: { minutes: n
     const formatRestTime = (mins: number, secs: number) => {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
+
+    if (!editable) {
+        return (
+            <View style={[styles.setInput, styles.addSetInput, styles.pickerInput, { opacity: 0.6 }]}>
+                <Text style={[styles.setText, { color: value ? '#FFFFFF' : '#8E8E93' }]}>
+                    {value ? formatRestTime(value.minutes, value.seconds) : 'Rest (before starting set)'}
+                </Text>
+            </View>
+        );
+    }
 
     return (
         <>
@@ -500,7 +520,7 @@ const RestTimePicker = ({ value, onValueChange, onFocus }: { value: { minutes: n
                 }}
             >
                 <Text style={[styles.setText, { color: value ? '#FFFFFF' : '#8E8E93' }]}>
-                    {value ? formatRestTime(value.minutes, value.seconds) : 'Rest'}
+                    {value ? formatRestTime(value.minutes, value.seconds) : 'Rest (before starting set)'}
                 </Text>
             </TouchableOpacity>
             <Modal
@@ -591,6 +611,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
     const [isTrackingTUT, setIsTrackingTUT] = useState(false);
     const [tutStartTime, setTutStartTime] = useState<number | null>(null);
     const [currentTUT, setCurrentTUT] = useState(0);
+    const [hasStopped, setHasStopped] = useState(false); // Track if we've stopped the set (to show Add Set button)
 
     const formatWeightForInput = (weight: number) => {
         if (!weight && weight !== 0) return '';
@@ -653,6 +674,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
             setIsTrackingTUT(true);
             setTutStartTime(Date.now());
             setCurrentTUT(0);
+            setHasStopped(false);
         } catch (error) {
             console.error('Failed to stop rest timer:', error);
         }
@@ -661,53 +683,14 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
     const handleStopSet = async () => {
         if (!isTrackingTUT || tutStartTime === null) return;
 
-        // Stop TUT tracking
+        // Stop TUT tracking (but don't add set yet)
         setIsTrackingTUT(false);
         const finalTUT = Math.floor((Date.now() - tutStartTime) / 1000);
         setTutStartTime(null);
         // Update currentTUT with the calculated value (user can still edit it)
         setCurrentTUT(finalTUT);
-
-        // Get rest time - use user input if provided, otherwise use global rest timer
-        let restTimeSeconds = 0;
-        if (nextSetNumber === 1 && index === 0) {
-            restTimeSeconds = 0;
-        } else if (inputs.restTime) {
-            // User has manually entered rest time, use that
-            restTimeSeconds = restTimeToSeconds(inputs.restTime);
-        } else {
-            // Use global rest timer
-            const restTime: any = await getRestTimerState();
-            restTimeSeconds = restTime.elapsed_seconds || 0;
-        }
-
-        // Prepare set data - use currentTUT (which may have been manually edited)
-        const setData = {
-            weight: parseFloat(inputs.weight) || 0,
-            reps: inputs.reps !== null ? inputs.reps : 0,
-            reps_in_reserve: inputs.rir !== null ? inputs.rir : 0,
-            is_warmup: inputs.isWarmup,
-            rest_time_before_set: restTimeSeconds,
-            total_tut: currentTUT > 0 ? currentTUT : undefined
-        };
-
-        // Validate before sending
-        const validation = validateSetData(setData);
-        if (!validation.isValid) {
-            Alert.alert('Validation Error', validation.errors.join('\n'));
-            // Restart TUT tracking since validation failed
-            setIsTrackingTUT(true);
-            setTutStartTime(Date.now());
-            return;
-        }
-
-        // Add set with TUT data
-        onAdd(setData);
-
-        // Reset inputs but keep weight and reps
-        setInputs({ weight: inputs.weight, reps: inputs.reps, rir: null, restTime: null, isWarmup: false });
-        // Reset TUT after adding set
-        setCurrentTUT(0);
+        // Mark that we've stopped - this will show the "Add Set" button
+        setHasStopped(true);
     };
 
     const handleAdd = async () => {
@@ -743,29 +726,47 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
         
         onAdd(setData);
 
-        setInputs({ weight: inputs.weight, reps: inputs.reps, rir: null, restTime: null, isWarmup: false });
-        // Reset TUT after adding set
+        // Reset everything after adding set
+        setInputs({ weight: inputs.weight, reps: null, rir: null, restTime: null, isWarmup: false });
         setCurrentTUT(0);
+        setHasStopped(false);
     };
 
     if ((isLocked && !isEditMode ) || isViewOnly) return null;
 
+    // Determine state: initial, tracking, or stopped
+    const isInitial = !isTrackingTUT && !hasStopped;
+    const isTracking = isTrackingTUT;
+    const isStopped = hasStopped && !isTrackingTUT;
+
     return (
         <>
             <View style={[styles.setRow, styles.addSetRowContainer]}>
+                {/* Set Number - Always visible */}
                 <TouchableOpacity
-                    onPress={() => setInputs(p => ({ ...p, isWarmup: !p.isWarmup }))}
-                    style={{ width: 30, alignItems: 'center', paddingVertical: 10, }}
+                    onPress={() => !isTracking && setInputs(p => ({ ...p, isWarmup: !p.isWarmup }))}
+                    disabled={isTracking}
+                    style={{ width: 30, alignItems: 'center', paddingVertical: 10, opacity: isTracking ? 0.6 : 1 }}
                 >
                     <Text style={[styles.setText, { color: inputs.isWarmup ? '#FF9F0A' : '#8E8E93', fontWeight: inputs.isWarmup ? 'bold' : 'normal' }]}>
                         {inputs.isWarmup ? 'W' : nextSetNumber}
                     </Text>
                 </TouchableOpacity>
 
+                {/* Rest Time - Always visible, editable unless tracking */}
+                <RestTimePicker
+                    value={inputs.restTime}
+                    onValueChange={(value) => setInputs(p => ({ ...p, restTime: value }))}
+                    onFocus={onFocus}
+                    editable={!isTracking}
+                />
+
+                {/* Weight - Always visible, editable unless tracking */}
                 <TextInput
-                    style={[styles.setInput, styles.addSetInput]}
+                    style={[styles.setInput, styles.addSetInput, isTracking && { opacity: 0.6 }]}
                     value={inputs.weight}
                     onChangeText={(t: string) => {
+                        if (isTracking) return; // Don't allow editing while tracking
                         // Replace : and , with .
                         let sanitized = t.replace(/[:,]/g, '.');
                         
@@ -783,76 +784,95 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
                     placeholder={lastSet?.weight?.toString() || "kg"}
                     placeholderTextColor="#8E8E93"
                     onFocus={onFocus}
+                    editable={!isTracking}
                 />
-                <RepsPicker
-                    value={inputs.reps}
-                    onValueChange={(value) => setInputs(p => ({ ...p, reps: value }))}
-                    onFocus={onFocus}
-                />
-                <RIRPicker
-                    value={inputs.rir}
-                    onValueChange={(value) => setInputs(p => ({ ...p, rir: value }))}
-                    onFocus={onFocus}
-                />
-                <RestTimePicker
-                    value={inputs.restTime}
-                    onValueChange={(value) => setInputs(p => ({ ...p, restTime: value }))}
-                    onFocus={onFocus}
-                />
+
+                {/* Reps - Visible when tracking or stopped, editable only when stopped */}
+                {(isTracking || isStopped) && (
+                    <RepsPicker
+                        value={inputs.reps}
+                        onValueChange={(value) => setInputs(p => ({ ...p, reps: value }))}
+                        onFocus={onFocus}
+                        editable={isStopped}
+                    />
+                )}
+
+                {/* RIR - Visible when tracking or stopped, editable only when stopped */}
+                {(isTracking || isStopped) && (
+                    <RIRPicker
+                        value={inputs.rir}
+                        onValueChange={(value) => setInputs(p => ({ ...p, rir: value }))}
+                        onFocus={onFocus}
+                        editable={isStopped}
+                    />
+                )}
             </View>
 
-            {inputs.weight && inputs.reps !== null && (
-                <>
-                    {(isTrackingTUT || currentTUT > 0) && (
-                        <View style={styles.tutTimerContainer}>
-                            <Text style={styles.tutTimerLabel}>Time Under Tension:</Text>
-                            <View style={styles.tutInputContainer}>
-                                {isTrackingTUT ? (
-                                    <Text style={styles.tutDisplayText}>{formatTUT(currentTUT)}</Text>
-                                ) : (
-                                    <>
-                                        <TextInput
-                                            style={styles.tutInput}
-                                            value={currentTUT.toString()}
-                                            onChangeText={(text) => {
-                                                const num = parseInt(text) || 0;
-                                                if (num >= 0 && num <= 600) {
-                                                    setCurrentTUT(num);
-                                                }
-                                            }}
-                                            keyboardType="numeric"
-                                            placeholder="0"
-                                            placeholderTextColor="#8E8E93"
-                                        />
-                                        <Text style={styles.tutInputSuffix}>s</Text>
-                                    </>
-                                )}
-                            </View>
-                        </View>
-                    )}
-                    <TouchableOpacity
-                        style={[
-                            styles.addSetButton,
-                            (!inputs.weight || inputs.reps === null) && { opacity: 0.5 },
-                            isActive && hasSets && !isTrackingTUT && styles.startSetButton,
-                            isTrackingTUT && styles.stopSetButton
-                        ]}
-                        onPress={isTrackingTUT ? handleStopSet : (isActive && hasSets ? handleStartSet : handleAdd)}
-                        disabled={!inputs.weight || inputs.reps === null}
-                    >
-                        <Text style={[
-                            styles.addSetButtonText,
-                            isTrackingTUT && styles.stopSetButtonText,
-                            isActive && hasSets && !isTrackingTUT && styles.startSetButtonText
-                        ]}>
-                            {(() => {
-                                if (isTrackingTUT) return 'Stop Performing Set';
-                                if (isActive && hasSets) return 'Start Set';
-                                return 'Add Set';
-                            })()}
-                        </Text>
-                    </TouchableOpacity>
-                </>
+            {/* TUT Display - Visible when tracking or stopped */}
+            {(isTracking || isStopped) && (
+                <View style={styles.tutTimerContainer}>
+                    <Text style={styles.tutTimerLabel}>Time Under Tension:</Text>
+                    <View style={styles.tutInputContainer}>
+                        {isTracking ? (
+                            <Text style={styles.tutDisplayText}>{formatTUT(currentTUT)}</Text>
+                        ) : (
+                            <>
+                                <TextInput
+                                    style={styles.tutInput}
+                                    value={currentTUT.toString()}
+                                    onChangeText={(text) => {
+                                        const num = parseInt(text) || 0;
+                                        if (num >= 0 && num <= 600) {
+                                            setCurrentTUT(num);
+                                        }
+                                    }}
+                                    keyboardType="numeric"
+                                    placeholder="0"
+                                    placeholderTextColor="#8E8E93"
+                                />
+                                <Text style={styles.tutInputSuffix}>s</Text>
+                            </>
+                        )}
+                    </View>
+                </View>
+            )}
+
+            {/* Button - Show based on state */}
+            {inputs.weight && (
+                <TouchableOpacity
+                    style={[
+                        styles.addSetButton,
+                        !inputs.weight && { opacity: 0.5 },
+                        isActive && isInitial && styles.startSetButton,
+                        isTracking && styles.stopSetButton,
+                        isStopped && styles.addSetButton
+                    ]}
+                    onPress={() => {
+                        if (isTracking) {
+                            handleStopSet();
+                        } else if (isActive && isInitial) {
+                            handleStartSet();
+                        } else if (isStopped) {
+                            handleAdd();
+                        } else {
+                            handleAdd();
+                        }
+                    }}
+                    disabled={!inputs.weight || (isStopped && inputs.reps === null)}
+                >
+                    <Text style={[
+                        styles.addSetButtonText,
+                        isTracking && styles.stopSetButtonText,
+                        isActive && isInitial && styles.startSetButtonText
+                    ]}>
+                        {(() => {
+                            if (isTracking) return 'Stop Performing Set';
+                            if (isActive && isInitial) return 'Start Set';
+                            if (isStopped) return 'Add Set';
+                            return 'Add Set';
+                        })()}
+                    </Text>
+                </TouchableOpacity>
             )}
         </>
     );
@@ -1025,10 +1045,10 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
                         }}
 >                        <View style={styles.setsHeader}>
                             <Text style={[styles.setHeaderText, {maxWidth: 30}]}>Set</Text>
+                            <Text style={[styles.setHeaderText, {}]}>Rest (before starting set)</Text>
                             <Text style={[styles.setHeaderText, {}]}>Weight</Text>
                             <Text style={[styles.setHeaderText, {}]}>Reps</Text>
                             <Text style={[styles.setHeaderText, {}]}>RIR</Text>
-                            <Text style={[styles.setHeaderText, {}]}>Rest</Text>
                         </View>
                         
                         {sets.map((set: any, index: number) => {

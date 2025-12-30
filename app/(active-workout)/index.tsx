@@ -231,6 +231,16 @@ export default function ActiveWorkoutScreen() {
         }
     };
 
+    const handleUpdateSet = async (setId: number, updatedSet: any) => {
+        try {
+            // Refresh workout from backend to get latest data
+            const updatedWorkout = await getActiveWorkout();
+            setActiveWorkout(updatedWorkout);
+        } catch (error) {
+            console.error("Failed to refresh workout after set update:", error);
+        }
+    };
+
     const handleFinishWorkout = async () => {
         if (!activeWorkout?.id) return;
 
@@ -249,11 +259,13 @@ export default function ActiveWorkoutScreen() {
                             const startTime = new Date(activeWorkout.created_at).getTime();
                             const durationSeconds = Math.floor(Math.max(0, now - startTime) / 1000);
                             
-                            await completeWorkout(activeWorkout.id, { duration: durationSeconds.toString() });
+                            const completedWorkout = await completeWorkout(activeWorkout.id, { duration: durationSeconds.toString() });
                             // Clear rest timer state when workout is completed
                             setLastSetTimestamp(null);
                             setLastExerciseCategory('isolation');
-                            router.replace('/');
+                            // Navigate to workout summary with the workout ID
+                            // Use the active workout ID since completeWorkout may not return full workout data
+                            router.replace(`/(active-workout)/workoutsummary?workoutId=${activeWorkout.id}`);
                         } catch (error) {
                             console.error("Failed to complete workout:", error);
                             Alert.alert("Error", "Failed to complete workout. Please try again.");
@@ -397,6 +409,7 @@ export default function ActiveWorkoutScreen() {
                 onRemoveExercise={handleRemoveExercise}
                 onAddSet={handleAddSet}
                 onDeleteSet={handleDeleteSet}
+                onUpdateSet={handleUpdateSet}
                 onCompleteWorkout={handleFinishWorkout}
                 onShowStatistics={(exerciseId: number) => router.push(`/(exercise-statistics)/${exerciseId}`)}
             />
