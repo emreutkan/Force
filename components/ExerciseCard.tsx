@@ -973,7 +973,7 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
                     <View style={styles.exerciseInfo}>
                         <View style={styles.exerciseNameRow}>
                             <Text style={styles.exerciseName}>
-                                {exercise.name} {isLocked && <Ionicons name="lock-closed" size={14} color="#8E8E93" />}
+                                {exercise.name || ''} {isLocked && <Ionicons name="lock-closed" size={14} color="#8E8E93" />}
                             </Text>
                             <TouchableOpacity 
                                 onPress={() => setShowMenu(true)}
@@ -986,7 +986,7 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
 
                         <View style={styles.exerciseInfoRow}>
                             <View style={styles.exerciseMusclesContainer}>
-                                {exercise.primary_muscle && (
+                                {exercise.primary_muscle && typeof exercise.primary_muscle === 'string' && (
                                     <View style={[styles.exerciseTag, styles.primaryMuscleTag]}>
                                         <Text style={styles.exerciseTagText}>{exercise.primary_muscle}</Text>
                                     </View>
@@ -998,12 +998,14 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
                                                 <Text style={styles.secondaryMuscleTagText}>{muscle}</Text>
                                             </View>
                                           ))
-                                        : <View style={styles.exerciseTag}>
-                                            <Text style={styles.secondaryMuscleTagText}>{exercise.secondary_muscles}</Text>
-                                          </View>
+                                        : typeof exercise.secondary_muscles === 'string' ? (
+                                            <View style={styles.exerciseTag}>
+                                                <Text style={styles.secondaryMuscleTagText}>{exercise.secondary_muscles}</Text>
+                                            </View>
+                                          ) : null
                                 )}
                             </View>
-                            {exercise.equipment_type && (
+                            {exercise.equipment_type && typeof exercise.equipment_type === 'string' && (
                                 <View style={styles.exerciseTag}>
                                     <Text style={styles.exerciseTagText}>{exercise.equipment_type}</Text>
                                 </View>
