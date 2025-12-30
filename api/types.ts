@@ -18,6 +18,7 @@ export interface GetAccountResponse {
     is_verified: boolean;
     gender: string;
     height: number | null;
+    weight: number | null;
     created_at: string;
 }
 
@@ -255,6 +256,21 @@ export interface VolumeAnalysisFilters {
     end_date?: string; // YYYY-MM-DD
 }
 
+// Weight History Types
+export interface WeightHistoryEntry {
+    id: number;
+    date: string;
+    weight: number;
+    bodyfat: number | null;
+}
+
+export interface WeightHistoryResponse {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: WeightHistoryEntry[];
+}
+
 // Calendar Types
 export interface CalendarDay {
     date: string; // ISO date string "2025-12-18"
@@ -441,4 +457,19 @@ export interface VolumeAnalysisFilters {
     weeks_back?: number;
     start_date?: string; // YYYY-MM-DD
     end_date?: string; // YYYY-MM-DD
+}
+
+// Weight History Types
+export interface WeightHistoryEntry {
+    id: number;
+    date: string;
+    weight: number;
+    bodyfat: number | null;
+}
+
+export interface WeightHistoryResponse {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: WeightHistoryEntry[];
 }

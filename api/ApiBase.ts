@@ -1,5 +1,4 @@
-import { Platform } from 'react-native';
-import { getBackendPreference, BackendType } from './Storage';
+import { BackendType, getBackendPreference } from './Storage';
 
 // Backend configurations
 const LOCAL_IP = '192.168.1.7';
@@ -29,9 +28,9 @@ export const getBASE_URL = async (): Promise<string> => {
 let cachedAPI_URL = `http://${LOCAL_IP}:8000/api`;
 let cachedBASE_URL = `http://${LOCAL_IP}:8000`;
 
-// Initialize cache
-getAPI_URL().then(url => cachedAPI_URL = url);
-getBASE_URL().then(url => cachedBASE_URL = url);
+// Initialize cache - defer to avoid errors during Metro bundling
+// The cache will be initialized when first accessed via getAPI_URL() or getBASE_URL()
+// This prevents errors during module initialization in Node.js/Metro bundler
 
 // Export cached values for synchronous access
 export let API_URL = cachedAPI_URL;

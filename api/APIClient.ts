@@ -13,9 +13,16 @@ const apiClient = axios.create({
 });
 
 // Update baseURL on initialization with actual preference
-getAPI_URL().then(url => {
-    apiClient.defaults.baseURL = url;
-});
+// Wrap in try-catch to prevent errors during Metro bundling
+try {
+    getAPI_URL().then(url => {
+        apiClient.defaults.baseURL = url;
+    }).catch(() => {
+        // Silently fail during module initialization
+    });
+} catch (e) {
+    // Silently fail during module initialization
+}
 
 export default apiClient;
 

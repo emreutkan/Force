@@ -7,7 +7,7 @@ export type BackendType = 'local' | 'ec2';
 
 export const storeAccessToken = async (token: string) => {
     if (isWeb) {
-        localStorage.setItem('access_token', token);
+       // localStorage.setItem('access_token', token);
     } else {
         await SecureStore.setItemAsync('access_token', token);
     }
@@ -15,7 +15,7 @@ export const storeAccessToken = async (token: string) => {
 
 export const storeRefreshToken = async (token: string) => {
     if (isWeb) {
-        localStorage.setItem('refresh_token', token);
+      //  localStorage.setItem('refresh_token', token);
     } else {
         await SecureStore.setItemAsync('refresh_token', token);
     }
@@ -23,21 +23,21 @@ export const storeRefreshToken = async (token: string) => {
 
 export const getAccessToken = async () => {
     if (isWeb) {
-        return localStorage.getItem('access_token');
+      //  return localStorage.getItem('access_token');
     }
     return await SecureStore.getItemAsync('access_token');
 }
 
 export const getRefreshToken = async () => {
     if (isWeb) {
-        return localStorage.getItem('refresh_token');
+      //  return localStorage.getItem('refresh_token');
     }
     return await SecureStore.getItemAsync('refresh_token');
 }
 
 export const clearTokens = async () => {
-    if (isWeb) {
-        localStorage.removeItem('access_token');
+    if (isWeb && typeof localStorage !== 'undefined') {
+      //  localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
     } else {
         await SecureStore.deleteItemAsync('access_token');
@@ -47,19 +47,33 @@ export const clearTokens = async () => {
 
 export const setBackendPreference = async (backend: BackendType) => {
     if (isWeb) {
-        localStorage.setItem('backend_preference', backend);
+      //  localStorage.setItem('backend_preference', backend);
     } else {
         await SecureStore.setItemAsync('backend_preference', backend);
     }
 }
 
 export const getBackendPreference = async (): Promise<BackendType> => {
-    let preference: string | null;
-    if (isWeb) {
-        preference = localStorage.getItem('backend_preference');
-    } else {
-        preference = await SecureStore.getItemAsync('backend_preference');
+    let preference: string | null = null;
+    
+    // Safely check for localStorage - must be in browser environment
+    try {
+        if (isWeb && typeof window !== 'undefined' && typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function') {
+            preference = localStorage.getItem('backend_preference');
+        }
+    } catch (e) {
+        // localStorage not available, will use SecureStore
     }
+    
+    // If we didn't get preference from localStorage, try SecureStore
+    if (preference === null) {
+        try {
+            preference = await SecureStore.getItemAsync('backend_preference');
+        } catch (e) {
+            // SecureStore also failed, will default to 'local'
+        }
+    }
+    
     // Default to 'local' if no preference is set
     return (preference === 'local' || preference === 'ec2') ? preference : 'local';
 }

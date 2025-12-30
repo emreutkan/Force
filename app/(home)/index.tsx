@@ -39,7 +39,7 @@ export default function Home() {
     const [modalCreateButtonText, setModalCreateButtonText] = useState('Create Workout');
     const [modalCreateButtonAction, setModalCreateButtonAction] = useState('createWorkout');
     const [keyboardHeight, setKeyboardHeight] = useState(300);
-    const { workouts, fetchWorkouts } = useWorkoutStore();
+    const { workouts } = useWorkoutStore();
     const [restDayInfo, setRestDayInfo] = useState<{ is_rest_day: boolean; date: string; rest_day_id: number | null } | null>(null);
     const [templates, setTemplates] = useState<TemplateWorkout[]>([]);
     const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
@@ -87,21 +87,22 @@ export default function Home() {
             await Promise.all([
                 fetchTodayStatus(),
                 fetchActiveWorkout(),
-                fetchWorkouts(),
                 fetchTemplates(),
                 fetchAvailableYears(),
                 fetchRecoveryStatus(),
                 fetchSteps(),
             ]);
             const now = new Date();
+            const currentWeek = getCurrentWeekNumber(now);
+            // Fetch current week for home screen refresh
             await Promise.all([
-                fetchCalendar(now.getFullYear(), now.getMonth() + 1),
-                fetchCalendarStats(now.getFullYear(), now.getMonth() + 1),
+                fetchCalendar(now.getFullYear(), undefined, currentWeek),
+                fetchCalendarStats(now.getFullYear(), undefined, currentWeek),
             ]);
         } finally {
             setRefreshing(false);
         }
-    }, [fetchWorkouts, fetchSteps]);
+    }, [fetchSteps]);
 
 
     
@@ -133,9 +134,20 @@ export default function Home() {
         }
     };
 
-    const fetchCalendar = async (year: number, month?: number) => {
+    const getCurrentWeekNumber = (date: Date): number => {
+        // Calculate week number based on Saturday as start of week
+        const startOfYear = new Date(date.getFullYear(), 0, 1);
+        const daysFromStart = Math.floor((date.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24));
+        // Adjust for Saturday-based week (Saturday = day 6)
+        const dayOfWeek = date.getDay();
+        const daysFromSaturday = (dayOfWeek + 1) % 7;
+        const weekNumber = Math.floor((daysFromStart - daysFromSaturday) / 7) + 1;
+        return Math.max(1, weekNumber);
+    };
+
+    const fetchCalendar = async (year: number, month?: number, week?: number) => {
         try {
-            const result = await getCalendar(year, month);
+            const result = await getCalendar(year, month, week);
             if (result?.calendar) {
                 setCalendarData(result.calendar);
             } else {
@@ -146,9 +158,9 @@ export default function Home() {
         }
     };
 
-    const fetchCalendarStats = async (year: number, month?: number) => {
+    const fetchCalendarStats = async (year: number, month?: number, week?: number) => {
         try {
-            const result = await getCalendarStats(year, month);
+            const result = await getCalendarStats(year, month, week);
             if (result) {
                 setCalendarStats(result);
             }
@@ -236,16 +248,28 @@ export default function Home() {
         useCallback(() => {
             fetchTodayStatus();
             fetchActiveWorkout();
-            fetchWorkouts();
             fetchTemplates();
             fetchAvailableYears();
             fetchRecoveryStatus(); // Refresh recovery status when screen comes into focus
             fetchSteps();
             const now = new Date();
+            const currentWeek = getCurrentWeekNumber(now);
+            // Fetch current week for home screen
+            fetchCalendar(now.getFullYear(), undefined, currentWeek);
+            fetchCalendarStats(now.getFullYear(), undefined, currentWeek);
+        }, [fetchSteps])
+    );
+
+    // Fetch month data when calendar modal opens
+    useEffect(() => {
+        if (showCalendarModal) {
+            const now = new Date();
+            setSelectedYear(now.getFullYear());
+            setSelectedMonth(now.getMonth() + 1);
             fetchCalendar(now.getFullYear(), now.getMonth() + 1);
             fetchCalendarStats(now.getFullYear(), now.getMonth() + 1);
-        }, [fetchWorkouts, fetchSteps])
-    );
+        }
+    }, [showCalendarModal]);
 
     useEffect(() => {
         const showSubscription = Keyboard.addListener('keyboardDidShow', (e) => {
@@ -339,7 +363,6 @@ export default function Home() {
                     setActiveWorkout(null);
                     setElapsedTime('00:00:00');
                     fetchTodayStatus();
-                    fetchWorkouts();
                 }
             }}
         ]);
@@ -352,7 +375,6 @@ export default function Home() {
                 if (todayStatus?.workout?.id) {
                     await deleteWorkout(todayStatus.workout.id);
                     fetchTodayStatus();
-                    fetchWorkouts();
                 }
             }}
         ]);
@@ -745,8 +767,8 @@ export default function Home() {
                         style={styles.bottomNavButton}
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="calculator-outline" size={24} color={pathname.startsWith('/(calculations)') ? "#0A84FF" : "#8E8E93"} />
-                        <Text style={[styles.bottomNavLabel, { color: pathname.startsWith('/(calculations)') ? "#0A84FF" : "#8E8E93" }]}>Calculations</Text>
+                        <Ionicons name="body-outline" size={24} color={pathname.startsWith('/(calculations)') ? "#0A84FF" : "#8E8E93"} />
+                        <Text style={[styles.bottomNavLabel, { color: pathname.startsWith('/(calculations)') ? "#0A84FF" : "#8E8E93" }]}>Measurements</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity 
@@ -783,8 +805,8 @@ export default function Home() {
                         style={styles.bottomNavButton}
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="calculator-outline" size={24} color={pathname.startsWith('/(calculations)') ? "#0A84FF" : "#8E8E93"} />
-                        <Text style={[styles.bottomNavLabel, { color: pathname.startsWith('/(calculations)') ? "#0A84FF" : "#8E8E93" }]}>Calculations</Text>
+                        <Ionicons name="body-outline" size={24} color={pathname.startsWith('/(calculations)') ? "#0A84FF" : "#8E8E93"} />
+                        <Text style={[styles.bottomNavLabel, { color: pathname.startsWith('/(calculations)') ? "#0A84FF" : "#8E8E93" }]}>Measurements</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity 

@@ -1,6 +1,6 @@
 
 import apiClient from "./APIClient";
-import { getAccountResponse } from "./types";
+import { getAccountResponse, WeightHistoryResponse } from "./types";
 
 export const getAccount = async () : Promise<getAccountResponse > => {
     try {
@@ -49,6 +49,49 @@ export const changePassword = async (oldPassword: string, newPassword: string): 
 export const updateGender = async (gender: 'male' | 'female'): Promise<{ gender: string; message: string } | any> => {
     try {
         const response = await apiClient.post('/user/gender/', { gender });
+        return response.data;
+    } catch (error: any) {
+        if (error.response) {
+            return error.response.data;
+        }
+        return error.message || 'An unknown error occurred';
+    }
+}
+
+export const updateWeight = async (weight: number): Promise<{ weight: number; message: string } | any> => {
+    try {
+        const response = await apiClient.post('/user/weight/', { weight });
+        return response.data;
+    } catch (error: any) {
+        if (error.response) {
+            return error.response.data;
+        }
+        return error.message || 'An unknown error occurred';
+    }
+}
+
+export const getWeightHistory = async (page: number = 1, pageSize: number = 100): Promise<WeightHistoryResponse | any> => {
+    try {
+        const params: any = {
+            page,
+            page_size: pageSize
+        };
+        const response = await apiClient.get('/user/weight/history/', { params });
+        return response.data;
+    } catch (error: any) {
+        if (error.response) {
+            return error.response.data;
+        }
+        return error.message || 'An unknown error occurred';
+    }
+}
+
+export const deleteWeightEntry = async (weightId: number, deleteBodyfat: boolean = false): Promise<{ message: string; deleted_date: string; bodyfat_deleted?: boolean } | any> => {
+    try {
+        const url = deleteBodyfat 
+            ? `/user/weight/${weightId}/?delete_bodyfat=true`
+            : `/user/weight/${weightId}/`;
+        const response = await apiClient.delete(url);
         return response.data;
     } catch (error: any) {
         if (error.response) {
