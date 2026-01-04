@@ -1,15 +1,15 @@
 import { healthService } from '@/api/Health';
 import { CalendarDay, CalendarStats, MuscleRecovery, RecoveryStatusResponse, TemplateWorkout } from '@/api/types';
 import { checkToday, createWorkout, deleteWorkout, getActiveWorkout, getAvailableYears, getCalendar, getCalendarStats, getRecoveryStatus, getTemplateWorkouts, startTemplateWorkout } from '@/api/Workout';
-import { useWorkoutStore } from '@/state/userStore';
+import { useWorkoutStore, useHomeLoadingStore } from '@/state/userStore';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BlurView } from 'expo-blur';
 import { router, useFocusEffect, usePathname } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Keyboard, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView as RNScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SwipeAction = ({ progress, onPress }: any) => {
@@ -27,6 +27,64 @@ const SwipeAction = ({ progress, onPress }: any) => {
     );
 };
 
+// Animated Loading Screen Component
+const LoadingScreen = ({ type = 'workout' }: { type?: 'workout' | 'recovery' }) => {
+    const opacity = useSharedValue(0.3);
+    const scale = useSharedValue(0.95);
+
+    useEffect(() => {
+        opacity.value = withRepeat(
+            withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+            -1,
+            true
+        );
+        scale.value = withRepeat(
+            withTiming(1.02, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+            -1,
+            true
+        );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value,
+        transform: [{ scale: scale.value }],
+    }));
+
+    const pulseStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value * 0.5,
+    }));
+
+    if (type === 'workout') {
+        return (
+            <View style={styles.loadingScreenContainer}>
+                <Animated.View style={[styles.loadingCard, animatedStyle]}>
+                    <Animated.View style={[styles.loadingHeader, pulseStyle]}>
+                        <View style={styles.loadingBadge} />
+                        <View style={styles.loadingSpacer} />
+                    </Animated.View>
+                    <View style={styles.loadingTitle} />
+                    <View style={[styles.loadingTitle, { width: '60%', marginTop: 8 }]} />
+                </Animated.View>
+            </View>
+        );
+    }
+
+    return (
+        <View style={styles.loadingScreenContainer}>
+            <Animated.View style={[styles.loadingCard, animatedStyle]}>
+                <Animated.View style={[styles.loadingHeader, pulseStyle]}>
+                    <View style={styles.loadingTitle} />
+                    <View style={styles.loadingSpacer} />
+                </Animated.View>
+                <View style={styles.loadingRecoveryItem} />
+                <View style={styles.loadingRecoveryItem} />
+                <View style={[styles.loadingRecoveryItem, { marginBottom: 0 }]} />
+            </Animated.View>
+        </View>
+    );
+};
+
 export default function Home() {
     const [modalVisible, setModalVisible] = useState(false);
     const [workoutTitle, setWorkoutTitle] = useState('');
@@ -40,6 +98,14 @@ export default function Home() {
     const [modalCreateButtonAction, setModalCreateButtonAction] = useState('createWorkout');
     const [keyboardHeight, setKeyboardHeight] = useState(300);
     const { workouts } = useWorkoutStore();
+    const { 
+        isInitialLoadComplete, 
+        todayStatus: cachedTodayStatus, 
+        recoveryStatus: cachedRecoveryStatus,
+        setInitialLoadComplete,
+        setTodayStatus: setCachedTodayStatus,
+        setRecoveryStatus: setCachedRecoveryStatus
+    } = useHomeLoadingStore();
     const [restDayInfo, setRestDayInfo] = useState<{ is_rest_day: boolean; date: string; rest_day_id: number | null } | null>(null);
     const [templates, setTemplates] = useState<TemplateWorkout[]>([]);
     const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
@@ -48,10 +114,10 @@ export default function Home() {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [showCalendarModal, setShowCalendarModal] = useState(false);
-    const [todayStatus, setTodayStatus] = useState<any>(null);
-    const [isLoadingToday, setIsLoadingToday] = useState(true);
-    const [recoveryStatus, setRecoveryStatus] = useState<Record<string, MuscleRecovery>>({});
-    const [isLoadingRecovery, setIsLoadingRecovery] = useState(false);
+    const [todayStatus, setTodayStatus] = useState<any>(cachedTodayStatus);
+    const [isLoadingToday, setIsLoadingToday] = useState(!isInitialLoadComplete);
+    const [recoveryStatus, setRecoveryStatus] = useState<Record<string, MuscleRecovery>>(cachedRecoveryStatus || {});
+    const [isLoadingRecovery, setIsLoadingRecovery] = useState(!isInitialLoadComplete);
     const [refreshing, setRefreshing] = useState(false);
     const [showStartWorkoutMenu, setShowStartWorkoutMenu] = useState(false);
     const startWorkoutButtonRef = useRef<View>(null);
@@ -184,8 +250,10 @@ export default function Home() {
         try {
             const result = await checkToday();
             setTodayStatus(result);
+            setCachedTodayStatus(result);
         } catch (error) {
             setTodayStatus(null);
+            setCachedTodayStatus(null);
         } finally {
             setIsLoadingToday(false);
         }
@@ -197,9 +265,11 @@ export default function Home() {
             const result: RecoveryStatusResponse = await getRecoveryStatus();
             if (result?.recovery_status) {
                 setRecoveryStatus(result.recovery_status);
+                setCachedRecoveryStatus(result.recovery_status);
             }
         } catch (error) {
             setRecoveryStatus({});
+            setCachedRecoveryStatus({});
         } finally {
             setIsLoadingRecovery(false);
         }
@@ -245,17 +315,38 @@ export default function Home() {
 
     useFocusEffect(
         useCallback(() => {
-            fetchTodayStatus();
-            fetchActiveWorkout();
-            fetchTemplates();
-            fetchRecoveryStatus(); // Refresh recovery status when screen comes into focus
-            fetchSteps();
-            const now = new Date();
-            const currentWeek = getCurrentWeekNumber(now);
-            // Fetch current week for home screen
-            fetchCalendar(now.getFullYear(), undefined, currentWeek);
-            fetchCalendarStats(now.getFullYear(), undefined, currentWeek);
-        }, [fetchSteps])
+            // If initial load is complete, use cached data and only refresh if needed
+            if (isInitialLoadComplete) {
+                // Use cached data immediately
+                if (cachedTodayStatus) {
+                    setTodayStatus(cachedTodayStatus);
+                    setIsLoadingToday(false);
+                }
+                if (cachedRecoveryStatus) {
+                    setRecoveryStatus(cachedRecoveryStatus);
+                    setIsLoadingRecovery(false);
+                }
+                // Still fetch active workout and other data that changes frequently
+                fetchActiveWorkout();
+                fetchTemplates();
+                fetchSteps();
+            } else {
+                // Initial load - fetch everything
+                fetchTodayStatus();
+                fetchActiveWorkout();
+                fetchTemplates();
+                fetchRecoveryStatus();
+                fetchSteps();
+                const now = new Date();
+                const currentWeek = getCurrentWeekNumber(now);
+                fetchCalendar(now.getFullYear(), undefined, currentWeek);
+                fetchCalendarStats(now.getFullYear(), undefined, currentWeek);
+                // Mark as complete after a short delay to ensure data is loaded
+                setTimeout(() => {
+                    setInitialLoadComplete(true);
+                }, 100);
+            }
+        }, [isInitialLoadComplete, cachedTodayStatus, cachedRecoveryStatus, fetchSteps])
     );
 
     // Fetch month data when calendar modal opens
@@ -402,9 +493,7 @@ export default function Home() {
         return (
             <>
                  {isLoadingToday ? (
-                <View style={{ width: '100%', paddingVertical: 20 }}>
-                    <ActivityIndicator size="large" color="#0A84FF" />
-                </View>
+                <LoadingScreen type="workout" />
             ) : todayStatus && (
                 <View style={{ width: '100%' }}>
      
@@ -518,6 +607,19 @@ export default function Home() {
             </>
         );
     };
+
+    // Route to loading screen on initial mount if not loaded
+    useEffect(() => {
+        if (!isInitialLoadComplete) {
+            router.replace('/(home)/loadingHome');
+        }
+    }, [isInitialLoadComplete]);
+
+    // Don't render if initial load is not complete (will route to loading screen)
+    if (!isInitialLoadComplete) {
+        return null;
+    }
+
     return (
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.container, { paddingTop: insets.top }]}>
 
@@ -555,9 +657,7 @@ export default function Home() {
          {/* Muscle Recovery Status */}
          <View style={{ width: '100%' }}>
                 {isLoadingRecovery ? (
-                    <View style={styles.recoveryLoadingContainer}>
-                        <ActivityIndicator size="large" color="#0A84FF" />
-                    </View>
+                    <LoadingScreen type="recovery" />
                 ) : (
                     <TouchableOpacity 
                         style={styles.recoveryContainer}
@@ -1416,6 +1516,51 @@ const styles = StyleSheet.create({
     recoveryLoadingContainer: {
         padding: 24,
         alignItems: 'center',
+    },
+    loadingScreenContainer: {
+        width: '100%',
+        marginVertical: 12,
+    },
+    loadingCard: {
+        backgroundColor: '#1C1C1E',
+        borderRadius: 22,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 16,
+        elevation: 2,
+    },
+    loadingHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    loadingBadge: {
+        width: 100,
+        height: 24,
+        backgroundColor: '#2C2C2E',
+        borderRadius: 12,
+    },
+    loadingSpacer: {
+        width: 20,
+        height: 20,
+    },
+    loadingTitle: {
+        width: '80%',
+        height: 20,
+        backgroundColor: '#2C2C2E',
+        borderRadius: 4,
+        marginTop: 8,
+    },
+    loadingRecoveryItem: {
+        height: 60,
+        backgroundColor: '#2C2C2E',
+        borderRadius: 8,
+        marginBottom: 12,
     },
     recoveryContainer: {
         backgroundColor: '#1C1C1E',

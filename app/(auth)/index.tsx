@@ -1,11 +1,13 @@
 import { googleLogin, login } from '@/api/Auth';
-import { getAccessToken } from '@/api/Storage';
 import { Ionicons } from '@expo/vector-icons';
 import * as Google from 'expo-auth-session/providers/google';
+import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Web-compatible alert helper
 const showAlert = (title: string, message: string) => {
@@ -15,7 +17,6 @@ const showAlert = (title: string, message: string) => {
         Alert.alert(title, message);
     }
 };
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Handle deep linking for authentication
 WebBrowser.maybeCompleteAuthSession();
@@ -28,6 +29,30 @@ export default function AuthScreen() {
     const insets = useSafeAreaInsets();
     const tapCount = useRef(0);
     const tapTimeout = useRef<NodeJS.Timeout | null>(null);
+    
+    // Animation for login button section
+    const buttonHeight = useSharedValue(0);
+    const buttonOpacity = useSharedValue(0);
+    
+    useEffect(() => {
+        if (password.length > 0) {
+            buttonHeight.value = withTiming(70, {
+                duration: 500,
+            });
+            buttonOpacity.value = withTiming(1, { duration: 500 });
+        } else {
+            buttonHeight.value = withTiming(0, {
+                duration: 500,
+            });
+            buttonOpacity.value = withTiming(0, { duration: 500 });
+        }
+    }, [password.length]);
+    
+    const animatedButtonStyle = useAnimatedStyle(() => ({
+        height: buttonHeight.value,
+        opacity: buttonOpacity.value,
+        overflow: 'hidden',
+    }));
 
     // Google Auth Request
     const [request, response, promptAsync] = Google.useAuthRequest({
@@ -72,7 +97,7 @@ export default function AuthScreen() {
             // Reset counter after 2 seconds of no taps
             tapTimeout.current = setTimeout(() => {
                 tapCount.current = 0;
-            }, 2000);
+            }, 2000) as any;
         }
     };
 
@@ -133,15 +158,12 @@ export default function AuthScreen() {
                         onPress={handleUtrackTap}
                         activeOpacity={0.8}
                     >
-                        <Text style={styles.heroTitle}>Utrack</Text>
+                        <Text style={styles.heroTitle}>utrack</Text>
                     </TouchableOpacity>
                 </View>
+      
                 
-                <View style={styles.header}>
-                    <Text style={styles.title}>Log In</Text>
-                    <Text style={styles.subtitle}>Sign in to access your workouts</Text>
-                </View>
-                
+                <BlurView intensity={80} style={styles.blurView}>
                 <View style={styles.inputGroup}>
                     <TextInput 
                         style={styles.inputTop} 
@@ -154,35 +176,27 @@ export default function AuthScreen() {
                     />
                     <View style={styles.separator} />
                     <TextInput 
-                        style={styles.inputBottom} 
+                        style={styles.inputMiddle} 
                         placeholder="Password" 
                         placeholderTextColor="#8E8E93"
                         value={password} 
                         onChangeText={setPassword} 
                         secureTextEntry
                     />
+                   <Animated.View style={animatedButtonStyle}>
+                         <View style={styles.seperatorWide} />
+                         <TouchableOpacity style={styles.inputBottom}
+                             onPress={handleLogin}
+                             activeOpacity={0.8}
+                             disabled={loading || password.length === 0}
+                             >
+                             <Text style={styles.loginButtonText}>Log In</Text>
+                         </TouchableOpacity>
+                   </Animated.View>
+
                 </View>
 
-                <View style={styles.buttonContainer}>
-                    {loading ? (
-                        <ActivityIndicator size="large" color="#0A84FF" />
-                    ) : (
-                        <TouchableOpacity 
-                            style={styles.loginButton} 
-                            onPress={handleLogin}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={styles.loginButtonText}>Log In</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                {/* Divider */}
-                <View style={styles.dividerContainer}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>Or continue with</Text>
-                    <View style={styles.dividerLine} />
-                </View>
+        
 
                 {/* Social Buttons */}
                 <View style={styles.socialContainer}>
@@ -212,6 +226,7 @@ export default function AuthScreen() {
                        
                     </TouchableOpacity>
                 </View>
+                </BlurView>
                 
                 <View style={styles.footer}>
                     <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
@@ -233,12 +248,18 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        justifyContent: 'center',
         padding: 24,
     },
+    blurView: {
+        borderRadius: 22,
+        overflow: 'hidden',
+
+        padding: 12,
+    },
     heroSection: {
+        paddingTop: "20%",
+        paddingBottom: "5%",
         alignItems: 'center',
-        marginBottom: 48,
     },
     heroTitle: {
         fontSize: 48,
@@ -246,21 +267,7 @@ const styles = StyleSheet.create({
         color: '#0A84FF',
         letterSpacing: 2,
     },
-    header: {
-        marginBottom: 32,
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 34,
-        fontWeight: '700',
-        color: '#FFFFFF',
-        marginBottom: 16,
-    },
-    subtitle: {
-        fontSize: 17,
-        color: '#8E8E93',
-        textAlign: 'center',
-    },
+
     inputGroup: {
         backgroundColor: '#1C1C1E',
         borderRadius: 22,
@@ -281,54 +288,37 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         backgroundColor: '#1C1C1E',
     },
-    inputBottom: {
+    inputMiddle: {
         height: 56,
         paddingHorizontal: 16,
         fontSize: 17,
         color: '#FFFFFF',
         backgroundColor: '#1C1C1E',
     },
+    inputBottom: {
+        height: 70,
+        paddingHorizontal: 16,
+        fontSize: 17,
+        backgroundColor: '#151517',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     separator: {
         height: StyleSheet.hairlineWidth,
         backgroundColor: '#3C3C43',
         marginLeft: 16,
+        marginRight: 16,
     },
-    buttonContainer: {
-        marginBottom: 24,
-    },
-    loginButton: {
-        backgroundColor: '#0A84FF',
-        borderRadius: 22,
-        height: 56,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 16,
-        elevation: 2,
-    },
-    loginButtonText: {
-        color: '#FFFFFF',
-        fontSize: 17,
-        fontWeight: '400',
-    },
-    dividerContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 24,
-    },
-    dividerLine: {
-        flex: 1,
+    seperatorWide: {
         height: StyleSheet.hairlineWidth,
         backgroundColor: '#3C3C43',
     },
-    dividerText: {
-        color: '#8E8E93',
-        fontSize: 13,
-        marginHorizontal: 16,
-        fontWeight: '300',
+    loginButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '800',
     },
+
     socialContainer: {
         flexDirection: 'row',
         gap: 16,
