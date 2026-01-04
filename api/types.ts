@@ -310,6 +310,13 @@ export interface AvailableYearsResponse {
     years: number[];
 }
 
+// Check Today Response Types
+export type CheckTodayResponse =
+    | { workout_performed: false; active_workout: true } // Active Workout Exists
+    | { workout_performed: false; date: string; message: string } // No Workout Today
+    | { workout_performed: true; is_rest: true } // Rest Day Today
+    | { workout_performed: true; is_rest_day: false; date: string; workout: Workout; message: string }; // Regular Workout Performed Today
+
 // Muscle Recovery Types
 export interface MuscleRecovery {
     id: number | null;

@@ -32,7 +32,7 @@ const withNetworkSecurityConfig = (config) => {
         </trust-anchors>
     </base-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">192.168.1.7</domain>
+        <domain includeSubdomains="true">192.168.1.2</domain>
         <domain includeSubdomains="true">api.utrack.irfanemreutkan.com</domain>
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">10.0.2.2</domain>

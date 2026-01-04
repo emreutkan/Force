@@ -1,6 +1,6 @@
-import { checkToday, createWorkout, deleteWorkout, getActiveWorkout, getAvailableYears, getCalendar, getCalendarStats, getRecoveryStatus, getTemplateWorkouts, startTemplateWorkout } from '@/api/Workout';
 import { healthService } from '@/api/Health';
 import { CalendarDay, CalendarStats, MuscleRecovery, RecoveryStatusResponse, TemplateWorkout } from '@/api/types';
+import { checkToday, createWorkout, deleteWorkout, getActiveWorkout, getAvailableYears, getCalendar, getCalendarStats, getRecoveryStatus, getTemplateWorkouts, startTemplateWorkout } from '@/api/Workout';
 import { useWorkoutStore } from '@/state/userStore';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -424,7 +424,7 @@ export default function Home() {
                                         <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
                                     </View>
                                 </View>
-                                <Text style={styles.cardTitle} numberOfLines={1}>{todayStatus.active_workout_title || 'Active Workout'}</Text>
+                                <Text style={styles.cardTitle} numberOfLines={1}>{activeWorkout?.title}</Text>
                             </TouchableOpacity>
                         </ReanimatedSwipeable>
                     ) : todayStatus.workout_performed && todayStatus.is_rest ? (
@@ -457,7 +457,7 @@ export default function Home() {
                                     </View>
                                     <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
                                 </View>
-                                <Text style={styles.cardTitle} numberOfLines={1}>{todayStatus.workout.title || 'Workout'}</Text>
+                                <Text style={styles.cardTitle} numberOfLines={1}>{todayStatus.workout.title}</Text>
                                 {todayStatus.workout.calories_burned && parseFloat(String(todayStatus.workout.calories_burned)) > 0 && (
                                     <View style={styles.caloriesContainer}>
                                         <Ionicons name="flame" size={16} color="#FF9500" />
@@ -552,6 +552,63 @@ export default function Home() {
                     </View>
                 </View>
             )}
+         {/* Muscle Recovery Status */}
+         <View style={{ width: '100%' }}>
+                {isLoadingRecovery ? (
+                    <View style={styles.recoveryLoadingContainer}>
+                        <ActivityIndicator size="large" color="#0A84FF" />
+                    </View>
+                ) : (
+                    <TouchableOpacity 
+                        style={styles.recoveryContainer}
+                        onPress={() => router.push('/(recovery-status)')}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.recoveryHeader}>
+                            <Text style={styles.contentTitle}>Recovery Status</Text>
+                            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                        </View>
+                        {getRecoveringMuscles().length > 0 ? (
+                            <>
+                                {getRecoveringMuscles().map(([muscle, status]) => (
+                                    <View key={muscle} style={styles.recoveryItem}>
+                                        <View style={styles.recoveryItemLeft}>
+                                            <Text style={styles.recoveryMuscleName}>
+                                                {muscle.charAt(0).toUpperCase() + muscle.slice(1).replace('_', ' ')}
+                                            </Text>
+                                            <View style={styles.recoveryBarContainer}>
+                                                <View style={styles.recoveryBarBackground}>
+                                                    <View 
+                                                        style={[
+                                                            styles.recoveryBarFill,
+                                                            { 
+                                                                width: `${status.recovery_percentage}%`,
+                                                                backgroundColor: status.recovery_percentage >= 80 ? '#32D74B' : status.recovery_percentage >= 50 ? '#FF9F0A' : '#FF3B30'
+                                                            }
+                                                        ]}
+                                                    />
+                                                </View>
+                                            </View>
+                                        </View>
+                                        <View style={styles.recoveryItemRight}>
+                                            <Text style={styles.recoveryTime}>
+                                                {formatRecoveryTime(status.hours_until_recovery)}
+                                            </Text>
+                                            <Text style={styles.recoveryPercentage}>
+                                                {status.recovery_percentage.toFixed(0)}%
+                                            </Text>
+                                        </View>
+                                    </View>
+                                ))}
+                            </>
+                        ) : (
+                            <View style={styles.recoveryEmptyContainer}>
+                                <Text style={styles.recoveryEmptyText}>All muscles recovered</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                )}
+            </View>
 
             {/* Calendar Week View */}
             <View style={[styles.WeeklyActivityContainer]}>
@@ -615,67 +672,10 @@ export default function Home() {
 
             </View>
 
-            {/* Muscle Recovery Status */}
-            <View style={{ width: '100%', paddingTop: 12 }}>
-                {isLoadingRecovery ? (
-                    <View style={styles.recoveryLoadingContainer}>
-                        <ActivityIndicator size="small" color="#0A84FF" />
-                    </View>
-                ) : (
-                    <TouchableOpacity 
-                        style={styles.recoveryContainer}
-                        onPress={() => router.push('/(recovery-status)')}
-                        activeOpacity={0.8}
-                    >
-                        <View style={styles.recoveryHeader}>
-                            <Text style={styles.contentTitle}>Recovery Status</Text>
-                            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-                        </View>
-                        {getRecoveringMuscles().length > 0 ? (
-                            <>
-                                {getRecoveringMuscles().map(([muscle, status]) => (
-                                    <View key={muscle} style={styles.recoveryItem}>
-                                        <View style={styles.recoveryItemLeft}>
-                                            <Text style={styles.recoveryMuscleName}>
-                                                {muscle.charAt(0).toUpperCase() + muscle.slice(1).replace('_', ' ')}
-                                            </Text>
-                                            <View style={styles.recoveryBarContainer}>
-                                                <View style={styles.recoveryBarBackground}>
-                                                    <View 
-                                                        style={[
-                                                            styles.recoveryBarFill,
-                                                            { 
-                                                                width: `${status.recovery_percentage}%`,
-                                                                backgroundColor: status.recovery_percentage >= 80 ? '#32D74B' : status.recovery_percentage >= 50 ? '#FF9F0A' : '#FF3B30'
-                                                            }
-                                                        ]}
-                                                    />
-                                                </View>
-                                            </View>
-                                        </View>
-                                        <View style={styles.recoveryItemRight}>
-                                            <Text style={styles.recoveryTime}>
-                                                {formatRecoveryTime(status.hours_until_recovery)}
-                                            </Text>
-                                            <Text style={styles.recoveryPercentage}>
-                                                {status.recovery_percentage.toFixed(0)}%
-                                            </Text>
-                                        </View>
-                                    </View>
-                                ))}
-                            </>
-                        ) : (
-                            <View style={styles.recoveryEmptyContainer}>
-                                <Text style={styles.recoveryEmptyText}>All muscles recovered</Text>
-                            </View>
-                        )}
-                    </TouchableOpacity>
-                )}
-            </View>
-
+   
             <View style={{ width: '100%', paddingTop: 12 }}>
                 <View style={styles.contentContainer}>
-                    <Text style={styles.contentTitle}>Templates</Text>
+                    <Text style={styles.contentTitle}>Exercise Templates</Text>
                 </View>
                 <RNScrollView 
                     horizontal 
@@ -742,7 +742,7 @@ export default function Home() {
 
             {/* Bottom Navigation Bar */}
             {Platform.OS === 'ios' ? (
-                <BlurView intensity={80} tint="dark" style={[styles.bottomNavContainer, { bottom: insets.bottom + 12 }]}>
+                <BlurView intensity={80} tint="dark" style={[styles.bottomNavContainer, { bottom: insets.bottom}]}>
                     <TouchableOpacity 
                         onPress={() => router.push('/(workouts)')} 
                         style={styles.bottomNavButton}
@@ -1215,14 +1215,11 @@ const styles = StyleSheet.create({
     },
     bottomNavContainer: {
         position: 'absolute',
-        left: 16,
-        right: 16,
+
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
-        paddingVertical: 16,
-        paddingHorizontal: 16,
-        height: 64,
+        padding: 4,
         borderRadius: 22,
         overflow: 'hidden',
         zIndex: 10,

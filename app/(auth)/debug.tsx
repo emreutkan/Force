@@ -139,7 +139,7 @@ export default function DebugView() {
                         onPress={() => handleBackendChange('local')}
                     >
                         <Text style={[styles.backendButtonText, backend === 'local' && styles.backendButtonTextActive]}>
-                            Local (192.168.1.7:8000)
+                            Local (192.168.1.2:8000)
                         </Text>
                         {backend === 'local' && (
                             <Ionicons name="checkmark-circle" size={20} color="#0A84FF" />

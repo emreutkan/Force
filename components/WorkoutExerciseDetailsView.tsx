@@ -100,16 +100,9 @@ export default function WorkoutExerciseDetailsView({
     };
 
     const handleUpdateSet = async (setId: number, updatedSet: any) => {
-        // Update the exercises state with the updated set
-        const updatedExercises = exercises.map((exercise: any) => ({
-            ...exercise,
-            sets: exercise.sets?.map((set: any) => 
-                set.id === setId ? { ...set, ...updatedSet } : set
-            ) || []
-        }));
-        setExercises(updatedExercises);
-        
-        // Also call parent's onUpdateSet if provided (for active workout to refresh from backend)
+        // updatedSet is the API response from ExerciseCard, which contains the full updated set data
+        // Don't update local state optimistically - let the parent refresh handle it
+        // This ensures we always have the latest data from the backend
         if (onUpdateSet) {
             onUpdateSet(setId, updatedSet);
         }

@@ -1,11 +1,12 @@
 import { updateSet } from '@/api/Exercises';
 import { getRestTimerState, stopRestTimer } from '@/api/Workout';
+import { useActiveWorkoutStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
-
+import { useRestTimer } from './RestTimerBar';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IS_WEB_SMALL = Platform.OS === 'web' && SCREEN_WIDTH <= 750;
 
@@ -95,6 +96,8 @@ const formatValidationErrors = (validationErrors: any): string => {
     return messages.join('\n');
 };
 
+
+
 interface SwipeActionProps {
     progress: any;
     dragX: any;
@@ -128,7 +131,7 @@ const SwipeAction = ({ progress, dragX, onPress, drag, iconSize = 24, style, ico
 };
 
 // SetRow Component
-const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMode, swipeRef, onOpen, onClose, onUpdate }: any) => {
+const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMode, swipeRef, onOpen, onClose, onUpdate, onInputFocus, onShowStatistics, exerciseId }: any) => {
     const formatRestTimeForInput = (seconds: number) => {
         if (!seconds) return '';
         if (seconds < 60) return `${seconds}`;
@@ -147,18 +150,64 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
     const [localValues, setLocalValues] = useState(getInitialValues());
     const originalValuesRef = React.useRef(getInitialValues());
     const currentValuesRef = React.useRef(getInitialValues());
+    const isUpdatingRef = React.useRef(false); // Track if an update is in progress
 
     // Match AddSetRow visibility condition, but also allow editing when workout is active
     // AddSetRow is visible when: !isViewOnly && (!isLocked || isEditMode)
     // But we also want sets editable when workout is active (isActive = true)
     const isEditable = !isViewOnly && (!isLocked || isEditMode || isActive);
 
+    // Track the set ID to detect when we're looking at a different set
+    const previousSetIdRef = React.useRef(set.id);
+
+    // Only update when the set ID changes (different set) or when set values change AND we're not currently updating
     React.useEffect(() => {
+        // If we're in the middle of an update, don't reset the values
+        if (isUpdatingRef.current) {
+            return;
+        }
+
+        // If the set ID changed, this is a completely different set - reset everything
+        if (previousSetIdRef.current !== set.id) {
+            previousSetIdRef.current = set.id;
+            const newValues = getInitialValues();
+            setLocalValues(newValues);
+            originalValuesRef.current = newValues;
+            currentValuesRef.current = newValues;
+            return;
+        }
+
+        // Same set ID - check if backend values differ from what we have stored
         const newValues = getInitialValues();
-        setLocalValues(newValues);
-        originalValuesRef.current = newValues;
-        currentValuesRef.current = newValues;
-    }, [set.weight, set.reps, set.reps_in_reserve, set.rest_time_before_set]);
+        const currentStored = originalValuesRef.current;
+        
+        // Only update if backend values changed from what we last stored
+        // This means the backend was updated (maybe by another device or a refresh)
+        const backendChanged = 
+            newValues.weight !== currentStored.weight ||
+            newValues.reps !== currentStored.reps ||
+            newValues.rir !== currentStored.rir ||
+            newValues.restTime !== currentStored.restTime;
+
+        if (backendChanged) {
+            // Backend has new values - update refs but preserve user's current edits if they differ
+            // Only update localValues if user hasn't made changes (local matches original)
+            const localMatchesOriginal = 
+                localValues.weight === currentStored.weight &&
+                localValues.reps === currentStored.reps &&
+                localValues.rir === currentStored.rir &&
+                localValues.restTime === currentStored.restTime;
+
+            if (localMatchesOriginal) {
+                // User hasn't edited, safe to update from backend
+                setLocalValues(newValues);
+            }
+            
+            // Always update refs to reflect backend state
+            originalValuesRef.current = newValues;
+            currentValuesRef.current = newValues;
+        }
+    }, [set.id, set.weight, set.reps, set.reps_in_reserve, set.rest_time_before_set]);
 
     const parseRestTime = (input: string): number => {
         if (!input) return 0;
@@ -209,9 +258,29 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
         if (Object.keys(updateData).length > 0) {
             if (onUpdate) {
                 console.log('Calling onUpdate with setId:', set.id, 'updateData:', updateData);
-                onUpdate(set.id, updateData);
-                // Update original values after successful update
+                // Mark that we're updating to prevent useEffect from resetting values
+                isUpdatingRef.current = true;
+                
+                // Update originalValuesRef immediately to reflect the change we're about to save
+                // This prevents the useEffect from resetting values when the workout refreshes
                 originalValuesRef.current = { ...currentValuesRef.current };
+                
+                // Call onUpdate - it's async, and when it completes, the workout will refresh
+                // Wrap in Promise.resolve to handle both sync and async returns
+                Promise.resolve(onUpdate(set.id, updateData)).then(() => {
+                    // Reset the flag after a delay to allow the workout refresh to complete
+                    setTimeout(() => {
+                        isUpdatingRef.current = false;
+                    }, 1000);
+                }).catch((error) => {
+                    console.error('Update failed:', error);
+                    // Revert originalValuesRef if update failed - restore from set prop
+                    const revertedValues = getInitialValues();
+                    originalValuesRef.current = revertedValues;
+                    currentValuesRef.current = revertedValues;
+                    setLocalValues(revertedValues);
+                    isUpdatingRef.current = false;
+                });
             } else {
                 console.warn('onUpdate is not defined! Set updates will not be saved.');
             }
@@ -230,6 +299,20 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
             iconName="trash-outline"
         />
     );
+
+    const renderLeftActions = (progress: any, dragX: any) => {
+        if (!onShowStatistics || !exerciseId) return null;
+        return (
+            <SwipeAction
+                progress={progress}
+                dragX={dragX}
+                onPress={() => onShowStatistics(exerciseId)}
+                iconSize={20}
+                style={styles.analysisSetAction}
+                iconName="stats-chart-outline"
+            />
+        );
+    };
 
     const formatRestTime = (seconds: number) => {
         if (!seconds) return '-';
@@ -252,17 +335,41 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
             ref={swipeRef}
             onSwipeableWillOpen={onOpen}
             onSwipeableWillClose={onClose}
+            renderLeftActions={isViewOnly || isLocked ? undefined : renderLeftActions}
             renderRightActions={isViewOnly || isLocked ? undefined : renderRightActions}
             containerStyle={{ marginBottom: 0 }}
             enabled={!isViewOnly && !isLocked}
+            overshootLeft={false}
             overshootRight={false}
             friction={2}
+            leftThreshold={40}
             rightThreshold={40}
         >
             <View style={styles.setRow}>
                 <Text style={[styles.setText, {maxWidth: 30}, set.is_warmup && { color: '#FF9F0A', fontWeight: 'bold' }]}>
                     {set.is_warmup ? 'W' : index + 1}
                 </Text>
+                {isEditable ? (
+                    <TextInput
+                        style={[styles.setInput]}
+                        value={localValues.restTime}
+                        onChangeText={(value) => {
+                            setLocalValues(prev => ({ ...prev, restTime: value }));
+                            currentValuesRef.current.restTime = value;
+                        }}
+                        onFocus={() => {
+                            if (onInputFocus) {
+                                onInputFocus();
+                            }
+                        }}
+                        onBlur={() => handleBlur('restTime')}
+                        keyboardType="numbers-and-punctuation"
+                        placeholder="Rest"
+                        placeholderTextColor="#8E8E93"
+                    />
+                ) : (
+                    <Text style={[styles.setText, {}]}>{formatRestTime(set.rest_time_before_set)}</Text>
+                )}
                 {isEditable ? (
                     <TextInput
                         style={[styles.setInput]}
@@ -283,6 +390,11 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
                                 currentValuesRef.current.weight = '';
                             }
                         }}
+                        onFocus={() => {
+                            if (onInputFocus) {
+                                onInputFocus();
+                            }
+                        }}
                         onBlur={() => handleBlur('weight')}
                         keyboardType="numeric"
                         placeholder="kg"
@@ -298,6 +410,11 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
                         onChangeText={(value) => {
                             setLocalValues(prev => ({ ...prev, reps: value }));
                             currentValuesRef.current.reps = value;
+                        }}
+                        onFocus={() => {
+                            if (onInputFocus) {
+                                onInputFocus();
+                            }
                         }}
                         onBlur={() => handleBlur('reps')}
                         keyboardType="numeric"
@@ -315,6 +432,11 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
                             setLocalValues(prev => ({ ...prev, rir: value }));
                             currentValuesRef.current.rir = value;
                         }}
+                        onFocus={() => {
+                            if (onInputFocus) {
+                                onInputFocus();
+                            }
+                        }}
                         onBlur={() => handleBlur('rir')}
                         keyboardType="numeric"
                         placeholder="RIR"
@@ -322,22 +444,6 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
                     />
                 ) : (
                     <Text style={[styles.setText, {}]}>{set.reps_in_reserve != null ? set.reps_in_reserve.toString() : '-'}</Text>
-                )}
-                {isEditable ? (
-                    <TextInput
-                        style={[styles.setInput]}
-                        value={localValues.restTime}
-                        onChangeText={(value) => {
-                            setLocalValues(prev => ({ ...prev, restTime: value }));
-                            currentValuesRef.current.restTime = value;
-                        }}
-                        onBlur={() => handleBlur('restTime')}
-                        keyboardType="numbers-and-punctuation"
-                        placeholder="Rest"
-                        placeholderTextColor="#8E8E93"
-                    />
-                ) : (
-                    <Text style={[styles.setText, {}]}>{formatRestTime(set.rest_time_before_set)}</Text>
                 )}
             </View>
         </ReanimatedSwipeable>
@@ -491,6 +597,22 @@ const RestTimePicker = ({ value, onValueChange, onFocus, editable = true }: { va
     const [tempMinutes, setTempMinutes] = useState(value?.minutes || 0);
     const [tempSeconds, setTempSeconds] = useState(value?.seconds || 0);
     
+    // Get rest timer values from the hook
+    const { lastSetTimestamp, lastExerciseCategory } = useActiveWorkoutStore();
+    const { timerText } = useRestTimer(lastSetTimestamp, lastExerciseCategory);
+
+
+    
+    useEffect(() => {
+        if (value) {
+            setTempMinutes(value.minutes);
+            setTempSeconds(value.seconds);
+        } else {
+            setTempMinutes(0);
+            setTempSeconds(0);
+        }
+    }, [value]);
+    
     const minuteOptions = Array.from({ length: 11 }, (_, i) => i); // 0-10
     const secondOptions = Array.from({ length: 61 }, (_, i) => i); // 0-60
 
@@ -502,7 +624,7 @@ const RestTimePicker = ({ value, onValueChange, onFocus, editable = true }: { va
         return (
             <View style={[styles.setInput, styles.addSetInput, styles.pickerInput, { opacity: 0.6 }]}>
                 <Text style={[styles.setText, { color: value ? '#FFFFFF' : '#8E8E93' }]}>
-                    {value ? formatRestTime(value.minutes, value.seconds) : 'Rest (before starting set)'}
+                    {value ? formatRestTime(value.minutes, value.seconds) : timerText}
                 </Text>
             </View>
         );
@@ -517,10 +639,13 @@ const RestTimePicker = ({ value, onValueChange, onFocus, editable = true }: { va
                     setTempSeconds(value?.seconds || 0);
                     setShowPicker(true);
                     onFocus();
+                    console.log('value', value);
+                    console.log('tempMinutes', tempMinutes);
+                    console.log('tempSeconds', tempSeconds);
                 }}
             >
                 <Text style={[styles.setText, { color: value ? '#FFFFFF' : '#8E8E93' }]}>
-                    {value ? formatRestTime(value.minutes, value.seconds) : 'Rest (before starting set)'}
+                    {value ? formatRestTime(value.minutes, value.seconds) : timerText}
                 </Text>
             </TouchableOpacity>
             <Modal
@@ -755,7 +880,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
 
                 {/* Rest Time - Always visible, editable unless tracking */}
                 <RestTimePicker
-                    value={inputs.restTime}
+                    value={inputs.restTime }
                     onValueChange={(value) => setInputs(p => ({ ...p, restTime: value }))}
                     onFocus={onFocus}
                     editable={!isTracking}
@@ -1067,6 +1192,12 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
                                     swipeRef={(ref: any) => swipeControl.register(setKey, ref)}
                                     onOpen={() => swipeControl.onOpen(setKey)}
                                     onClose={() => swipeControl.onClose(setKey)}
+                                    onInputFocus={() => {
+                                        swipeControl.closeAll();
+                                        onInputFocus?.();
+                                    }}
+                                    onShowStatistics={onShowStatistics}
+                                    exerciseId={exercise.id}
                                 />
                             );
                         })}
@@ -1469,6 +1600,14 @@ const styles = StyleSheet.create({
     },
     deleteSetAction: {
         backgroundColor: '#FF3B30',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 60,
+        height: '100%',
+        borderRadius: 0,
+    },
+    analysisSetAction: {
+        backgroundColor: '#6366F1',
         justifyContent: 'center',
         alignItems: 'center',
         width: 60,

@@ -37,26 +37,25 @@ const getRestStatus = (elapsed: number, category: string) => {
     }
 };
 
-interface RestTimerBarProps {
-    lastSetTimestamp: number | null;
-    category?: string;
-}
-
-export default function RestTimerBar({ lastSetTimestamp, category }: RestTimerBarProps) {
+// Custom hook to calculate rest timer values - can be used in any component
+export const useRestTimer = (lastSetTimestamp: number | null, category?: string) => {
     const [progress, setProgress] = useState(0);
     const [timerText, setTimerText] = useState('');
     const [status, setStatus] = useState({ text: 'Rest', color: '#FF3B30', goal: 90, maxGoal: 180 });
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
     useEffect(() => {
         if (!lastSetTimestamp) {
             setProgress(0);
             setTimerText('');
+            setElapsedSeconds(0);
             return;
         }
 
         const update = () => {
             const now = Date.now();
             const elapsed = Math.max(0, Math.floor((now - lastSetTimestamp) / 1000));
+            setElapsedSeconds(elapsed);
             
             // Get current status to determine goals
             const currentStatus = getRestStatus(elapsed, category || 'isolation');
@@ -76,6 +75,22 @@ export default function RestTimerBar({ lastSetTimestamp, category }: RestTimerBa
         const interval = setInterval(update, 1000);
         return () => clearInterval(interval);
     }, [lastSetTimestamp, category]);
+
+    return {
+        timerText,
+        progress,
+        status,
+        elapsedSeconds
+    };
+};
+
+interface RestTimerBarProps {
+    lastSetTimestamp: number | null;
+    category?: string;
+}
+
+export default function RestTimerBar({ lastSetTimestamp, category }: RestTimerBarProps) {
+    const { timerText, progress, status } = useRestTimer(lastSetTimestamp, category);
 
     if (!lastSetTimestamp) return null;
 

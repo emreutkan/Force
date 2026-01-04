@@ -415,7 +415,7 @@ export default function ActiveWorkoutScreen() {
             />
             {renderAddExerciseModal()}
             {Platform.OS === 'ios' ? (
-                <BlurView intensity={80} tint="dark" style={[styles.WorkoutFooter, {paddingBottom: insets.bottom}]}>
+                <BlurView intensity={80} tint="dark" style={[styles.WorkoutFooter, {marginBottom: insets.bottom}]}>
                     <View style={styles.footerContent}>
                         <TouchableOpacity 
                             style={styles.completeWorkoutButton}
