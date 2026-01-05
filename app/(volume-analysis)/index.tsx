@@ -210,16 +210,16 @@ export default function VolumeAnalysisScreen() {
             />
 
             {isLoading ? (
-                <View style={styles.centerFill}>
+                <View style={[styles.centerFill, { marginTop: 58 }]}>
                     <ActivityIndicator size="large" color="#0A84FF" />
                 </View>
             ) : !analysis ? (
-                <View style={styles.centerFill}>
+                <View style={[styles.centerFill, { marginTop: 58 }]}>
                     <Ionicons name="stats-chart" size={48} color="#2C2C2E" />
                     <Text style={styles.emptyText}>No data found</Text>
                 </View>
             ) : (
-                <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}>
+                <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20, marginTop: 58 }]}>
                     
                     {/* Overview Chips */}
                     <View style={styles.statsRow}>

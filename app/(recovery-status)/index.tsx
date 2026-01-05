@@ -174,12 +174,12 @@ export default function RecoveryStatusScreen() {
             <UnifiedHeader title="Recovery Status" />
 
             {isLoading ? (
-                <View style={styles.center}>
+                <View style={[styles.center, { marginTop: 58 }]}>
                     <ActivityIndicator size="large" color="#0A84FF" />
                 </View>
             ) : (
                 <ScrollView 
-                    contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 20 }]}
+                    contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 20, marginTop: 58 }]}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0A84FF" />}
                 >
                     {/* Summary Dashboard */}

@@ -1,6 +1,6 @@
 import { healthService } from '@/api/Health';
-import { CalendarDay, CalendarStats, MuscleRecovery, TemplateWorkout } from '@/api/types';
-import { checkToday, createWorkout, deleteWorkout, getActiveWorkout, getCalendar, getCalendarStats, getRecoveryStatus, getTemplateWorkouts, startTemplateWorkout } from '@/api/Workout';
+import { CalendarDay, CalendarStats, CheckTodayResponse, MuscleRecovery, TemplateWorkout, Workout } from '@/api/types';
+import { checkToday, createWorkout, deleteWorkout, getActiveWorkout, getCalendar, getCalendarStats, getRecoveryStatus, getTemplateWorkouts, getWorkouts, startTemplateWorkout } from '@/api/Workout';
 import { useHomeLoadingStore, useWorkoutStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -22,14 +22,19 @@ import {
     View
 } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, { Easing, Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, Extrapolation, interpolate, SharedValue, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ============================================================================
 // 1. ANIMATED COMPONENTS
 // ============================================================================
 
-const SwipeAction = ({ progress, onPress }: any) => {
+interface SwipeActionProps {
+    progress: SharedValue<number>;
+    onPress: () => void;
+}
+
+const SwipeAction = ({ progress, onPress }: SwipeActionProps) => {
     const animatedStyle = useAnimatedStyle(() => {
         const scale = interpolate(progress.value, [0, 1], [0.5, 1], Extrapolation.CLAMP);
         return { transform: [{ scale }] };
@@ -82,8 +87,8 @@ export default function Home() {
     } = useHomeLoadingStore();
 
     // Data State
-    const [todayStatus, setTodayStatus] = useState<any>(cachedTodayStatus);
-    const [activeWorkout, setActiveWorkout] = useState<any>(null);
+    const [todayStatus, setTodayStatus] = useState<CheckTodayResponse | null>(cachedTodayStatus);
+    const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
     const [recoveryStatus, setRecoveryStatus] = useState<Record<string, MuscleRecovery>>(cachedRecoveryStatus || {});
     const [templates, setTemplates] = useState<TemplateWorkout[]>([]);
     const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
@@ -293,6 +298,58 @@ export default function Home() {
         ]);
     };
 
+    const handleCalendarDayClick = async (dateStr: string, dayData: CalendarDay | undefined) => {
+        if (!dayData) return;
+
+        // If it's a rest day, show delete alert
+        if (dayData.is_rest_day) {
+            try {
+                // Fetch workouts for this date to find the rest day workout ID
+                const workoutsResponse = await getWorkouts();
+                if (workoutsResponse && 'results' in workoutsResponse) {
+                    const restDayWorkout = workoutsResponse.results.find((w: Workout) => {
+                        const workoutDate = new Date(w.datetime).toISOString().split('T')[0];
+                        return workoutDate === dateStr && w.is_rest_day;
+                    });
+
+                    if (restDayWorkout) {
+                        Alert.alert("Delete Rest Day", "Do you want to delete this rest day?", [
+                            { text: "Cancel", style: "cancel" },
+                            { text: "Delete", style: "destructive", onPress: async () => {
+                                await deleteWorkout(restDayWorkout.id);
+                                fetchAllData();
+                                fetchCalendar(selectedYear, selectedMonth);
+                                fetchCalendarStats(selectedYear, selectedMonth);
+                            }}
+                        ]);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching workout for rest day:", error);
+            }
+            return;
+        }
+
+        // If it's a regular workout, navigate to workout detail
+        if (dayData.has_workout) {
+            try {
+                const workoutsResponse = await getWorkouts();
+                if (workoutsResponse && 'results' in workoutsResponse) {
+                    const workout = workoutsResponse.results.find((w: Workout) => {
+                        const workoutDate = new Date(w.datetime).toISOString().split('T')[0];
+                        return workoutDate === dateStr && !w.is_rest_day;
+                    });
+
+                    if (workout) {
+                        router.push(`/(workouts)/${workout.id}`);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching workout:", error);
+            }
+        }
+    };
+
     // ========================================================================
     // 5. RENDER HELPERS
     // ========================================================================
@@ -320,7 +377,7 @@ export default function Home() {
         }
 
         // Check for rest day first (priority)
-        if (todayStatus?.workout?.is_rest_day) {
+        if (todayStatus && 'workout' in todayStatus && todayStatus.workout && 'is_rest_day' in todayStatus.workout && todayStatus.workout.is_rest_day) {
             const w = todayStatus.workout;
             return (
                 <ReanimatedSwipeable renderRightActions={(p, d) => <SwipeAction progress={p} onPress={() => handleDeleteWorkout(w.id, false)} />}>
@@ -332,30 +389,25 @@ export default function Home() {
                             </View>
                         </View>
                         <Text style={styles.activeTitle}>{w.title}</Text>
-                        <Text style={styles.activeSubtext}>Rest Day Logged</Text>
                     </TouchableOpacity>
                 </ReanimatedSwipeable>
             );
         }
         
         // Also check if rest day is set directly on todayStatus (fallback)
-        if (todayStatus?.is_rest_day) {
+        if (todayStatus && 'is_rest' in todayStatus && todayStatus.is_rest) {
             return (
                 <View style={styles.completedCard}>
-                    <View style={styles.cardHeader}>
                         <View style={[styles.liveBadge, styles.completedBadge]}>
                             <Ionicons name="cafe" size={12} color="#8B5CF6" />
                             <Text style={styles.completedText}>REST DAY</Text>
                         </View>
-                    </View>
-                    <Text style={styles.activeTitle}>Rest Day</Text>
-                    <Text style={styles.activeSubtext}>Rest Day Logged</Text>
                 </View>
             );
         }
 
         // Check for completed workout
-        if (todayStatus?.workout_performed && todayStatus?.workout) {
+        if (todayStatus && 'workout_performed' in todayStatus && todayStatus.workout_performed && 'workout' in todayStatus && todayStatus.workout) {
             const w = todayStatus.workout;
             return (
                 <ReanimatedSwipeable renderRightActions={(p, d) => <SwipeAction progress={p} onPress={() => handleDeleteWorkout(w.id, false)} />}>
@@ -365,7 +417,7 @@ export default function Home() {
                                 <Ionicons name="checkmark" size={12} color="#8B5CF6" />
                                 <Text style={styles.completedText}>COMPLETED</Text>
                             </View>
-                            <Text style={styles.timerText}>{w.calories_burned ? `${Math.round(w.calories_burned)} kcal` : ''}</Text>
+                            <Text style={styles.timerText}>{w.calories_burned ? `${Math.round(Number(w.calories_burned))} kcal` : ''}</Text>
                         </View>
                         <Text style={styles.activeTitle}>{w.title}</Text>
                     </TouchableOpacity>
@@ -758,6 +810,8 @@ export default function Home() {
                                                     !isCurrentMonth && styles.calendarDayCellOtherMonth,
                                                     isToday && styles.calendarDayCellToday
                                                 ]}
+                                                onPress={() => handleCalendarDayClick(dateStr, dayData)}
+                                                activeOpacity={0.7}
                                             >
                                                 <Text style={[
                                                     styles.calendarDayNumber,

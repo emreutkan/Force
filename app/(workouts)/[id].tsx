@@ -191,22 +191,24 @@ export default function WorkoutDetailScreen() {
             />
             
             {isLoading ? (
-                <View style={styles.loadingContainer}>
+                <View style={[styles.loadingContainer, { marginTop: 58 }]}>
                     <ActivityIndicator size="large" color="#0A84FF" />
                 </View>
             ) : (
-                <WorkoutDetailView 
-                    workout={workout} 
-                    elapsedTime={formatDuration(workout?.duration || 0)} 
-                    isActive={false}
-                    isEditMode={isEditMode}
-                    isViewOnly={!isEditMode}
-                    onAddExercise={isEditMode ? () => setIsSearchVisible(true) : undefined}
-                    onRemoveExercise={isEditMode ? handleRemoveExercise : undefined}
-                    onAddSet={isEditMode ? handleAddSet : undefined}
-                    onDeleteSet={isEditMode ? handleDeleteSet : undefined}
-                    onShowStatistics={(exerciseId: number) => router.push(`/(exercise-statistics)/${exerciseId}`)}
-                />
+                <View style={{ marginTop: 58, flex: 1 }}>
+                    <WorkoutDetailView 
+                        workout={workout} 
+                        elapsedTime={formatDuration(workout?.duration || 0)} 
+                        isActive={false}
+                        isEditMode={isEditMode}
+                        isViewOnly={!isEditMode}
+                        onAddExercise={isEditMode ? () => setIsSearchVisible(true) : undefined}
+                        onRemoveExercise={isEditMode ? handleRemoveExercise : undefined}
+                        onAddSet={isEditMode ? handleAddSet : undefined}
+                        onDeleteSet={isEditMode ? handleDeleteSet : undefined}
+                        onShowStatistics={(exerciseId: number) => router.push(`/(exercise-statistics)/${exerciseId}`)}
+                    />
+                </View>
             )}
 
             <ExerciseSearchModal
