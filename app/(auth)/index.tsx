@@ -29,6 +29,7 @@ export default function AuthScreen() {
     const [currentStep, setCurrentStep] = useState<'email' | 'name' | 'password'>('email');
     const [isRegistering, setIsRegistering] = useState(false);
     
+
     // Validation states
     const [emailValidation, setEmailValidation] = useState<CheckEmailResponse | null>(null);
     const [nameValidation, setNameValidation] = useState<CheckNameResponse | null>(null);
@@ -70,6 +71,13 @@ export default function AuthScreen() {
     
     const subtitlePhrases = ['by Discipline', 'with Science', 'for Excellence', 'for You'];    
     
+    const setEmailValue = (text: string) => {
+        if (text.length > 0) {
+            setEmailValidation(null);
+        }
+        setEmail(text);
+        console.log(email);
+    };
     // Email step: show continue/register button when email is entered
     useEffect(() => {
         if (currentStep === 'email') {
@@ -437,7 +445,7 @@ export default function AuthScreen() {
                                 placeholder="Email" 
                                 placeholderTextColor="#8E8E93"
                                 value={email} 
-                                onChangeText={setEmail}
+                                onChangeText={setEmailValue}
                                 autoCapitalize="none"
                                 keyboardType="email-address"
                                 returnKeyType="next"
@@ -872,6 +880,10 @@ const styles = StyleSheet.create({
     inputError: {
         borderColor: '#FF3B30',
         borderWidth: 1,
+        borderTopLeftRadius: 22,
+        borderTopRightRadius: 22,
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
     },
     errorContainer: {
         paddingHorizontal: 16,
