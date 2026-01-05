@@ -117,19 +117,17 @@ const SwipeAction = ({ progress, dragX, onPress, drag, iconSize = 24, style, ico
     });
 
     return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 8 }}>
-            <TouchableOpacity 
-                onPress={onPress} 
-                activeOpacity={0.7} 
-                style={style}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                delayPressIn={0}
-            >
-                <Animated.View style={[animatedStyle, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
-                    <Ionicons name={iconName} size={iconSize} color={color} />
-                </Animated.View>
-            </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+            onPress={onPress} 
+            activeOpacity={0.7} 
+            style={style}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            delayPressIn={0}
+        >
+            <Animated.View style={[animatedStyle, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
+                <Ionicons name={iconName} size={iconSize} color={color} />
+            </Animated.View>
+        </TouchableOpacity>
     );
 };
 
@@ -351,15 +349,8 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
         if (!weight && weight !== 0) return '-';
         const w = Number(weight);
         if (isNaN(w)) return '-';
-        // Check if it's effectively a whole number (no meaningful decimal part)
-        const decimalPart = Math.abs(w % 1);
-        if (decimalPart < 0.0000001) {
-            return Math.round(w).toString();
-        }
-        // Format to 2 decimal places and remove trailing zeros
-        // parseFloat automatically removes trailing zeros
-        const formatted = parseFloat(w.toFixed(2));
-        return formatted.toString();
+        if (Math.abs(w % 1) < 0.0000001) return Math.round(w).toString();
+        return parseFloat(w.toFixed(2)).toString();
     };
 
     return (
@@ -1768,40 +1759,25 @@ const styles = StyleSheet.create({
         backgroundColor: '#FF3B30',
         justifyContent: 'center',
         alignItems: 'center',
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 4,
+        width: 60,
+        height: '100%',
+        borderRadius: 0,
     },
     analysisSetAction: {
-        backgroundColor: '#007AFF',
+        backgroundColor: '#48484A',
         justifyContent: 'center',
         alignItems: 'center',
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 4,
+        width: 60,
+        height: '100%',
+        borderRadius: 0,
     },
     insightsSetAction: {
-        backgroundColor: '#FF9500',
+        backgroundColor: '#FF9F0A',
         justifyContent: 'center',
         alignItems: 'center',
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 4,
+        width: 60,
+        height: '100%',
+        borderRadius: 0,
     },
     addSetButton: {
         marginTop: 12,
@@ -2012,17 +1988,13 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     lockAction: {
-        backgroundColor: '#007AFF',
+        backgroundColor: '#0A84FF',
         justifyContent: 'center',
         alignItems: 'center',
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 4,
+        width: 80,
+        height: '100%',
+        borderRadius: 22,
+        marginRight: 8,
     },
     insightsModalOverlay: {
         flex: 1,
