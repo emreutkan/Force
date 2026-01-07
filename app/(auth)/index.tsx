@@ -61,7 +61,7 @@ export default function AuthScreen() {
     // Animation for back button (hide when typing)
     const backButtonWidth = useSharedValue(40);
     const backButtonOpacity = useSharedValue(1);
-    const backButtonMarginRight = useSharedValue(2);    
+    const backButtonMarginRight = useSharedValue(2);
     
     const setEmailValue = (text: string) => {
         if (text.length > 0) {
@@ -396,19 +396,19 @@ export default function AuthScreen() {
 
                 <View style={styles.middleSection}>
                     <View style={styles.titleContainer}>
-                        <TouchableOpacity 
-                            onPress={handleForceTap}
-                            activeOpacity={0.8}
-                        >
+                    <TouchableOpacity 
+                        onPress={handleForceTap}
+                        activeOpacity={0.8}
+                    >
                             <Text style={typographyStyles.hero}>
                                 FORCE
                                 <Text style={{ color: theme.colors.status.rest }}>.</Text>
                             </Text>
-                        </TouchableOpacity>
+                    </TouchableOpacity>
                     </View>
                     <Text style={styles.heroSubtitle}>
                         {currentStep === 'password' ? 'BUILT FOR YOU' : 'BUILT FOR EXCELLENCE'}
-                    </Text>
+                            </Text>
                 </View>
       
                 <View style={styles.contentContainer}>
@@ -418,25 +418,25 @@ export default function AuthScreen() {
                         <>
                             <View style={[styles.inputWrapper, emailValidation && !emailValidation.is_valid && styles.inputWrapperError]}>
                                 <Ionicons name="mail-outline" size={20} color="#FFFFFF" style={styles.inputIcon} />
-                                <TextInput 
+                            <TextInput 
                                     style={styles.inputTop} 
-                                    placeholder="Email" 
-                                    placeholderTextColor="#8E8E93"
-                                    value={email} 
-                                    onChangeText={setEmailValue}
-                                    autoCapitalize="none"
-                                    keyboardType="email-address"
-                                    returnKeyType="next"
-                                    onSubmitEditing={() => {
-                                        if (email.length > 0 && (!emailValidation || emailValidation.is_valid)) {
-                                            if (isRegistering) {
-                                                handleStartRegister();
-                                            } else {
-                                                handleContinueFromEmail();
-                                            }
+                                placeholder="Email" 
+                                placeholderTextColor="#8E8E93"
+                                value={email} 
+                                onChangeText={setEmailValue}
+                                autoCapitalize="none"
+                                keyboardType="email-address"
+                                returnKeyType="next"
+                                onSubmitEditing={() => {
+                                    if (email.length > 0 && (!emailValidation || emailValidation.is_valid)) {
+                                        if (isRegistering) {
+                                            handleStartRegister();
+                                        } else {
+                                            handleContinueFromEmail();
                                         }
-                                    }}
-                                />
+                                    }
+                                }}
+                            />
                             </View>
                             <Animated.View style={animatedEmailButtonStyle}>
                                 <View style={styles.seperatorWide} />
@@ -550,24 +550,24 @@ export default function AuthScreen() {
                                 </Animated.View>
                                 <View style={styles.inputWrapper}>
                                     <Ionicons name="lock-closed-outline" size={20} color="#FFFFFF" style={styles.inputIcon} />
-                                    <TextInput 
-                                        style={styles.inputTop} 
-                                        placeholder="Password" 
-                                        placeholderTextColor="#8E8E93"
-                                        value={password} 
-                                        onChangeText={setPassword} 
-                                        secureTextEntry
-                                        returnKeyType={isRegistering ? "done" : "go"}
-                                        onSubmitEditing={() => {
-                                            if (password.length > 0) {
-                                                if (isRegistering) {
-                                                    handleRegister();
-                                                } else {
-                                                    handleLogin();
-                                                }
+                                <TextInput 
+                                    style={styles.inputTop} 
+                                    placeholder="Password" 
+                                    placeholderTextColor="#8E8E93"
+                                    value={password} 
+                                    onChangeText={setPassword} 
+                                    secureTextEntry
+                                    returnKeyType={isRegistering ? "done" : "go"}
+                                    onSubmitEditing={() => {
+                                        if (password.length > 0) {
+                                            if (isRegistering) {
+                                                handleRegister();
+                                            } else {
+                                                handleLogin();
                                             }
-                                        }}
-                                    />
+                                        }
+                                    }}
+                                />
                                 </View>
                             </View>
                             {validating && currentStep === 'password' && (
@@ -595,21 +595,21 @@ export default function AuthScreen() {
                                         )}
                                     </TouchableOpacity>
                                 ) : (
-                                    <TouchableOpacity 
+                                        <TouchableOpacity 
                                         style={[styles.inputBottom, styles.inputBottomPrimary]}
-                                        onPress={(e) => {
-                                            e.preventDefault();
-                                            handleLogin();
-                                        }}
-                                        activeOpacity={0.8}
-                                        disabled={loading || password.length === 0}
-                                    >
-                                        {loading ? (
-                                            <ActivityIndicator size="small" color="#FFFFFF" />
-                                        ) : (
+                                            onPress={(e) => {
+                                                e.preventDefault();
+                                                handleLogin();
+                                            }}
+                                            activeOpacity={0.8}
+                                            disabled={loading || password.length === 0}
+                                        >
+                                            {loading ? (
+                                                <ActivityIndicator size="small" color="#FFFFFF" />
+                                            ) : (
                                             <Text style={[styles.splitButtonText, styles.splitButtonTextPrimary]}>LOGIN</Text>
-                                        )}
-                                    </TouchableOpacity>
+                                            )}
+                                        </TouchableOpacity>
                                 )}
                             </Animated.View>
                         </>
@@ -618,8 +618,8 @@ export default function AuthScreen() {
 
                 <Animated.View style={animatedSocialButtonsStyle}>
                     <View style={styles.socialContainer}>
-                        <TouchableOpacity 
-                            style={styles.socialButton} 
+                            <TouchableOpacity 
+                                style={styles.socialButton} 
                             onPress={() => handleSocialLogin('Google')}
                             activeOpacity={0.8}
                             disabled={!request}
@@ -648,7 +648,7 @@ export default function AuthScreen() {
                 </Animated.View>
                 </View>
 
- 
+         
             </KeyboardAvoidingView>
         </View>
     );

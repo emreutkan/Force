@@ -1,12 +1,13 @@
 import { updateExerciseOrder } from '@/api/Exercises';
 import { theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useRef, useState } from 'react';
-import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ExerciseCard } from './ExerciseCard';
+import { ActiveWorkoutExerciseCard } from './ActiveWorkoutExerciseCard';
+import { EditWorkoutExerciseCard } from './EditWorkoutExerciseCard';
 import { ViewOnlyExerciseCard } from './ViewOnlyExerciseCard';
 
 interface WorkoutExerciseDetailsViewProps {
@@ -40,8 +41,9 @@ export default function WorkoutExerciseDetailsView({
     onInputFocus
 }: WorkoutExerciseDetailsViewProps) {
     const insets = useSafeAreaInsets();
-    const [lockedExerciseIds, setLockedExerciseIds] = useState<Set<number>>(new Set());
     const [selectedExerciseInfo, setSelectedExerciseInfo] = useState<any>(null);
+    const flatListRef = useRef<any>(null);
+    const focusedIndexRef = useRef<number | null>(null);
 
     // Swipe Logic
     const swipeableRefs = useRef<Map<string, SwipeableMethods>>(new Map());
@@ -81,22 +83,6 @@ export default function WorkoutExerciseDetailsView({
         }
     };
 
-    const toggleLock = (exerciseId: number) => {
-        console.log('toggleLock', exerciseId);
-        setLockedExerciseIds(prev => {
-            const next = new Set(prev);
-            if (next.has(exerciseId)) {
-                next.delete(exerciseId);
-                console.log('exercise unlocked', exerciseId);
-            } else {
-                next.add(exerciseId);
-                console.log('exercise locked', exerciseId);
-            }
-            return next;
-        });
-        closeCurrentSwipeable();
-    };
-
     const handleAddSet = (exerciseId: number, data: any) => {
         onAddSet?.(exerciseId, data);
     };
@@ -110,32 +96,91 @@ export default function WorkoutExerciseDetailsView({
         }
     };
 
+    // Handle input focus - scroll to the exercise when keyboard appears
+    const handleInputFocus = useCallback((index: number) => {
+        focusedIndexRef.current = index;
+        onInputFocus?.(index);
+        
+        // Scroll to the focused exercise after a short delay to ensure keyboard is shown
+        setTimeout(() => {
+            if (flatListRef.current && index !== null && index >= 0 && index < exercises.length) {
+                flatListRef.current.scrollToIndex({
+                    index,
+                    animated: true,
+                    viewPosition: 0.3, // Position the item 30% from top to account for keyboard
+                });
+            }
+        }, Platform.OS === 'ios' ? 300 : 100);
+    }, [exercises.length, onInputFocus]);
+
+    // Scroll to focused item when keyboard appears
+    useEffect(() => {
+        const keyboardWillShowListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            () => {
+                if (focusedIndexRef.current !== null && flatListRef.current) {
+                    const index = focusedIndexRef.current;
+                    if (index >= 0 && index < exercises.length) {
+                        setTimeout(() => {
+                            flatListRef.current?.scrollToIndex({
+                                index,
+                                animated: true,
+                                viewPosition: 0.3,
+                            });
+                        }, 100);
+                    }
+                }
+            }
+        );
+
+        return () => {
+            keyboardWillShowListener.remove();
+        };
+    }, [exercises.length]);
+
     // Check if there's at least one exercise with at least one set
     const hasSets = exercises.some((ex: any) => ex.sets && ex.sets.length > 0);
 
     const renderItems = ({item, drag, isActive: isDragging, getIndex}: {item: any, drag: () => void, isActive: boolean, getIndex: () => number | undefined}) => {
-        const exerciseCard = (
-            <ExerciseCard
-                key={item.order}
-                workoutExercise={item}
-                isLocked={lockedExerciseIds.has(item.id)}
-                isEditMode={isEditMode}
-                isViewOnly={isViewOnly}
-                onToggleLock={toggleLock}
-                onRemove={onRemoveExercise}
-                onAddSet={handleAddSet}
-                onDeleteSet={onDeleteSet}
-                onUpdateSet={handleUpdateSet}
-                swipeControl={swipeControl}
-                onInputFocus={() => {
-                    onInputFocus?.(getIndex() ?? 0);
-                }}
-                onShowInfo={(exercise: any) => setSelectedExerciseInfo(exercise)}
-                onShowStatistics={onShowStatistics}
-                isActive={isActive}
-                drag={drag}
-            />
-        );
+        let exerciseCard;
+        
+        if (isActive) {
+            // Use ActiveWorkoutExerciseCard for active workouts
+            exerciseCard = (
+                <ActiveWorkoutExerciseCard
+                    key={item.order}
+                    workoutExercise={item}
+                    onRemove={onRemoveExercise}
+                    onAddSet={handleAddSet}
+                    onDeleteSet={onDeleteSet}
+                    onUpdateSet={handleUpdateSet}
+                    swipeControl={swipeControl}
+                    onInputFocus={() => {
+                        handleInputFocus(getIndex() ?? 0);
+                    }}
+                    onShowInfo={(exercise: any) => setSelectedExerciseInfo(exercise)}
+                    onShowStatistics={onShowStatistics}
+                />
+            );
+        } else {
+            // Use EditWorkoutExerciseCard for editing workouts
+            exerciseCard = (
+                <EditWorkoutExerciseCard
+                    key={item.order}
+                    workoutExercise={item}
+                    onRemove={onRemoveExercise}
+                    onAddSet={handleAddSet}
+                    onDeleteSet={onDeleteSet}
+                    onUpdateSet={handleUpdateSet}
+                    swipeControl={swipeControl}
+                    onInputFocus={() => {
+                        handleInputFocus(getIndex() ?? 0);
+                    }}
+                    onShowInfo={(exercise: any) => setSelectedExerciseInfo(exercise)}
+                    onShowStatistics={onShowStatistics}
+                />
+            );
+        }
 
         // Only use ScaleDecorator when inside DraggableFlatList
         if (isViewOnly && !isActive) {
@@ -173,6 +218,7 @@ export default function WorkoutExerciseDetailsView({
                             </View>
                         ) : (
                             <DraggableFlatList
+                                ref={flatListRef}
                                 data={exercises}
                                 showsVerticalScrollIndicator={false}
                                 contentContainerStyle={{ paddingBottom: hasSets && isActive ? 200 : 120 }}
@@ -191,6 +237,13 @@ export default function WorkoutExerciseDetailsView({
                                 simultaneousHandlers={[]}
                                 activationDistance={Platform.OS === 'android' ? 20 : 10}
                                 dragItemOverflow={false}
+                                onScrollToIndexFailed={(info) => {
+                                    // Handle scroll to index failure gracefully
+                                    const wait = new Promise(resolve => setTimeout(resolve, 500));
+                                    wait.then(() => {
+                                        flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+                                    });
+                                }}
                             />
                         )}
                     </>

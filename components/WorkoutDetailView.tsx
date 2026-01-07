@@ -108,9 +108,9 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEd
                 <View style={[styles.container, 
                     isActive ? { paddingTop: insets.top, paddingBottom: insets.bottom } : { paddingBottom: insets.bottom }]}>
                     <KeyboardAvoidingView 
-                        style={{ flex: 1 } }
-                        behavior={Platform.OS === "ios" ? "padding" : undefined}
-                        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+                        style={{ flex: 1 }}
+                        behavior={Platform.OS === "ios" ? "padding" : "height"}
+                        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
                     >
                         {!isEditMode && (
                             <WorkoutDetailsView 
