@@ -313,7 +313,7 @@ export default function AuthScreen() {
     }, [currentSubtitleIndex]);
     
 
-    const handleUtrackTap = () => {
+    const handleForceTap = () => {
         tapCount.current += 1;
         
         // Clear existing timeout
@@ -419,10 +419,10 @@ export default function AuthScreen() {
             >
                 <View style={styles.heroSection}>
                     <TouchableOpacity 
-                        onPress={handleUtrackTap}
+                        onPress={handleForceTap}
                         activeOpacity={0.8}
                     >
-                        <Text style={styles.heroTitle}>utrack</Text>
+                        <Text style={styles.heroTitle}>FORCE</Text>
                     </TouchableOpacity>
                     <View style={styles.heroSubtitleContainer}>
                         <Text style={styles.heroSubtitleStatic}>Built </Text>

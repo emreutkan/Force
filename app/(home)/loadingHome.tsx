@@ -107,7 +107,7 @@ export default function LoadingHome() {
         <View style={styles.container}>
             <View style={[styles.content, { paddingTop: insets.top }]}>
                 <View style={styles.heroSection}>
-                    <Text style={styles.heroTitle}>utrack</Text>
+                    <Text style={styles.heroTitle}>FORCE</Text>
                     <View style={styles.heroSubtitleContainer}>
                         <Text style={styles.heroSubtitleStatic}>Built </Text>
                         <Animated.View style={[styles.heroSubtitleAnimated, animatedSubtitleStyle]}>

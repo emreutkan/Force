@@ -1,4 +1,4 @@
-# uTrack - Personal Fitness Tracker
+# FORCE - Personal Fitness Tracker
 
 **Alpha Version 1**
 
@@ -73,4 +73,4 @@ A comprehensive mobile fitness app designed to help you track your workouts, mon
 
 ---
 
-**uTrack** - Your complete fitness companion for tracking, analyzing, and optimizing your training.
+**FORCE** - Your complete fitness companion for tracking, analyzing, and optimizing your training.

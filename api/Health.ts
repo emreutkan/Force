@@ -52,6 +52,13 @@ class HealthService {
                     });
                 });
             } else if (Platform.OS === 'android' && GoogleFit) {
+                // Check if GoogleFit.Scopes exists
+                if (!GoogleFit.Scopes || !GoogleFit.Scopes.FITNESS_ACTIVITY_READ) {
+                    console.log('GoogleFit.Scopes not available');
+                    this.isInitialized = false;
+                    return false;
+                }
+                
                 const options = {
                     scopes: [
                         GoogleFit.Scopes.FITNESS_ACTIVITY_READ,

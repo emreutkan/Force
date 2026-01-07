@@ -21,6 +21,7 @@ export default function RootLayout() {
               contentStyle: { backgroundColor: 'black' }
             }}
           >
+            <Stack.Screen name="hero" />
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(home)" />
             <Stack.Screen name="(account)" />

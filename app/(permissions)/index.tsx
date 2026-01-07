@@ -111,7 +111,7 @@ export default function PermissionsScreen() {
                 <Text style={styles.heroSubtitle}>
                     {isGranted 
                         ? "Your step count is automatically syncing with Apple Health."
-                        : "Enable access to view your daily step count and activity trends directly in uTrack."
+                        : "Enable access to view your daily step count and activity trends directly in FORCE."
                     }
                 </Text>
             </View>

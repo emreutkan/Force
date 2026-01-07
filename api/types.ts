@@ -39,6 +39,7 @@ export interface Workout {
     secondary_muscles_worked?: string[]; // Array of secondary muscles targeted
     calories_burned?: string | number; // Calories burned during the workout
     muscle_recovery_pre_workout?: Record<string, number>; // {muscle_group: recovery_percentage}
+    cns_load?: number; // CNS load score for this workout
 }
 
 // Exercise Set Insights Types (defined early for use in WorkoutExerciseSet)
@@ -352,8 +353,22 @@ export interface MuscleRecovery {
     updated_at: string | null;
 }
 
+export interface CNSRecovery {
+    id: number | null;
+    cns_load: number;
+    recovery_hours: number;
+    recovery_until: string | null;
+    is_recovered: boolean;
+    source_workout: number | null;
+    hours_until_recovery: number;
+    recovery_percentage: number;
+    created_at: string | null;
+    updated_at: string | null;
+}
+
 export interface RecoveryStatusResponse {
     recovery_status: Record<string, MuscleRecovery>;
+    cns_recovery: CNSRecovery;
     timestamp: string;
 }
 

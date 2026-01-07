@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "utrack",
-    "slug": "utrack",
+    "name": "FORCE",
+    "slug": "force",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "utrack",
+    "scheme": "force",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.emre.utrack.app",
+      "bundleIdentifier": "com.emre.force.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
@@ -21,7 +21,7 @@
       }
     },
     "android": {
-      "package": "com.emre.utrack.app",
+      "package": "com.emre.force.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

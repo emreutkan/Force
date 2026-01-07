@@ -1,7 +1,7 @@
 import apiClient from './APIClient';
 // Don't use the full URL here if apiClient has a baseURL
 // import { CREATE_WORKOUT_URL } from './ApiBase'; 
-import { AddExerciseToWorkoutRequest, AvailableYearsResponse, CalendarResponse, CalendarStats, CheckTodayResponse, CreateTemplateWorkoutRequest, CreateWorkoutRequest, CreateWorkoutResponse, GetWorkoutsResponse, StartTemplateWorkoutRequest, TemplateWorkout, UpdateWorkoutRequest, Workout } from './types';
+import { AddExerciseToWorkoutRequest, AvailableYearsResponse, CalendarResponse, CalendarStats, CheckTodayResponse, CreateTemplateWorkoutRequest, CreateWorkoutRequest, CreateWorkoutResponse, GetWorkoutsResponse, RecoveryStatusResponse, StartTemplateWorkoutRequest, TemplateWorkout, UpdateWorkoutRequest, Workout } from './types';
 
 export const createWorkout = async (request: CreateWorkoutRequest): Promise<CreateWorkoutResponse | any> => {
     try {
@@ -204,7 +204,7 @@ export const checkToday = async (): Promise<CheckTodayResponse | any> => {
     }
 }
 
-export const getRecoveryStatus = async (): Promise<any> => {
+export const getRecoveryStatus = async (): Promise<RecoveryStatusResponse | any> => {
     try {
         const response = await apiClient.get('/workout/recovery/status/');
         return response.data;

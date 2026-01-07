@@ -90,6 +90,14 @@ export default function DebugView() {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Actions</Text>
                     <TouchableOpacity 
+                        style={[styles.button, { backgroundColor: '#c084fc', marginBottom: 12 }]}
+                        onPress={() => router.push('/hero')}
+                    >
+                        <Ionicons name="sparkles-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                        <Text style={styles.buttonText}>Go to Hero Screen</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
                         style={styles.button}
                         onPress={handleDebugLogin}
                     >

@@ -1,5 +1,5 @@
 import { getRecoveryStatus } from '@/api/Workout';
-import { MuscleRecovery, RecoveryStatusResponse } from '@/api/types';
+import { CNSRecovery, MuscleRecovery, RecoveryStatusResponse } from '@/api/types';
 import UnifiedHeader from '@/components/UnifiedHeader';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -54,6 +54,7 @@ export default function RecoveryStatusScreen() {
     
     // --- State ---
     const [statusMap, setStatusMap] = useState<Record<string, MuscleRecovery>>({});
+    const [cnsRecovery, setCnsRecovery] = useState<CNSRecovery | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -63,6 +64,9 @@ export default function RecoveryStatusScreen() {
             const res: RecoveryStatusResponse = await getRecoveryStatus();
             if (res?.recovery_status) {
                 setStatusMap(res.recovery_status);
+            }
+            if (res?.cns_recovery) {
+                setCnsRecovery(res.cns_recovery);
             }
         } catch (e) {
             console.error(e);
@@ -128,6 +132,46 @@ export default function RecoveryStatusScreen() {
     }, [statusMap]);
 
     // --- Renderers ---
+
+    const renderCNSCard = (data: CNSRecovery) => {
+        const pct = Number(data.recovery_percentage);
+        const color = getStatusColor(pct);
+        const hoursLeft = Number(data.hours_until_recovery);
+        const isReady = data.is_recovered || pct >= 90;
+
+        return (
+            <View style={[styles.card, styles.cnsCard, !isReady && styles.cardActive]} key="cns">
+                <View style={styles.cardHeader}>
+                    <View style={styles.nameContainer}>
+                        <Ionicons name="pulse" size={16} color={color} />
+                        <Text style={styles.muscleName}>Central Nervous System</Text>
+                    </View>
+                    <View style={[styles.badge, { backgroundColor: isReady ? 'rgba(48,209,88,0.1)' : 'rgba(255,159,10,0.1)' }]}>
+                        <Text style={[styles.badgeText, { color: isReady ? '#30D158' : '#FF9F0A' }]}>
+                            {isReady ? 'Ready' : formatTimeRemaining(hoursLeft)}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Progress Bar */}
+                <View style={styles.progressContainer}>
+                    <View style={styles.track}>
+                        <View style={[styles.fill, { width: `${pct}%`, backgroundColor: color }]} />
+                    </View>
+                </View>
+
+                <View style={styles.cardFooter}>
+                    <Text style={styles.pctText}>{pct.toFixed(0)}% Recovered</Text>
+                    {!isReady && data.cns_load > 0 && (
+                        <View style={styles.fatigueRow}>
+                            <Ionicons name="flash" size={12} color="#8E8E93" />
+                            <Text style={styles.fatigueText}>Load: {data.cns_load.toFixed(1)}</Text>
+                        </View>
+                    )}
+                </View>
+            </View>
+        );
+    };
 
     const renderMuscleCard = (muscle: string, data: MuscleRecovery) => {
         const pct = Number(data.recovery_percentage);
@@ -202,6 +246,14 @@ export default function RecoveryStatusScreen() {
                         </View>
                     )}
 
+                    {/* CNS Recovery Card */}
+                    {cnsRecovery && !cnsRecovery.is_recovered && cnsRecovery.cns_load > 0 && (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>System Recovery</Text>
+                            {renderCNSCard(cnsRecovery)}
+                        </View>
+                    )}
+
                     {/* Muscle Groups */}
                     {(['Upper Body', 'Lower Body', 'Core'] as const).map(category => {
                         const items = groupedData[category];
@@ -264,6 +316,10 @@ const styles = StyleSheet.create({
         padding: 16,
         borderWidth: 1,
         borderColor: '#2C2C2E',
+    },
+    cnsCard: {
+        borderWidth: 2,
+        borderColor: '#3A3A3C',
     },
     cardActive: {
         borderColor: '#3A3A3C', // Slightly lighter border for active items

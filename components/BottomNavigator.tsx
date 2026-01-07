@@ -10,6 +10,7 @@ import Animated, {
     withSpring
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { theme } from '@/constants/theme';
 
 // --- Types & Config ---
 
@@ -77,7 +78,7 @@ const TabButton = ({ tab, isActive, onPress }: TabButtonProps) => {
         // Base width is 48 (icon + padding). 
         // Expanded width is 48 + textWidth + extra padding for text.
         // We ensure textWidth is at least 40 to prevent collapse before measurement.
-        const expandedWidth = 48 + (textWidth.value || 40) + 12;
+        const expandedWidth = 48 + (textWidth.value || 40) + theme.spacing.m;
         
         // Animate background color opacity from transparent to white
         const bgOpacity = activeProgress.value;
@@ -118,7 +119,7 @@ const TabButton = ({ tab, isActive, onPress }: TabButtonProps) => {
                     <Animated.View style={animatedIconStyle}>
                         {tab.icon({ 
                             size: 24, 
-                            color: isActive ? '#000000' : '#8E8E93' 
+                            color: isActive ? theme.colors.text.primary : theme.colors.text.secondary 
                         })}
                     </Animated.View>
                     
@@ -153,8 +154,8 @@ export default function BottomNavigator() {
     const isWorkoutDetailPage = (pathname.includes('/workouts/') && pathname.split('/workouts/')[1]?.length > 0 && !pathname.endsWith('/workouts')) || 
                                 (segments.includes('(workouts)') && segments.length > 2);
     const shouldHide = segments.some(s => 
-        ['(auth)', 'auth', 'active-workout', '(active-workout)', 'recovery-status', '(recovery-status)', 'templates', '(templates)', 'loadingHome', 'permissions', '(permissions)', 'knowledge-base', '(knowledge-base)', 'volume-analysis', '(volume-analysis)'].includes(String(s))
-    ) || pathname.includes('/auth') || pathname.includes('/active-workout') || pathname.includes('/recovery-status') || pathname.includes('/templates') || pathname.includes('/permissions') || pathname.includes('/knowledge-base') || pathname.includes('/volume-analysis') || isWorkoutDetailPage;
+        ['(auth)', 'auth', 'hero', 'active-workout', '(active-workout)', 'recovery-status', '(recovery-status)', 'templates', '(templates)', 'loadingHome', 'permissions', '(permissions)', 'knowledge-base', '(knowledge-base)', 'volume-analysis', '(volume-analysis)'].includes(String(s))
+    ) || pathname.includes('/auth') || pathname.includes('/hero') || pathname.includes('/active-workout') || pathname.includes('/recovery-status') || pathname.includes('/templates') || pathname.includes('/permissions') || pathname.includes('/knowledge-base') || pathname.includes('/volume-analysis') || isWorkoutDetailPage;
 
     if (shouldHide) return null;
 
@@ -205,28 +206,28 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         zIndex: 1000,
-        paddingHorizontal: 12,
-        paddingBottom: 8,
+        paddingHorizontal: theme.spacing.m,
+        paddingBottom: theme.spacing.s,
     },
     blurContainer: {
-        borderRadius: 30, // Slightly rounder for modern look
+        borderRadius: theme.borderRadius.xxl, // Slightly rounder for modern look
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)', // Subtle border
-        shadowColor: '#000',
+        borderColor: theme.colors.ui.border, // Subtle border
+        shadowColor: theme.colors.background,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 12,
         elevation: 10,
     },
     androidContainer: {
-        backgroundColor: '#1C1C1E',
+        backgroundColor: theme.colors.ui.glassStrong,
     },
     tabsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 6,
+        padding: theme.spacing.xs,
     },
     tabWrapper: {
         // No fixed width, let them flex naturally or stay compact
@@ -235,29 +236,29 @@ const styles = StyleSheet.create({
     },
     tabButton: {
         height: 44, // Slightly cleaner height
-        borderRadius: 22,
+        borderRadius: theme.borderRadius.full,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-start', // Important for expansion animation
-        paddingHorizontal: 4, // Padding for the icon side
+        paddingHorizontal: theme.spacing.xs, // Padding for the icon side
         overflow: 'hidden',
     },
     tabContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingLeft: 8, // Space around icon
+        paddingLeft: theme.spacing.s, // Space around icon
     },
     textContainer: {
-        marginLeft: 8, // Gap between icon and text
+        marginLeft: theme.spacing.s, // Gap between icon and text
         // Don't set overflow hidden here, let the text measure itself
     },
     tabLabel: {
-        fontSize: 13,
+        fontSize: theme.typography.sizes.s,
         fontWeight: '600',
-        color: '#8E8E93',
-        marginRight: 12, // Right padding inside the pill
+        color: theme.colors.text.secondary,
+        marginRight: theme.spacing.m, // Right padding inside the pill
     },
     tabLabelActive: {
-        color: '#000000',
+        color: theme.colors.text.primary,
     },
 });

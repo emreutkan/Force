@@ -1,10 +1,13 @@
-import { getBASE_URL, REFRESH_URL } from '@/api/ApiBase';
+import { getAPI_URL, REFRESH_URL } from '@/api/ApiBase';
 import { clearTokens, getAccessToken, getRefreshToken, storeAccessToken, storeRefreshToken } from '@/api/Storage';
 import axios from 'axios';
 import { useRouter, useSegments } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const HERO_SEEN_KEY = '@force_hero_seen';
 
 // Global event emitter for token errors
 let tokenErrorListeners: Array<() => void> = [];
@@ -81,18 +84,25 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
                 refreshTokenLength: refreshToken?.length || 0
             });
 
-            // No tokens - go to login
+            // No tokens - check hero first, then go to auth
             if (!accessToken && !refreshToken) {
                 console.log('[AuthCheck] No tokens found');
                 isCheckingRef.current = false;
                 setIsChecking(false);
                 console.log('[AuthCheck] isChecking set to false');
-                // Only route if not already on auth
-                if (segments[0] !== '(auth)') {
-                    console.log('[AuthCheck] Not on auth, calling router.replace');
-                    router.replace('/(auth)');
+                // Only route if not already on auth or hero
+                if (segments[0] !== '(auth)' && segments[0] !== 'hero') {
+                    console.log('[AuthCheck] Not on auth or hero, checking hero seen...');
+                    const heroSeen = await AsyncStorage.getItem(HERO_SEEN_KEY);
+                    if (!heroSeen) {
+                        console.log('[AuthCheck] Hero not seen, routing to hero');
+                        router.replace('/hero');
+                    } else {
+                        console.log('[AuthCheck] Hero seen, routing to auth');
+                        router.replace('/(auth)');
+                    }
                 } else {
-                    console.log('[AuthCheck] Already on auth screen, staying put');
+                    console.log('[AuthCheck] Already on auth or hero screen, staying put');
                 }
                 return;
             }
@@ -101,12 +111,12 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
             if (refreshToken) {
                 console.log('[AuthCheck] Has refresh token, validating...');
                 try {
-                    console.log('[AuthCheck] Getting base URL...');
-                    const baseUrl = await getBASE_URL();
-                    console.log('[AuthCheck] Base URL:', baseUrl);
-                    console.log('[AuthCheck] Making refresh request to:', `${baseUrl}${REFRESH_URL}`);
+                    console.log('[AuthCheck] Getting API URL...');
+                    const apiUrl = await getAPI_URL();
+                    console.log('[AuthCheck] API URL:', apiUrl);
+                    console.log('[AuthCheck] Making refresh request to:', `${apiUrl}${REFRESH_URL}`);
                     
-                    const response = await axios.post(`${baseUrl}${REFRESH_URL}`, { refresh: refreshToken }, {
+                    const response = await axios.post(`${apiUrl}${REFRESH_URL}`, { refresh: refreshToken }, {
                         timeout: 3000
                     });
                     
@@ -141,14 +151,21 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
                     });
                     
                     if (isAuthError) {
-                        // Token is actually invalid - clear and go to login
-                        console.log('[AuthCheck] Authentication error (401/403), clearing tokens and routing to auth');
+                        // Token is actually invalid - clear and check hero first
+                        console.log('[AuthCheck] Authentication error (401/403), clearing tokens');
                         await clearTokens();
                         isCheckingRef.current = false;
                         setIsChecking(false);
-                        if (segments[0] !== '(auth)') {
+                        if (segments[0] !== '(auth)' && segments[0] !== 'hero') {
+                            const heroSeen = await AsyncStorage.getItem(HERO_SEEN_KEY);
                             setTimeout(() => {
-                                router.replace('/(auth)');
+                                if (!heroSeen) {
+                                    console.log('[AuthCheck] Hero not seen, routing to hero');
+                                    router.replace('/hero');
+                                } else {
+                                    console.log('[AuthCheck] Hero seen, routing to auth');
+                                    router.replace('/(auth)');
+                                }
                             }, 100);
                         }
                     } else {
@@ -176,14 +193,21 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
                 return;
             }
 
-            // Fallback - go to login
-            console.log('[AuthCheck] Fallback: routing to auth');
+            // Fallback - check hero first, then go to auth
+            console.log('[AuthCheck] Fallback: checking hero then routing');
             isCheckingRef.current = false;
             setIsChecking(false);
             console.log('[AuthCheck] isChecking set to false, checking segments before routing');
-            if (segments[0] !== '(auth)') {
+            if (segments[0] !== '(auth)' && segments[0] !== 'hero') {
+                const heroSeen = await AsyncStorage.getItem(HERO_SEEN_KEY);
                 setTimeout(() => {
-                    router.replace('/(auth)');
+                    if (!heroSeen) {
+                        console.log('[AuthCheck] Hero not seen, routing to hero');
+                        router.replace('/hero');
+                    } else {
+                        console.log('[AuthCheck] Hero seen, routing to auth');
+                        router.replace('/(auth)');
+                    }
                 }, 100);
             }
         } catch (error) {
@@ -192,9 +216,16 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
             isCheckingRef.current = false;
             setIsChecking(false);
             console.log('[AuthCheck] Checking segments before routing in catch block');
-            if (segments[0] !== '(auth)') {
+            if (segments[0] !== '(auth)' && segments[0] !== 'hero') {
+                const heroSeen = await AsyncStorage.getItem(HERO_SEEN_KEY);
                 setTimeout(() => {
-                    router.replace('/(auth)');
+                    if (!heroSeen) {
+                        console.log('[AuthCheck] Hero not seen, routing to hero');
+                        router.replace('/hero');
+                    } else {
+                        console.log('[AuthCheck] Hero seen, routing to auth');
+                        router.replace('/(auth)');
+                    }
                 }, 100);
             }
         }

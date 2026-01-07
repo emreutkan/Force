@@ -1,7 +1,8 @@
 import { healthService } from '@/api/Health';
-import { CalendarDay, CalendarStats, CheckTodayResponse, MuscleRecovery, TemplateWorkout, Workout } from '@/api/types';
+import { CalendarDay, CalendarStats, CheckTodayResponse, CNSRecovery, MuscleRecovery, TemplateWorkout, Workout } from '@/api/types';
 import { checkToday, createWorkout, deleteWorkout, getActiveWorkout, getCalendar, getCalendarStats, getRecoveryStatus, getTemplateWorkouts, getWorkouts, startTemplateWorkout } from '@/api/Workout';
 import WorkoutModal from '@/components/WorkoutModal';
+import { theme } from '@/constants/theme';
 import { useHomeLoadingStore, useWorkoutStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -11,6 +12,7 @@ import {
     Alert,
     Dimensions,
     Modal,
+    Platform,
     RefreshControl,
     ScrollView as RNScrollView,
     StyleSheet,
@@ -40,7 +42,7 @@ const SwipeAction = ({ progress, onPress }: SwipeActionProps) => {
     return (
         <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.deleteAction}>
             <Animated.View style={animatedStyle}>
-                <Ionicons name="trash-outline" size={24} color="#FFFFFF" />
+                <Ionicons name="trash-outline" size={24} color={theme.colors.text.primary} />
             </Animated.View>
         </TouchableOpacity>
     );
@@ -87,6 +89,7 @@ export default function Home() {
     const [todayStatus, setTodayStatus] = useState<CheckTodayResponse | null>(cachedTodayStatus);
     const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
     const [recoveryStatus, setRecoveryStatus] = useState<Record<string, MuscleRecovery>>(cachedRecoveryStatus || {});
+    const [cnsRecovery, setCnsRecovery] = useState<CNSRecovery | null>(null);
     const [templates, setTemplates] = useState<TemplateWorkout[]>([]);
     const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
     const [calendarStats, setCalendarStats] = useState<CalendarStats | null>(null);
@@ -143,6 +146,9 @@ export default function Home() {
             if (recovery?.recovery_status) {
                 setRecoveryStatus(recovery.recovery_status);
                 setCachedRecoveryStatus(recovery.recovery_status);
+            }
+            if (recovery?.cns_recovery) {
+                setCnsRecovery(recovery.cns_recovery);
             }
 
             setTodaySteps(steps);
@@ -346,14 +352,14 @@ export default function Home() {
         }
 
         // Check for rest day first (priority)
-        if (todayStatus && 'workout' in todayStatus && todayStatus.workout && 'is_rest_day' in todayStatus.workout && todayStatus.workout.is_rest_day) {
+        if (todayStatus && typeof todayStatus === 'object' && todayStatus !== null && 'workout' in todayStatus && todayStatus.workout && typeof todayStatus.workout === 'object' && 'is_rest_day' in todayStatus.workout && todayStatus.workout.is_rest_day) {
             const w = todayStatus.workout;
             return (
                 <ReanimatedSwipeable renderRightActions={(p, d) => <SwipeAction progress={p} onPress={() => handleDeleteWorkout(w.id, false)} />}>
                     <TouchableOpacity style={styles.completedCard} onPress={() => router.push(`/(workouts)/${w.id}`)} activeOpacity={0.9}>
                         <View style={styles.cardHeader}>
                             <View style={[styles.liveBadge, styles.completedBadge]}>
-                                <Ionicons name="cafe" size={12} color="#8B5CF6" />
+                                <Ionicons name="cafe" size={12} color={theme.colors.status.rest} />
                                 <Text style={styles.completedText}>REST DAY</Text>
                             </View>
                         </View>
@@ -364,11 +370,11 @@ export default function Home() {
         }
         
         // Also check if rest day is set directly on todayStatus (fallback)
-        if (todayStatus && 'is_rest' in todayStatus && todayStatus.is_rest) {
+        if (todayStatus && typeof todayStatus === 'object' && todayStatus !== null && 'is_rest' in todayStatus && todayStatus.is_rest) {
             return (
                 <View style={styles.completedCard}>
                         <View style={[styles.liveBadge, styles.completedBadge]}>
-                            <Ionicons name="cafe" size={12} color="#8B5CF6" />
+                            <Ionicons name="cafe" size={12} color={theme.colors.status.rest} />
                             <Text style={styles.completedText}>REST DAY</Text>
                         </View>
                 </View>
@@ -376,14 +382,14 @@ export default function Home() {
         }
 
         // Check for completed workout
-        if (todayStatus && 'workout_performed' in todayStatus && todayStatus.workout_performed && 'workout' in todayStatus && todayStatus.workout) {
+        if (todayStatus && typeof todayStatus === 'object' && todayStatus !== null && 'workout_performed' in todayStatus && todayStatus.workout_performed && 'workout' in todayStatus && todayStatus.workout) {
             const w = todayStatus.workout;
             return (
                 <ReanimatedSwipeable renderRightActions={(p, d) => <SwipeAction progress={p} onPress={() => handleDeleteWorkout(w.id, false)} />}>
                     <TouchableOpacity style={styles.completedCard} onPress={() => router.push(`/(workouts)/${w.id}`)} activeOpacity={0.9}>
                         <View style={styles.cardHeader}>
                             <View style={[styles.liveBadge, styles.completedBadge]}>
-                                <Ionicons name="checkmark" size={12} color="#8B5CF6" />
+                                <Ionicons name="checkmark" size={12} color={theme.colors.status.rest} />
                                 <Text style={styles.completedText}>COMPLETED</Text>
                             </View>
                             <Text style={styles.timerText}>{w.calories_burned ? `${Math.round(Number(w.calories_burned))} kcal` : ''}</Text>
@@ -407,7 +413,7 @@ export default function Home() {
                         activeOpacity={0.8}
                     >
                         <Text style={styles.startTitle}>Start Workout</Text>
-                <Ionicons name="chevron-down" size={20} color="#545458" />
+                <Ionicons name="chevron-down" size={20} color={theme.colors.text.tertiary} />
                     </TouchableOpacity>
         );
     };
@@ -453,13 +459,16 @@ export default function Home() {
             .sort((a, b) => a[1].hours_until_recovery - b[1].hours_until_recovery)
             .slice(0, 3); // Top 3 most fatigued
 
+        const showCNS = cnsRecovery && !cnsRecovery.is_recovered && cnsRecovery.cns_load > 0;
+        const hasRecovering = recovering.length > 0 || showCNS;
+
         return (
             <View style={styles.metricsRow}>
                 {/* Steps Card */}
                 {todaySteps !== null && (
                     <View style={styles.metricCard}>
                         <View style={styles.metricHeader}>
-                            <Ionicons name="footsteps" size={16} color="#0A84FF" />
+                            <Ionicons name="footsteps" size={16} color={theme.colors.status.active} />
                             <Text style={styles.metricTitle}>Steps</Text>
             </View>
                         <Text style={styles.metricValue}>{todaySteps.toLocaleString()}</Text>
@@ -473,32 +482,86 @@ export default function Home() {
                 >
                     <View style={styles.metricHeader}>
                         <Text style={styles.metricTitle}>Recovery</Text>
-                        <Ionicons name="chevron-forward" size={14} color="#545458" style={{ marginLeft: 'auto' }} />
+                        <Ionicons name="chevron-forward" size={14} color={theme.colors.text.tertiary} style={{ marginLeft: 'auto' }} />
                         </View>
                     
-                    {recovering.length > 0 ? (
+                    {hasRecovering ? (
                         <View style={styles.recoveryList}>
+                            {/* CNS Recovery - Show first if not recovered */}
+                            {showCNS && (
+                                <View key="cns" style={styles.recoveryCard}>
+                                    <View style={styles.recoveryCardContent}>
+                                        <View style={styles.recoveryLeft}>
+                                            <Ionicons 
+                                                name="pulse" 
+                                                size={20} 
+                                                color={cnsRecovery.recovery_percentage > 80 ? theme.colors.status.success : theme.colors.status.warning} 
+                                                style={styles.recoveryIcon}
+                                            />
+                                            <View style={styles.recoveryTextContainer}>
+                                                <Text style={styles.recoveryName}>CNS</Text>
+                                                <Text style={styles.recoveryTimeText}>
+                                                    {cnsRecovery.is_recovered || cnsRecovery.recovery_percentage >= 90 
+                                                        ? 'Ready' 
+                                                        : `${Math.round(cnsRecovery.hours_until_recovery)}H TO 100%`}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <View style={styles.recoveryRight}>
+                                            <Text style={[
+                                                styles.recoveryPctLarge, 
+                                                { color: cnsRecovery.recovery_percentage > 80 ? theme.colors.status.success : theme.colors.status.warning }
+                                            ]}>
+                                                {cnsRecovery.recovery_percentage.toFixed(0)}%
+                                            </Text>
+                                            <View style={styles.recoveryBar}>
+                                                <View style={[
+                                                    styles.recoveryFill, 
+                                                    { 
+                                                        width: `${cnsRecovery.recovery_percentage}%`, 
+                                                        backgroundColor: cnsRecovery.recovery_percentage > 80 ? theme.colors.status.success : theme.colors.status.warning
+                                                    }
+                                                ]} />
+                                            </View>
+                                        </View>
+                                    </View>
+                                </View>
+                            )}
+                            
+                            {/* Muscle Recovery */}
                             {recovering.map(([muscle, status]) => {
                                 const pct = Number(status.recovery_percentage);
                                 const hoursLeft = Number(status.hours_until_recovery);
                                 const isReady = status.is_recovered || pct >= 90;
-                                const color = pct > 80 ? '#30D158' : '#FF9F0A';
+                                const color = pct > 80 ? theme.colors.status.success : (pct > 50 ? theme.colors.status.active : theme.colors.status.warning);
                                 
                                 return (
-                                    <View key={muscle} style={styles.recoveryItem}>
-                                        <View style={styles.recoveryRow}>
-                                            <Text style={styles.recoveryName}>{muscle.replace(/_/g, ' ')}</Text>
-                                            <View style={styles.recoveryBar}>
-                                                <View style={[
-                                                    styles.recoveryFill, 
-                                                    { width: `${pct}%`, backgroundColor: color }
-                                                ]} />
+                                    <View key={muscle} style={styles.recoveryCard}>
+                                        <View style={styles.recoveryCardContent}>
+                                            <View style={styles.recoveryLeft}>
+                                                <Ionicons 
+                                                    name="pulse" 
+                                                    size={20} 
+                                                    color={color} 
+                                                    style={styles.recoveryIcon}
+                                                />
+                                                <View style={styles.recoveryTextContainer}>
+                                                    <Text style={styles.recoveryName}>{muscle.replace(/_/g, ' ')}</Text>
+                                                    <Text style={styles.recoveryTimeText}>
+                                                        {isReady ? 'Ready' : `${Math.round(hoursLeft)}H TO 100%`}
+                                                    </Text>
+                                                </View>
                                             </View>
-                                            <View style={styles.recoveryInfo}>
-                                                <Text style={[styles.recoveryPct, { color }]}>{pct.toFixed(0)}%</Text>
-                                                <Text style={styles.recoveryTime}>
-                                                    {isReady ? 'Ready' : `${Math.round(hoursLeft)}h`}
+                                            <View style={styles.recoveryRight}>
+                                                <Text style={[styles.recoveryPctLarge, { color }]}>
+                                                    {pct.toFixed(0)}%
                                                 </Text>
+                                                <View style={styles.recoveryBar}>
+                                                    <View style={[
+                                                        styles.recoveryFill, 
+                                                        { width: `${pct}%`, backgroundColor: color }
+                                                    ]} />
+                                                </View>
                                             </View>
                                         </View>
                                     </View>
@@ -506,7 +569,7 @@ export default function Home() {
                             })}
                         </View>
                     ) : (
-                        <Text style={styles.allRecovered}>All muscles recovered</Text>
+                        <Text style={styles.allRecovered}>All recovered</Text>
                     )}
                     </TouchableOpacity>
             </View>
@@ -527,7 +590,7 @@ export default function Home() {
                 <RNScrollView 
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0A84FF" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.status.active} />}
             >
                 {/* Header Date */}
                 <View style={styles.header}>
@@ -547,7 +610,7 @@ export default function Home() {
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Templates</Text>
                     <TouchableOpacity onPress={() => router.push('/(templates)/create')}>
-                        <Ionicons name="add-circle" size={24} color="#0A84FF" />
+                        <Ionicons name="add-circle" size={24} color={theme.colors.status.active} />
                             </TouchableOpacity>
                 </View>
                 <RNScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.templateList}>
@@ -577,23 +640,43 @@ export default function Home() {
                 <>
                     <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setShowStartMenu(false)} />
                     <Animated.View style={[styles.popover, { top: menuLayout.y, left: menuLayout.x, width: menuLayout.width }]}>
-                        <BlurView intensity={80} tint="dark" style={styles.popoverBlur}>
-                            <TouchableOpacity style={styles.popoverItem} onPress={() => { setShowStartMenu(false); setModalMode('create'); setModalVisible(true); }}>
-                                <Text style={styles.popoverText}>New Workout</Text>
+                        {Platform.OS === 'ios' ? (
+                            <BlurView intensity={80} tint="dark" style={styles.popoverBlur}>
+                                <TouchableOpacity style={styles.popoverItem} onPress={() => { setShowStartMenu(false); setModalMode('create'); setModalVisible(true); }}>
+                                    <Text style={styles.popoverText}>New Workout</Text>
                                 </TouchableOpacity>
-                            <View style={styles.divider} />
-                            <TouchableOpacity style={styles.popoverItem} onPress={() => { setShowStartMenu(false); setModalMode('log'); setModalVisible(true); }}>
-                                <Text style={styles.popoverText}>Log Previous</Text>
+                                <View style={styles.divider} />
+                                <TouchableOpacity style={styles.popoverItem} onPress={() => { setShowStartMenu(false); setModalMode('log'); setModalVisible(true); }}>
+                                    <Text style={styles.popoverText}>Log Previous</Text>
                                 </TouchableOpacity>
-                            <View style={styles.divider} />
-                            <TouchableOpacity style={styles.popoverItem} onPress={async () => { 
-                                setShowStartMenu(false); 
-                                await createWorkout({ title: 'Rest Day', is_rest_day: true }); 
-                                onRefresh();
-                            }}>
-                                <Text style={styles.popoverText}>Rest Day</Text>
+                                <View style={styles.divider} />
+                                <TouchableOpacity style={styles.popoverItem} onPress={async () => { 
+                                    setShowStartMenu(false); 
+                                    await createWorkout({ title: 'Rest Day', is_rest_day: true }); 
+                                    onRefresh();
+                                }}>
+                                    <Text style={styles.popoverText}>Rest Day</Text>
                                 </TouchableOpacity>
-                        </BlurView>
+                            </BlurView>
+                        ) : (
+                            <View style={styles.popoverAndroid}>
+                                <TouchableOpacity style={styles.popoverItem} onPress={() => { setShowStartMenu(false); setModalMode('create'); setModalVisible(true); }}>
+                                    <Text style={styles.popoverText}>New Workout</Text>
+                                </TouchableOpacity>
+                                <View style={styles.divider} />
+                                <TouchableOpacity style={styles.popoverItem} onPress={() => { setShowStartMenu(false); setModalMode('log'); setModalVisible(true); }}>
+                                    <Text style={styles.popoverText}>Log Previous</Text>
+                                </TouchableOpacity>
+                                <View style={styles.divider} />
+                                <TouchableOpacity style={styles.popoverItem} onPress={async () => { 
+                                    setShowStartMenu(false); 
+                                    await createWorkout({ title: 'Rest Day', is_rest_day: true }); 
+                                    onRefresh();
+                                }}>
+                                    <Text style={styles.popoverText}>Rest Day</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </Animated.View>
                 </>
             )}
@@ -618,7 +701,7 @@ export default function Home() {
                         <View style={styles.calendarModalHeader}>
                             <Text style={styles.calendarModalTitle}>Calendar</Text>
                             <TouchableOpacity onPress={() => setShowCalendarModal(false)}>
-                                <Ionicons name="close" size={24} color="#FFFFFF" />
+                                <Ionicons name="close" size={24} color={theme.colors.text.primary} />
                             </TouchableOpacity>
                         </View>
                         {calendarStats && (
@@ -654,7 +737,7 @@ export default function Home() {
                                 }}
                                 style={styles.calendarNavButton}
                             >
-                                <Ionicons name="chevron-back" size={20} color="#0A84FF" />
+                                <Ionicons name="chevron-back" size={20} color={theme.colors.status.active} />
                             </TouchableOpacity>
                             
                             <TouchableOpacity
@@ -701,7 +784,7 @@ export default function Home() {
                                 }}
                                 style={styles.calendarNavButton}
                             >
-                                <Ionicons name="chevron-forward" size={20} color="#0A84FF" />
+                                <Ionicons name="chevron-forward" size={20} color={theme.colors.status.active} />
                             </TouchableOpacity>
                         </View>
 
@@ -772,164 +855,175 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#000000' },
-    scrollContent: { padding: 10 },
+    container: { flex: 1, backgroundColor: theme.colors.background },
+    scrollContent: { padding: theme.spacing.s },
     
     // Header
-    header: { marginBottom: 12 },
-    headerDate: { fontSize: 13, fontWeight: '600', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: 0.5 },
+    header: { marginBottom: theme.spacing.s },
+    headerDate: { fontSize: theme.typography.sizes.xs, fontWeight: '600', color: theme.colors.text.secondary, textTransform: 'uppercase', letterSpacing: theme.typography.tracking.tight },
 
     // Active Card
-    activeCard: { backgroundColor: '#111111', borderRadius: 20, padding: 12, marginBottom: 12, borderWidth: 0.5, borderColor: '#222222' },
-    completedCard: { backgroundColor: '#111111', borderRadius: 20, padding: 12, marginBottom: 12, borderWidth: 0.5, borderColor: '#222222', opacity: 0.8 },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-    liveBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(48, 209, 88, 0.1)', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 6, gap: 6 },
-    completedBadge: { backgroundColor: 'rgba(139, 92, 246, 0.1)' },
-    liveText: { color: '#30D158', fontSize: 12, fontWeight: '700' },
-    completedText: { color: '#8B5CF6', fontSize: 12, fontWeight: '700' },
-    timerText: { color: 'orange', fontSize: 16, fontVariant: ['tabular-nums'], fontWeight: '600' },
-    activeTitle: { fontSize: 24, fontWeight: '700', color: '#FFF', marginBottom: 8 },
-    activeFooter: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    activeSubtext: { color: '#8E8E93', fontSize: 14 },
-    deleteAction: { backgroundColor: '#FF453A', justifyContent: 'center', alignItems: 'center', width: 80, height: '100%', borderRadius: 20, marginLeft: 12 },
+    activeCard: { backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.l, padding: theme.spacing.s, marginBottom: theme.spacing.s, borderWidth: 0.5, borderColor: theme.colors.ui.border },
+    completedCard: { backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.l, padding: theme.spacing.s, marginBottom: theme.spacing.s, borderWidth: 0.5, borderColor: theme.colors.ui.border, opacity: 0.8 },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing.s },
+    liveBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(52, 211, 153, 0.1)', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 6, gap: 6 },
+    completedBadge: { backgroundColor: theme.colors.ui.secondaryLight },
+    liveText: { color: theme.colors.status.success, fontSize: theme.typography.sizes.s, fontWeight: '700' },
+    completedText: { color: theme.colors.status.rest, fontSize: theme.typography.sizes.s, fontWeight: '700' },
+    timerText: { color: theme.colors.status.active, fontSize: theme.typography.sizes.m, fontVariant: ['tabular-nums'], fontWeight: '600' },
+    activeTitle: { fontSize: theme.typography.sizes.xl, fontWeight: '700', color: theme.colors.text.primary, marginBottom: theme.spacing.s },
+    activeFooter: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+    activeSubtext: { color: theme.colors.text.secondary, fontSize: theme.typography.sizes.s },
+    deleteAction: { backgroundColor: theme.colors.status.error, justifyContent: 'center', alignItems: 'center', width: 80, height: '100%', borderRadius: theme.borderRadius.l, marginLeft: theme.spacing.s },
 
     // Start Card
-    startCard: { backgroundColor: '#111111', borderRadius: 20, paddingVertical: 20, paddingHorizontal: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 0.5, borderColor: '#222222' },
-    startTitle: { fontSize: 24, fontWeight: '400', color: '#FFF'},
+    startCard: { backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.l, paddingVertical: theme.spacing.l, paddingHorizontal: theme.spacing.s, marginBottom: theme.spacing.s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 0.5, borderColor: theme.colors.ui.border },
+    startTitle: { fontSize: theme.typography.sizes.xl, fontWeight: '400', color: theme.colors.text.primary},
 
     // Calendar Strip
-    calendarStrip: { backgroundColor: '#111111', borderRadius: 20, padding: 12, marginBottom: 12, borderWidth: 0.5, borderColor: '#222222' },
+    calendarStrip: { backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.l, padding: theme.spacing.s, marginBottom: theme.spacing.s, borderWidth: 0.5, borderColor: theme.colors.ui.border },
     calendarRow: { flexDirection: 'row', justifyContent: 'space-between' },
     dayCell: { alignItems: 'center', flex: 1 },
-    dayName: { fontSize: 11, color: '#8E8E93', marginBottom: 6, textTransform: 'uppercase' },
-    dayNameToday: { color: '#0A84FF', fontWeight: '700' },
-    dayCircle: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 16 },
-    dayCircleToday: { backgroundColor: '#0A84FF' },
-    dayNum: { fontSize: 15, color: '#FFF', fontWeight: '500' },
-    dayNumToday: { color: '#FFF', fontWeight: '700' },
+    dayName: { fontSize: theme.typography.sizes.xs, color: theme.colors.text.secondary, marginBottom: 6, textTransform: 'uppercase' },
+    dayNameToday: { color: theme.colors.status.active, fontWeight: '700' },
+    dayCircle: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: theme.borderRadius.m },
+    dayCircleToday: { backgroundColor: theme.colors.status.active },
+    dayNum: { fontSize: 15, color: theme.colors.text.primary, fontWeight: '500' },
+    dayNumToday: { color: theme.colors.text.primary, fontWeight: '700' },
     dotContainer: { flexDirection: 'row', gap: 2, position: 'absolute', bottom: -6 },
-    workoutDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#0A84FF' },
-    restDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#8B5CF6' },
+    workoutDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: theme.colors.status.active },
+    restDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: theme.colors.status.rest },
 
     // Metrics
-    metricsRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
-    metricCard: { flex: 1, backgroundColor: '#111111', borderRadius: 20, padding: 16, borderWidth: 0.5, borderColor: '#222222' },
-    metricHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
-    metricTitle: { fontSize: 17, fontWeight: '600', color: '#fff' },
-    metricValue: { fontSize: 22, fontWeight: '700', color: '#FFF' },
-    recoveryList: { gap: 12 },
-    recoveryItem: { marginBottom: 4 },
-    recoveryRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    recoveryName: { fontSize: 13, fontWeight: '600', color: '#FFF', textTransform: 'capitalize', minWidth: 70 },
-    recoveryBar: { flex: 1, height: 6, backgroundColor: '#1A1A1A', borderRadius: 3, overflow: 'hidden' },
-    recoveryFill: { height: '100%', borderRadius: 3 },
-    recoveryInfo: { flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 60 },
-    recoveryPct: { fontSize: 12, fontWeight: '700' },
-    recoveryTime: { fontSize: 12, fontWeight: '500', color: '#8E8E93' },
-    allRecovered: { fontSize: 17, color: '#30D158', fontWeight: '600' },
+    metricsRow: { flexDirection: 'row', gap: theme.spacing.s, marginBottom: theme.spacing.xl },
+    metricCard: { flex: 1, backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.l, padding: theme.spacing.m, borderWidth: 0.5, borderColor: theme.colors.ui.border },
+    metricHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: theme.spacing.m },
+    metricTitle: { fontSize: theme.typography.sizes.m, fontWeight: '600', color: theme.colors.text.primary },
+    metricValue: { fontSize: 22, fontWeight: '700', color: theme.colors.text.primary },
+    recoveryList: { gap: theme.spacing.s },
+    recoveryCard: { 
+        backgroundColor: theme.colors.ui.glass, 
+        borderRadius: theme.borderRadius.l, 
+        padding: theme.spacing.m, 
+        borderWidth: 0.5, 
+        borderColor: theme.colors.ui.border,
+        marginBottom: theme.spacing.s,
+    },
+    recoveryCardContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    recoveryLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: theme.spacing.s },
+    recoveryIcon: { marginRight: theme.spacing.xs },
+    recoveryTextContainer: { flex: 1 },
+    recoveryName: { fontSize: theme.typography.sizes.m, fontWeight: '600', color: theme.colors.text.primary, textTransform: 'capitalize', marginBottom: 4 },
+    recoveryTimeText: { fontSize: theme.typography.sizes.xs, fontWeight: '500', color: theme.colors.text.secondary },
+    recoveryRight: { alignItems: 'flex-end', minWidth: 60 },
+    recoveryPctLarge: { fontSize: theme.typography.sizes.xl, fontWeight: '700', marginBottom: theme.spacing.xs },
+    recoveryBar: { width: 60, height: 4, backgroundColor: theme.colors.ui.glassStrong, borderRadius: 2, overflow: 'hidden' },
+    recoveryFill: { height: '100%', borderRadius: 2 },
+    allRecovered: { fontSize: theme.typography.sizes.m, color: theme.colors.status.success, fontWeight: '600' },
 
     // Templates
-    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingHorizontal: 4 },
-    sectionTitle: { fontSize: 18, fontWeight: '700', color: '#FFF' },
-    templateList: { paddingRight: 16, gap: 12 },
-    templateCard: { width: 140, height: 140, backgroundColor: '#111111', borderRadius: 20, padding: 12, justifyContent: 'space-between', borderWidth: 0.5, borderColor: '#222222' },
-    templateIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: '#2C2C2E', alignItems: 'center', justifyContent: 'center' },
-    templateIconText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
-    templateName: { fontSize: 14, fontWeight: '600', color: '#FFF' },
-    templateCount: { fontSize: 12, color: '#8E8E93' },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.s, paddingHorizontal: theme.spacing.xs },
+    sectionTitle: { fontSize: theme.typography.sizes.l, fontWeight: '700', color: theme.colors.text.primary },
+    templateList: { paddingRight: theme.spacing.m, gap: theme.spacing.s },
+    templateCard: { width: 140, height: 140, backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.l, padding: theme.spacing.s, justifyContent: 'space-between', borderWidth: 0.5, borderColor: theme.colors.ui.border },
+    templateIcon: { width: 32, height: 32, borderRadius: theme.borderRadius.m, backgroundColor: theme.colors.ui.surfaceHighlight, alignItems: 'center', justifyContent: 'center' },
+    templateIconText: { fontSize: theme.typography.sizes.m, fontWeight: '700', color: theme.colors.text.primary },
+    templateName: { fontSize: theme.typography.sizes.s, fontWeight: '600', color: theme.colors.text.primary },
+    templateCount: { fontSize: theme.typography.sizes.s, color: theme.colors.text.secondary },
 
     // Popover
     backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100 },
-    popover: { position: 'absolute', zIndex: 101, borderRadius: 14, overflow: 'hidden' },
+    popover: { position: 'absolute', zIndex: 101, borderRadius: theme.borderRadius.m, overflow: 'hidden' },
     popoverBlur: { padding: 0 },
-    popoverItem: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
-    popoverText: { color: '#FFF', fontSize: 16 },
-    divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#545458' },
+    popoverAndroid: { padding: 0, backgroundColor: theme.colors.ui.glassStrong, borderWidth: 1, borderColor: theme.colors.ui.border },
+    popoverItem: { flexDirection: 'row', alignItems: 'center', padding: theme.spacing.m, gap: theme.spacing.s },
+    popoverText: { color: theme.colors.text.primary, fontSize: theme.typography.sizes.m },
+    divider: { height: StyleSheet.hairlineWidth, backgroundColor: theme.colors.text.tertiary },
 
     // Skeleton
-    skeletonContainer: { padding: 16, marginBottom: 16 },
-    skeletonCard: { width: '100%', height: 120, backgroundColor: '#1C1C1E', borderRadius: 20 },
+    skeletonContainer: { padding: theme.spacing.m, marginBottom: theme.spacing.m },
+    skeletonCard: { width: '100%', height: 120, backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.l },
     
     // Calendar Modal Styles
     calendarModalContainer: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        backgroundColor: theme.colors.ui.glassStrong,
         justifyContent: 'flex-end'
     },
     calendarModalContent: {
-        backgroundColor: '#1C1C1E',
-        borderTopLeftRadius: 22,
-        borderTopRightRadius: 22,
+        backgroundColor: theme.colors.ui.glass,
+        borderTopLeftRadius: theme.borderRadius.xl,
+        borderTopRightRadius: theme.borderRadius.xl,
         maxHeight: '90%',
-        padding: 24
+        padding: theme.spacing.xl
     },
     calendarModalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 24
+        marginBottom: theme.spacing.xl
     },
     calendarModalTitle: {
-        color: '#FFFFFF',
-        fontSize: 24,
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.xl,
         fontWeight: '700'
     },
     weekStatsRow: {
         flexDirection: 'row',
         justifyContent: 'space-around',
         borderWidth: 1,
-        borderColor: '#2C2C2E',
-        borderRadius: 22,
-        padding: 16,
-        marginBottom: 24,
+        borderColor: theme.colors.ui.border,
+        borderRadius: theme.borderRadius.xl,
+        padding: theme.spacing.m,
+        marginBottom: theme.spacing.xl,
     },
     statBadge: {
         alignItems: 'center'
     },
     statBadgeLabel: {
-        color: '#8E8E93',
-        fontSize: 13,
+        color: theme.colors.text.secondary,
+        fontSize: theme.typography.sizes.s,
         fontWeight: '300',
-        marginBottom: 8
+        marginBottom: theme.spacing.s
     },
     statBadgeValue: {
-        color: '#FFFFFF',
-        fontSize: 18,
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.l,
         fontWeight: '500'
     },
     calendarControls: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 24
+        marginBottom: theme.spacing.xl
     },
     calendarNavButton: {
-        padding: 8
+        padding: theme.spacing.s
     },
     calendarMonthYear: {
-        paddingHorizontal: 16,
-        paddingVertical: 8
+        paddingHorizontal: theme.spacing.m,
+        paddingVertical: theme.spacing.s
     },
     calendarMonthYearText: {
-        color: '#FFFFFF',
-        fontSize: 18,
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.l,
         fontWeight: '500'
     },
     calendarGridContainer: {
-        marginTop: 16
+        marginTop: theme.spacing.m
     },
     calendarWeekHeader: {
         flexDirection: 'row',
-        marginBottom: 16
+        marginBottom: theme.spacing.m
     },
     calendarDayHeader: {
         flex: 1,
         alignItems: 'center',
-        paddingVertical: 8
+        paddingVertical: theme.spacing.s
     },
     calendarDayHeaderText: {
-        color: '#8E8E93',
-        fontSize: 13,
+        color: theme.colors.text.secondary,
+        fontSize: theme.typography.sizes.s,
         fontWeight: '300'
     },
     calendarDaysGrid: {
@@ -941,25 +1035,25 @@ const styles = StyleSheet.create({
         aspectRatio: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 8
+        padding: theme.spacing.s
     },
     calendarDayCellOtherMonth: {
         opacity: 0.3
     },
     calendarDayCellToday: {
-        backgroundColor: 'rgba(10, 132, 255, 0.1)',
-        borderRadius: 8
+        backgroundColor: theme.colors.ui.primaryLight,
+        borderRadius: theme.borderRadius.m
     },
     calendarDayNumber: {
-        color: '#FFFFFF',
-        fontSize: 17,
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.m,
         fontWeight: '400'
     },
     calendarDayNumberOtherMonth: {
-        color: '#8E8E93'
+        color: theme.colors.text.secondary
     },
     calendarDayNumberToday: {
-        color: '#0A84FF',
+        color: theme.colors.status.active,
         fontWeight: '700'
     },
     calendarDayDots: {
@@ -971,12 +1065,12 @@ const styles = StyleSheet.create({
         width: 4,
         height: 4,
         borderRadius: 2,
-        backgroundColor: '#0A84FF'
+        backgroundColor: theme.colors.status.active
     },
     calendarRestDayDot: {
         width: 4,
         height: 4,
         borderRadius: 2,
-        backgroundColor: '#8B5CF6'
+        backgroundColor: theme.colors.status.rest
     },
 });
