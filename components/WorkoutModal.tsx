@@ -1,4 +1,5 @@
 import { createWorkout } from '@/api/Workout';
+import { theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BlurView } from 'expo-blur';
@@ -17,6 +18,121 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+
+// Rest Day Card Component
+interface RestDayCardProps {
+    title?: string;
+}
+
+function RestDayCard({ title = 'Rest Day' }: RestDayCardProps) {
+    return (
+        <View style={trainingIntensityStyles.card}>
+            <View style={trainingIntensityStyles.upperSection}>
+                <View style={trainingIntensityStyles.upperLeft}>
+                    <View style={trainingIntensityStyles.intensityBars}>
+                        {[0.2, 0.2, 0.2].map((opacity, index) => (
+                            <View 
+                                key={index} 
+                                style={[trainingIntensityStyles.bar, { opacity, backgroundColor: theme.colors.status.rest }]} 
+                            />
+                        ))}
+                    </View>
+                    <View style={trainingIntensityStyles.intensityTextContainer}>
+                        <Text style={trainingIntensityStyles.intensityLabel}>REST DAY</Text>
+                        <Text style={[trainingIntensityStyles.intensityValue, { color: theme.colors.status.rest }]}>RECOVERY</Text>
+                        <Text style={trainingIntensityStyles.intensitySubtitle}>Active rest for optimal performance</Text>
+                    </View>
+                </View>
+                <View style={[trainingIntensityStyles.intensityIcon, { backgroundColor: 'rgba(192, 132, 252, 0.1)', borderColor: 'rgba(192, 132, 252, 0.3)' }]}>
+                    <Ionicons name="cafe" size={24} color={theme.colors.status.rest} />
+                </View>
+            </View>
+        </View>
+    );
+}
+
+// Training Intensity Card Component
+interface TrainingIntensityCardProps {
+    intensityScore?: number; // 0-10, will be shown as percentage (0-100%)
+    totalVolume?: number; // Total volume in kg
+    caloriesBurned?: number; // Calories burned (replaces progress)
+}
+
+function TrainingIntensityCard({ 
+    intensityScore = 0,
+    totalVolume = 0,
+    caloriesBurned = 0
+}: TrainingIntensityCardProps) {
+    // Convert score 0-10 to percentage 0-100%
+    const intensityPercentage = Math.round(intensityScore * 10);
+    
+    // Calculate intensity bars based on score
+    const getIntensityBars = () => {
+        const score = intensityScore;
+        if (score >= 8) return [1, 1, 1]; // All high
+        if (score >= 6) return [0.7, 1, 1]; // Medium, high, high
+        if (score >= 4) return [0.5, 0.7, 1]; // Low, medium, high
+        return [0.3, 0.5, 0.7]; // All low-medium
+    };
+
+    const bars = getIntensityBars();
+    return (
+        <View style={trainingIntensityStyles.card}>
+            {/* Upper Section - Training Intensity */}
+            <View style={trainingIntensityStyles.upperSection}>
+                <View style={trainingIntensityStyles.upperLeft}>
+                    <View style={trainingIntensityStyles.intensityBars}>
+                        {bars.map((opacity, index) => (
+                            <View 
+                                key={index} 
+                                style={[trainingIntensityStyles.bar, { opacity }]} 
+                            />
+                        ))}
+                    </View>
+                    <View style={trainingIntensityStyles.intensityTextContainer}>
+                        <Text style={trainingIntensityStyles.intensityLabel}>TRAINING INTENSITY</Text>
+                        <Text style={trainingIntensityStyles.intensityValue}>{intensityPercentage}%</Text>
+                        <Text style={trainingIntensityStyles.intensitySubtitle}>Readiness score for peak volume</Text>
+                    </View>
+                </View>
+                <View style={trainingIntensityStyles.intensityIcon}>
+                    <Ionicons name="pulse" size={24} color={theme.colors.status.active} />
+                </View>
+            </View>
+
+            {/* Lower Section - Total Volume & Calories */}
+            {(totalVolume > 0 || caloriesBurned > 0) && (
+                <View style={trainingIntensityStyles.lowerSection}>
+                    {/* Total Volume */}
+                    {totalVolume > 0 && (
+                        <View style={trainingIntensityStyles.metricItem}>
+                            <View style={[trainingIntensityStyles.metricIcon, trainingIntensityStyles.volumeIcon]}>
+                                <Ionicons name="layers" size={20} color={theme.colors.text.primary} />
+                            </View>
+                            <View style={trainingIntensityStyles.metricContent}>
+                                <Text style={trainingIntensityStyles.metricLabel}>TOTAL VOLUME</Text>
+                                <Text style={trainingIntensityStyles.metricValue}>{totalVolume.toFixed(0)} KG</Text>
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Calories Burned (replaces Progress) */}
+                    {caloriesBurned > 0 && (
+                        <View style={trainingIntensityStyles.metricItem}>
+                            <View style={[trainingIntensityStyles.metricIcon, trainingIntensityStyles.caloriesIcon]}>
+                                <Ionicons name="flame" size={20} color={theme.colors.text.primary} />
+                            </View>
+                            <View style={trainingIntensityStyles.metricContent}>
+                                <Text style={trainingIntensityStyles.metricLabel}>CALORIES</Text>
+                                <Text style={trainingIntensityStyles.metricValue}>{caloriesBurned.toFixed(0)} KCAL</Text>
+                            </View>
+                        </View>
+                    )}
+                </View>
+            )}
+        </View>
+    );
+}
 
 interface WorkoutModalProps {
     visible: boolean;
@@ -102,13 +218,11 @@ export default function WorkoutModal({ visible, onClose, mode, onSuccess }: Work
 
                 {/* Bottom Sheet Container */}
                 <BlurView intensity={Platform.OS === 'ios' ? 80 : 100} tint="dark" style={styles.sheetContainer}>
-     
-
                     {/* Header */}
                     <View style={styles.header}>
                         <Text style={styles.modalTitle}>{title}</Text>
                         <TouchableOpacity onPress={onClose} style={styles.closeIcon}>
-                            <Ionicons name="close" size={24} color="#8E8E93" />
+                            <Ionicons name="close" size={24} color={theme.colors.text.secondary} />
                         </TouchableOpacity>
                     </View>
 
@@ -118,7 +232,7 @@ export default function WorkoutModal({ visible, onClose, mode, onSuccess }: Work
                             <TextInput
                                 style={styles.input}
                                 placeholder="Workout Title"
-                                placeholderTextColor="#636366"
+                                placeholderTextColor={theme.colors.text.tertiary}
                                 value={workoutTitle}
                                 onChangeText={setWorkoutTitle}
                                 autoFocus
@@ -144,7 +258,7 @@ export default function WorkoutModal({ visible, onClose, mode, onSuccess }: Work
                                         <Ionicons 
                                             name="chevron-forward" 
                                             size={16} 
-                                            color="#636366" 
+                                            color={theme.colors.text.tertiary} 
                                             style={{ transform: [{ rotate: showDatePicker ? '90deg' : '0deg' }] }}
                                         />
                                     </View>
@@ -161,7 +275,7 @@ export default function WorkoutModal({ visible, onClose, mode, onSuccess }: Work
                                             maximumDate={new Date()}
                                             onChange={(e, d) => d && setDate(d)}
                                             style={styles.picker}
-                                            textColor="#FFF"
+                                            textColor={theme.colors.text.primary}
                                         />
                                     </View>
                                 )}
@@ -186,125 +300,237 @@ export default function WorkoutModal({ visible, onClose, mode, onSuccess }: Work
 const styles = StyleSheet.create({
     modalOverlay: {
         flex: 1,
-        justifyContent: 'flex-end', // Pushes content to bottom
+        justifyContent: 'flex-end',
     },
     modalBackdrop: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.9)', // Slightly lighter backdrop for depth
+        backgroundColor: theme.colors.ui.glassStrong,
     },
     sheetContainer: {
-        borderRadius: 16,
+        borderRadius: theme.borderRadius.l,
         overflow: 'hidden',
-        paddingBottom: 80, // Safe area padding 40 for ios bottom safe area and +40 for the bottom sheet to look like it goes below the keyboard
-        bottom: -40, // -40 to make it look like it goes below the keyboard 
-        backgroundColor: Platform.OS === 'android' ? '#1C1C1E' : undefined, // Fallback for android
+        paddingBottom: theme.spacing.navHeight,
+        bottom: -40,
+        backgroundColor: Platform.OS === 'android' ? theme.colors.ui.glassStrong : undefined,
     },
-
     header: {
         paddingTop: 22,
-
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        marginBottom: 20,
+        paddingHorizontal: theme.spacing.l,
+        marginBottom: theme.spacing.l,
     },
     modalTitle: {
-        fontSize: 24,
+        fontSize: theme.typography.sizes.xl,
         fontWeight: '700',
-        color: '#FFF',
-        letterSpacing: 0.3,
+        color: theme.colors.text.primary,
+        letterSpacing: theme.typography.tracking.tight,
     },
     closeIcon: {
-        padding: 4,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        borderRadius: 20,
+        padding: theme.spacing.xs,
+        backgroundColor: theme.colors.ui.surfaceHighlight,
+        borderRadius: theme.borderRadius.full,
     },
     formContainer: {
-        paddingHorizontal: 16,
-        gap: 12
+        paddingHorizontal: theme.spacing.m,
+        gap: theme.spacing.s,
     },
     label: {
-        fontSize: 12,
+        fontSize: theme.typography.sizes.s,
         fontWeight: '600',
-        color: '#8E8E93',
-        paddingHorizontal: 4,
+        color: theme.colors.text.secondary,
+        paddingHorizontal: theme.spacing.xs,
         textTransform: 'uppercase',
-        letterSpacing: 0.5,
+        letterSpacing: theme.typography.tracking.wide,
     },
     inputWrapper: {
-        backgroundColor: 'rgba(255,255,255,0.08)',
-        borderRadius: 12,
+        backgroundColor: theme.colors.ui.surfaceHighlight,
+        borderRadius: theme.borderRadius.m,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        borderColor: theme.colors.ui.border,
     },
     input: {
-        padding: 16,
-        color: '#FFF',
-        fontSize: 17,
+        padding: theme.spacing.m,
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.m,
         fontWeight: '500',
     },
     dateSection: {
-        marginTop: 4,
+        marginTop: theme.spacing.xs,
     },
     dateButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: 'rgba(255,255,255,0.08)',
-        padding: 16,
-        borderRadius: 12,
+        backgroundColor: theme.colors.ui.surfaceHighlight,
+        padding: theme.spacing.m,
+        borderRadius: theme.borderRadius.m,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        borderColor: theme.colors.ui.border,
     },
     dateButtonActive: {
-        backgroundColor: 'rgba(255,255,255,0.12)',
-        borderColor: '#0A84FF',
+        backgroundColor: theme.colors.ui.primaryLight,
+        borderColor: theme.colors.ui.primaryBorder,
     },
     dateRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap: theme.spacing.s,
     },
     dateText: {
-        color: '#FFF',
-        fontSize: 16,
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.m,
         fontWeight: '500',
     },
     timeRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: theme.spacing.xs,
     },
     timeText: {
-        color: '#8E8E93',
-        fontSize: 16,
+        color: theme.colors.text.secondary,
+        fontSize: theme.typography.sizes.m,
     },
     datePickerContainer: {
-        marginTop: 8,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        borderRadius: 12,
+        marginTop: theme.spacing.s,
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.m,
         overflow: 'hidden',
     },
     picker: {
         height: 180,
     },
     primaryButton: {
-        backgroundColor: '#0A84FF',
-        paddingVertical: 18,
-        borderRadius: 16,
+        backgroundColor: theme.colors.status.active,
+        paddingVertical: theme.spacing.l,
+        borderRadius: theme.borderRadius.l,
         alignItems: 'center',
-        marginTop: 10,
-
+        marginTop: theme.spacing.s,
     },
     btnDisabled: {
-        backgroundColor: '#2C2C2E',
+        backgroundColor: theme.colors.text.zinc800,
         shadowOpacity: 0,
     },
     primaryButtonText: {
-        color: '#FFF',
-        fontSize: 17,
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.m,
         fontWeight: '300',
-        letterSpacing: 0.5,
+        letterSpacing: theme.typography.tracking.wide,
     },
 });
+
+// Training Intensity Card Styles
+const trainingIntensityStyles = StyleSheet.create({
+    card: {
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.l,
+        padding: theme.spacing.m,
+        marginBottom: theme.spacing.m,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+        shadowColor: theme.colors.ui.brandGlow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    upperSection: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: theme.spacing.l,
+    },
+    upperLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+        gap: theme.spacing.s,
+    },
+    intensityBars: {
+        flexDirection: 'row',
+        gap: 4,
+        alignItems: 'flex-end',
+    },
+    bar: {
+        width: 4,
+        height: 12,
+        borderRadius: 2,
+        backgroundColor: theme.colors.status.active,
+    },
+    intensityTextContainer: {
+        flex: 1,
+    },
+    intensityLabel: {
+        fontSize: theme.typography.sizes.label,
+        fontWeight: '700',
+        color: theme.colors.text.secondary,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: theme.spacing.xs,
+    },
+    intensityValue: {
+        fontSize: theme.typography.sizes.xxl,
+        fontWeight: '900',
+        color: theme.colors.text.primary,
+        marginBottom: theme.spacing.xs,
+    },
+    intensitySubtitle: {
+        fontSize: theme.typography.sizes.s,
+        color: theme.colors.text.secondary,
+        fontWeight: '500',
+    },
+    intensityIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: theme.colors.ui.primaryLight,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.primaryBorder,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    lowerSection: {
+        flexDirection: 'row',
+        gap: theme.spacing.m,
+    },
+    metricItem: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.s,
+    },
+    metricIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    volumeIcon: {
+        backgroundColor: theme.colors.ui.primaryLight,
+    },
+    caloriesIcon: {
+        backgroundColor: 'rgba(52, 211, 153, 0.2)',
+    },
+    metricContent: {
+        flex: 1,
+    },
+    metricLabel: {
+        fontSize: theme.typography.sizes.label,
+        fontWeight: '700',
+        color: theme.colors.text.secondary,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: theme.spacing.xs,
+    },
+    metricValue: {
+        fontSize: theme.typography.sizes.l,
+        fontWeight: '900',
+        color: theme.colors.text.primary,
+    },
+});
+
+// Export TrainingIntensityCard and RestDayCard
+export { RestDayCard, TrainingIntensityCard };
+

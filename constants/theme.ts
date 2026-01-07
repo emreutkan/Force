@@ -155,7 +155,6 @@ export const typographyStyles = {
     fontWeight: '900',
     fontStyle: 'italic',
     letterSpacing: theme.typography.tracking.h1,
-    lineHeight: 1,
     color: theme.colors.text.primary,
   } as TextStyle,
   
@@ -164,7 +163,6 @@ export const typographyStyles = {
     fontWeight: '900',
     fontStyle: 'italic',
     letterSpacing: theme.typography.tracking.h2,
-    lineHeight: 1,
     color: theme.colors.text.primary,
   } as TextStyle,
   

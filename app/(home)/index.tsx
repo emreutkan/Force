@@ -1,13 +1,14 @@
 import { healthService } from '@/api/Health';
 import { CalendarDay, CalendarStats, CheckTodayResponse, CNSRecovery, MuscleRecovery, TemplateWorkout, Workout } from '@/api/types';
-import { checkToday, createWorkout, deleteWorkout, getActiveWorkout, getCalendar, getCalendarStats, getRecoveryStatus, getTemplateWorkouts, getWorkouts, startTemplateWorkout } from '@/api/Workout';
-import WorkoutModal from '@/components/WorkoutModal';
-import { theme } from '@/constants/theme';
+import { checkToday, createWorkout, deleteWorkout, getActiveWorkout, getCalendar, getCalendarStats, getRecoveryStatus, getTemplateWorkouts, getWorkouts, getWorkoutSummary, startTemplateWorkout } from '@/api/Workout';
+import MuscleRecoverySection from '@/components/MuscleRecoverySection';
+import WorkoutModal, { RestDayCard, TrainingIntensityCard } from '@/components/WorkoutModal';
+import { theme, typographyStyles } from '@/constants/theme';
 import { useHomeLoadingStore, useWorkoutStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     Alert,
     Dimensions,
@@ -94,6 +95,8 @@ export default function Home() {
     const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
     const [calendarStats, setCalendarStats] = useState<CalendarStats | null>(null);
     const [todaySteps, setTodaySteps] = useState<number | null>(null);
+    const [recentWorkouts, setRecentWorkouts] = useState<Workout[]>([]);
+    const [todayWorkoutScore, setTodayWorkoutScore] = useState<number | null>(null);
 
     // UI State
     const [isLoading, setIsLoading] = useState(!isInitialLoadComplete);
@@ -125,14 +128,15 @@ export default function Home() {
             const currentWeek = getCurrentWeekNumber(now);
 
             // Parallel fetching for speed
-            const [status, active, tpls, recovery, steps, cal, calStats] = await Promise.all([
+            const [status, active, tpls, recovery, steps, cal, calStats, workoutsData] = await Promise.all([
                 checkToday(),
                 getActiveWorkout(),
                 getTemplateWorkouts(),
                 getRecoveryStatus(),
                 fetchSteps(),
                 getCalendar(now.getFullYear(), undefined, currentWeek),
-                getCalendarStats(now.getFullYear(), undefined, currentWeek)
+                getCalendarStats(now.getFullYear(), undefined, currentWeek),
+                getWorkouts(1, 50) // Get recent workouts for volume calculation
             ]);
 
             setTodayStatus(status);
@@ -154,6 +158,25 @@ export default function Home() {
             setTodaySteps(steps);
             setCalendarData(cal?.calendar || []);
             setCalendarStats(calStats);
+
+            // Set recent workouts for volume calculation
+            if (workoutsData && 'results' in workoutsData && Array.isArray(workoutsData.results)) {
+                setRecentWorkouts(workoutsData.results);
+            }
+
+            // Fetch workout summary if today's workout exists
+            if (status && typeof status === 'object' && 'workout_performed' in status && status.workout_performed && 'workout' in status && status.workout) {
+                try {
+                    const summary = await getWorkoutSummary((status.workout as Workout).id);
+                    if (summary && typeof summary === 'object' && 'score' in summary && typeof summary.score === 'number') {
+                        setTodayWorkoutScore(summary.score);
+                    }
+                } catch (e) {
+                    console.error("Error fetching workout summary:", e);
+                }
+            } else {
+                setTodayWorkoutScore(null);
+            }
 
         } catch (e) {
             console.error("Home fetch error:", e);
@@ -259,7 +282,68 @@ export default function Home() {
     }, [activeWorkout]);
 
     // ========================================================================
-    // 4. ACTIONS
+    // 4. CALCULATIONS
+    // ========================================================================
+
+    // Calculate training intensity metrics
+    const trainingMetrics = useMemo(() => {
+        // Readiness score from CNS recovery
+        const readinessScore = cnsRecovery?.recovery_percentage ?? 0;
+
+        // Calculate total volume from recent workouts (last 30 days)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        const recentCompletedWorkouts = recentWorkouts.filter(w => {
+            if (!w.is_done || !w.total_volume) return false;
+            const workoutDate = new Date(w.datetime);
+            return workoutDate >= thirtyDaysAgo;
+        });
+
+        const totalVolume = recentCompletedWorkouts.reduce((sum, w) => {
+            return sum + (w.total_volume || 0);
+        }, 0);
+
+        // Calculate progress (compare current week vs previous week)
+        const now = new Date();
+        const currentWeekStart = new Date(now);
+        currentWeekStart.setDate(now.getDate() - now.getDay());
+        currentWeekStart.setHours(0, 0, 0, 0);
+        
+        const previousWeekStart = new Date(currentWeekStart);
+        previousWeekStart.setDate(previousWeekStart.getDate() - 7);
+        
+        const currentWeekWorkouts = recentWorkouts.filter(w => {
+            if (!w.is_done || !w.total_volume) return false;
+            const workoutDate = new Date(w.datetime);
+            return workoutDate >= currentWeekStart && workoutDate < now;
+        });
+        
+        const previousWeekWorkouts = recentWorkouts.filter(w => {
+            if (!w.is_done || !w.total_volume) return false;
+            const workoutDate = new Date(w.datetime);
+            return workoutDate >= previousWeekStart && workoutDate < currentWeekStart;
+        });
+
+        const currentWeekVolume = currentWeekWorkouts.reduce((sum, w) => sum + (w.total_volume || 0), 0);
+        const previousWeekVolume = previousWeekWorkouts.reduce((sum, w) => sum + (w.total_volume || 0), 0);
+
+        let progress = 0;
+        if (previousWeekVolume > 0) {
+            progress = ((currentWeekVolume - previousWeekVolume) / previousWeekVolume) * 100;
+        } else if (currentWeekVolume > 0) {
+            progress = 100; // New activity
+        }
+
+        return {
+            readinessScore,
+            totalVolume,
+            progress,
+        };
+    }, [cnsRecovery, recentWorkouts]);
+
+    // ========================================================================
+    // 5. ACTIONS
     // ========================================================================
 
     const handleModalSuccess = async () => {
@@ -355,76 +439,98 @@ export default function Home() {
         if (todayStatus && typeof todayStatus === 'object' && todayStatus !== null && 'workout' in todayStatus && todayStatus.workout && typeof todayStatus.workout === 'object' && 'is_rest_day' in todayStatus.workout && todayStatus.workout.is_rest_day) {
             const w = todayStatus.workout;
             return (
-                <ReanimatedSwipeable renderRightActions={(p, d) => <SwipeAction progress={p} onPress={() => handleDeleteWorkout(w.id, false)} />}>
-                    <TouchableOpacity style={styles.completedCard} onPress={() => router.push(`/(workouts)/${w.id}`)} activeOpacity={0.9}>
-                        <View style={styles.cardHeader}>
-                            <View style={[styles.liveBadge, styles.completedBadge]}>
-                                <Ionicons name="cafe" size={12} color={theme.colors.status.rest} />
-                                <Text style={styles.completedText}>REST DAY</Text>
-                            </View>
-                        </View>
-                        <Text style={styles.activeTitle}>{w.title}</Text>
-                    </TouchableOpacity>
-                </ReanimatedSwipeable>
+                <TouchableOpacity 
+                    onPress={() => router.push(`/(workouts)/${w.id}`)} 
+                    activeOpacity={0.9}
+                >
+                    <RestDayCard title={w.title} />
+                </TouchableOpacity>
             );
         }
         
         // Also check if rest day is set directly on todayStatus (fallback)
         if (todayStatus && typeof todayStatus === 'object' && todayStatus !== null && 'is_rest' in todayStatus && todayStatus.is_rest) {
             return (
-                <View style={styles.completedCard}>
-                        <View style={[styles.liveBadge, styles.completedBadge]}>
-                            <Ionicons name="cafe" size={12} color={theme.colors.status.rest} />
-                            <Text style={styles.completedText}>REST DAY</Text>
-                        </View>
-                </View>
+                <TouchableOpacity 
+                    onPress={() => router.push('/(workouts)')} 
+                    activeOpacity={0.9}
+                >
+                    <RestDayCard />
+                </TouchableOpacity>
             );
         }
 
-        // Check for completed workout
+        // Check for completed workout - Show TrainingIntensityCard instead
         if (todayStatus && typeof todayStatus === 'object' && todayStatus !== null && 'workout_performed' in todayStatus && todayStatus.workout_performed && 'workout' in todayStatus && todayStatus.workout) {
             const w = todayStatus.workout;
             return (
-                <ReanimatedSwipeable renderRightActions={(p, d) => <SwipeAction progress={p} onPress={() => handleDeleteWorkout(w.id, false)} />}>
-                    <TouchableOpacity style={styles.completedCard} onPress={() => router.push(`/(workouts)/${w.id}`)} activeOpacity={0.9}>
-                        <View style={styles.cardHeader}>
-                            <View style={[styles.liveBadge, styles.completedBadge]}>
-                                <Ionicons name="checkmark" size={12} color={theme.colors.status.rest} />
-                                <Text style={styles.completedText}>COMPLETED</Text>
-                            </View>
-                            <Text style={styles.timerText}>{w.calories_burned ? `${Math.round(Number(w.calories_burned))} kcal` : ''}</Text>
-                        </View>
-                        <Text style={styles.activeTitle}>{w.title}</Text>
-                    </TouchableOpacity>
-                </ReanimatedSwipeable>
+                <TouchableOpacity 
+                    onPress={() => router.push(`/(workouts)/${w.id}`)} 
+                    activeOpacity={0.9}
+                >
+                    <TrainingIntensityCard
+                        intensityScore={todayWorkoutScore ?? 0}
+                        totalVolume={w.total_volume || 0}
+                        caloriesBurned={Number(w.calories_burned || 0)}
+                    />
+                </TouchableOpacity>
             );
         }
 
         return (
-                    <TouchableOpacity 
+            <TouchableOpacity 
                 ref={startButtonRef}
                 style={styles.startCard} 
-                                    onPress={() => {
+                onPress={() => {
                     startButtonRef.current?.measure((x, y, w, h, px, py) => {
                         setMenuLayout({ x: px, y: py + h + 8, width: w });
                         setShowStartMenu(true);
-                                        });
-                                    }}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.startTitle}>Start Workout</Text>
-                <Ionicons name="chevron-down" size={20} color={theme.colors.text.tertiary} />
-                    </TouchableOpacity>
+                    });
+                }}
+                activeOpacity={0.8}
+            >
+                <View style={styles.startCardContent}>
+                    <View style={styles.startCardLeft}>
+                        <View style={styles.startIntensityBars}>
+                            {[0.3, 0.5, 0.7].map((opacity, index) => (
+                                <View 
+                                    key={index} 
+                                    style={[styles.startBar, { opacity }]} 
+                                />
+                            ))}
+                        </View>
+                        <View style={styles.startTextContainer}>
+                            <Text style={styles.startLabel}>START WORKOUT</Text>
+                            <Text style={styles.startSubtitle}>Tap to begin your session</Text>
+                        </View>
+                    </View>
+                    <View style={styles.startIcon}>
+                        <Ionicons name="add-circle-outline" size={24} color={theme.colors.status.active} />
+                    </View>
+                </View>
+            </TouchableOpacity>
         );
     };
 
     const renderCalendarStrip = () => {
-                        const today = new Date();
-                        const startOfWeek = new Date(today);
-        startOfWeek.setDate(today.getDate() - ((today.getDay() + 1) % 7)); // Start on Saturday
-                        
-                        return (
-            <TouchableOpacity style={styles.calendarStrip} onPress={() => setShowCalendarModal(true)} activeOpacity={0.9}>
+        const today = new Date();
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay()); // Start on Sunday
+        
+        // Get current week number and month
+        const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        const currentMonth = monthNames[today.getMonth()];
+        const weekNumber = Math.ceil((today.getDate() + new Date(today.getFullYear(), today.getMonth(), 1).getDay()) / 7);
+        
+        return (
+            <View style={styles.calendarStrip}>
+                {/* Header */}
+                <View style={styles.calendarHeader}>
+                    <Text style={styles.calendarTitle}>TIMELINE</Text>
+                    <Text style={styles.calendarWeek}>{currentMonth} WEEK {weekNumber.toString().padStart(2, '0')}</Text>
+                </View>
+                
+                {/* Days Row */}
                 <View style={styles.calendarRow}>
                     {Array.from({ length: 7 }).map((_, i) => {
                         const d = new Date(startOfWeek);
@@ -432,150 +538,37 @@ export default function Home() {
                         const isToday = d.toDateString() === today.toDateString();
                         const dateStr = d.toISOString().split('T')[0];
                         const dayData = calendarData.find(cd => cd.date === dateStr);
-                                        
-                                        return (
-                            <View key={i} style={styles.dayCell}>
-                                <Text style={[styles.dayName, isToday && styles.dayNameToday]}>
-                                    {d.toLocaleDateString('en-US', { weekday: 'narrow' })}
-                                                </Text>
-                                <View style={[styles.dayCircle, isToday && styles.dayCircleToday]}>
-                                    <Text style={[styles.dayNum, isToday && styles.dayNumToday]}>{d.getDate()}</Text>
-                                    <View style={styles.dotContainer}>
-                                        {dayData?.has_workout && <View style={styles.workoutDot} />}
-                                        {dayData?.is_rest_day && <View style={styles.restDot} />}
-                                    </View>
-                                                </View>
-                                            </View>
-                                        );
-                                    })}
+                        const hasActivity = dayData?.has_workout || dayData?.is_rest_day;
+                        
+                        return (
+                            <TouchableOpacity 
+                                key={i} 
+                                style={[styles.dayCell, isToday && styles.dayCellActive]}
+                                onPress={() => setShowCalendarModal(true)}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[styles.dayName, isToday && styles.dayNameActive]}>
+                                    {d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase().slice(0, 3)}
+                                </Text>
+                                <Text style={[styles.dayDate, isToday && styles.dayDateActive]}>
+                                    {d.getDate().toString().padStart(2, '0')}
+                                </Text>
+                                <View style={styles.dayDotContainer}>
+                                    {hasActivity && (
+                                        <View style={[
+                                            styles.dayDot, 
+                                            isToday ? styles.dayDotActive : (dayData?.has_workout ? styles.dayDotWorkout : styles.dayDotRest)
+                                        ]} />
+                                    )}
                                 </View>
-            </TouchableOpacity>
-        );
-    };
-
-    const renderMetrics = () => {
-        const recovering = Object.entries(recoveryStatus)
-            .filter(([_, s]) => !s.is_recovered && Number(s.fatigue_score) > 0)
-            .sort((a, b) => a[1].hours_until_recovery - b[1].hours_until_recovery)
-            .slice(0, 3); // Top 3 most fatigued
-
-        const showCNS = cnsRecovery && !cnsRecovery.is_recovered && cnsRecovery.cns_load > 0;
-        const hasRecovering = recovering.length > 0 || showCNS;
-
-        return (
-            <View style={styles.metricsRow}>
-                {/* Steps Card */}
-                {todaySteps !== null && (
-                    <View style={styles.metricCard}>
-                        <View style={styles.metricHeader}>
-                            <Ionicons name="footsteps" size={16} color={theme.colors.status.active} />
-                            <Text style={styles.metricTitle}>Steps</Text>
-            </View>
-                        <Text style={styles.metricValue}>{todaySteps.toLocaleString()}</Text>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
-            )}
-                
-                {/* Recovery Card */}
-                            <TouchableOpacity
-                    style={[styles.metricCard, { flex: 2 }]} 
-                        onPress={() => router.push('/(recovery-status)')}
-                >
-                    <View style={styles.metricHeader}>
-                        <Text style={styles.metricTitle}>Recovery</Text>
-                        <Ionicons name="chevron-forward" size={14} color={theme.colors.text.tertiary} style={{ marginLeft: 'auto' }} />
-                        </View>
-                    
-                    {hasRecovering ? (
-                        <View style={styles.recoveryList}>
-                            {/* CNS Recovery - Show first if not recovered */}
-                            {showCNS && (
-                                <View key="cns" style={styles.recoveryCard}>
-                                    <View style={styles.recoveryCardContent}>
-                                        <View style={styles.recoveryLeft}>
-                                            <Ionicons 
-                                                name="pulse" 
-                                                size={20} 
-                                                color={cnsRecovery.recovery_percentage > 80 ? theme.colors.status.success : theme.colors.status.warning} 
-                                                style={styles.recoveryIcon}
-                                            />
-                                            <View style={styles.recoveryTextContainer}>
-                                                <Text style={styles.recoveryName}>CNS</Text>
-                                                <Text style={styles.recoveryTimeText}>
-                                                    {cnsRecovery.is_recovered || cnsRecovery.recovery_percentage >= 90 
-                                                        ? 'Ready' 
-                                                        : `${Math.round(cnsRecovery.hours_until_recovery)}H TO 100%`}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                        <View style={styles.recoveryRight}>
-                                            <Text style={[
-                                                styles.recoveryPctLarge, 
-                                                { color: cnsRecovery.recovery_percentage > 80 ? theme.colors.status.success : theme.colors.status.warning }
-                                            ]}>
-                                                {cnsRecovery.recovery_percentage.toFixed(0)}%
-                                            </Text>
-                                            <View style={styles.recoveryBar}>
-                                                <View style={[
-                                                    styles.recoveryFill, 
-                                                    { 
-                                                        width: `${cnsRecovery.recovery_percentage}%`, 
-                                                        backgroundColor: cnsRecovery.recovery_percentage > 80 ? theme.colors.status.success : theme.colors.status.warning
-                                                    }
-                                                ]} />
-                                            </View>
-                                        </View>
-                                    </View>
-                                </View>
-                            )}
-                            
-                            {/* Muscle Recovery */}
-                            {recovering.map(([muscle, status]) => {
-                                const pct = Number(status.recovery_percentage);
-                                const hoursLeft = Number(status.hours_until_recovery);
-                                const isReady = status.is_recovered || pct >= 90;
-                                const color = pct > 80 ? theme.colors.status.success : (pct > 50 ? theme.colors.status.active : theme.colors.status.warning);
-                                
-                                return (
-                                    <View key={muscle} style={styles.recoveryCard}>
-                                        <View style={styles.recoveryCardContent}>
-                                            <View style={styles.recoveryLeft}>
-                                                <Ionicons 
-                                                    name="pulse" 
-                                                    size={20} 
-                                                    color={color} 
-                                                    style={styles.recoveryIcon}
-                                                />
-                                                <View style={styles.recoveryTextContainer}>
-                                                    <Text style={styles.recoveryName}>{muscle.replace(/_/g, ' ')}</Text>
-                                                    <Text style={styles.recoveryTimeText}>
-                                                        {isReady ? 'Ready' : `${Math.round(hoursLeft)}H TO 100%`}
-                                                    </Text>
-                                                </View>
-                                            </View>
-                                            <View style={styles.recoveryRight}>
-                                                <Text style={[styles.recoveryPctLarge, { color }]}>
-                                                    {pct.toFixed(0)}%
-                                                </Text>
-                                                <View style={styles.recoveryBar}>
-                                                    <View style={[
-                                                        styles.recoveryFill, 
-                                                        { width: `${pct}%`, backgroundColor: color }
-                                                    ]} />
-                                                </View>
-                                            </View>
-                                        </View>
-                                    </View>
-                                );
-                            })}
-                        </View>
-                    ) : (
-                        <Text style={styles.allRecovered}>All recovered</Text>
-                    )}
-                    </TouchableOpacity>
             </View>
         );
     };
-                                        
+
     if (isLoading && !isInitialLoadComplete) {
                         return (
             <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -592,10 +585,20 @@ export default function Home() {
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.status.active} />}
             >
-                {/* Header Date */}
+                {/* FORCE Title */}
+                <View style={styles.forceHeader}>
+                    <Text style={typographyStyles.h1}>
+                        FORCE
+                        <Text style={{ color: theme.colors.status.active }}>.</Text>
+                    </Text>
+                         {/* Header Date */}
                 <View style={styles.header}>
                     <Text style={styles.headerDate}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
                                 </View>
+                </View>
+
+           
+
             
                 {/* 1. Active Workout or Start Button */}
                 {renderActiveSection()}
@@ -603,8 +606,22 @@ export default function Home() {
                 {/* 2. Calendar Strip */}
                 {renderCalendarStrip()}
 
-                {/* 3. Metrics (Steps & Recovery) */}
-                {renderMetrics()}
+                {/* 3. Muscle Recovery Section */}
+                <MuscleRecoverySection 
+                    recoveryStatus={recoveryStatus}
+                    onPress={() => router.push('/(recovery-status)')}
+                />
+
+                {/* 4. Steps Card */}
+                {todaySteps !== null && (
+                    <View style={styles.stepsCard}>
+                        <View style={styles.metricHeader}>
+                            <Ionicons name="footsteps" size={16} color={theme.colors.status.active} />
+                            <Text style={styles.metricTitle}>Steps</Text>
+                        </View>
+                        <Text style={styles.metricValue}>{todaySteps.toLocaleString()}</Text>
+                    </View>
+                )}
 
                 {/* 4. Templates */}
                 <View style={styles.sectionHeader}>
@@ -858,6 +875,13 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
     scrollContent: { padding: theme.spacing.s },
     
+    // FORCE Header
+    forceHeader: { 
+        alignItems: 'flex-start', 
+        marginBottom: theme.spacing.m,
+        marginTop: theme.spacing.s,
+    },
+    
     // Header
     header: { marginBottom: theme.spacing.s },
     headerDate: { fontSize: theme.typography.sizes.xs, fontWeight: '600', color: theme.colors.text.secondary, textTransform: 'uppercase', letterSpacing: theme.typography.tracking.tight },
@@ -867,7 +891,7 @@ const styles = StyleSheet.create({
     completedCard: { backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.l, padding: theme.spacing.s, marginBottom: theme.spacing.s, borderWidth: 0.5, borderColor: theme.colors.ui.border, opacity: 0.8 },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing.s },
     liveBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(52, 211, 153, 0.1)', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 6, gap: 6 },
-    completedBadge: { backgroundColor: theme.colors.ui.secondaryLight },
+    completedBadge: { backgroundColor: 'rgba(192, 132, 252, 0.1)' },
     liveText: { color: theme.colors.status.success, fontSize: theme.typography.sizes.s, fontWeight: '700' },
     completedText: { color: theme.colors.status.rest, fontSize: theme.typography.sizes.s, fontWeight: '700' },
     timerText: { color: theme.colors.status.active, fontSize: theme.typography.sizes.m, fontVariant: ['tabular-nums'], fontWeight: '600' },
@@ -877,26 +901,157 @@ const styles = StyleSheet.create({
     deleteAction: { backgroundColor: theme.colors.status.error, justifyContent: 'center', alignItems: 'center', width: 80, height: '100%', borderRadius: theme.borderRadius.l, marginLeft: theme.spacing.s },
 
     // Start Card
-    startCard: { backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.l, paddingVertical: theme.spacing.l, paddingHorizontal: theme.spacing.s, marginBottom: theme.spacing.s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 0.5, borderColor: theme.colors.ui.border },
-    startTitle: { fontSize: theme.typography.sizes.xl, fontWeight: '400', color: theme.colors.text.primary},
+    startCard: { 
+        backgroundColor: theme.colors.ui.glass, 
+        borderRadius: theme.borderRadius.l, 
+        padding: theme.spacing.m, 
+        marginBottom: theme.spacing.m, 
+        borderWidth: 1, 
+        borderColor: theme.colors.ui.border,
+        shadowColor: theme.colors.ui.brandGlow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    startCardContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+    },
+    startCardLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+        gap: theme.spacing.s,
+    },
+    startIntensityBars: {
+        flexDirection: 'row',
+        gap: 4,
+        alignItems: 'flex-end',
+    },
+    startBar: {
+        width: 4,
+        height: 12,
+        borderRadius: 2,
+        backgroundColor: theme.colors.status.active,
+    },
+    startTextContainer: {
+        flex: 1,
+    },
+    startLabel: {
+        fontSize: theme.typography.sizes.label,
+        fontWeight: '700',
+        color: theme.colors.text.primary,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: theme.spacing.xs,
+    },
+    startSubtitle: {
+        fontSize: theme.typography.sizes.s,
+        color: theme.colors.text.secondary,
+        fontWeight: '500',
+    },
+    startIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: theme.colors.ui.primaryLight,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.primaryBorder,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 
     // Calendar Strip
-    calendarStrip: { backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.l, padding: theme.spacing.s, marginBottom: theme.spacing.s, borderWidth: 0.5, borderColor: theme.colors.ui.border },
-    calendarRow: { flexDirection: 'row', justifyContent: 'space-between' },
-    dayCell: { alignItems: 'center', flex: 1 },
-    dayName: { fontSize: theme.typography.sizes.xs, color: theme.colors.text.secondary, marginBottom: 6, textTransform: 'uppercase' },
-    dayNameToday: { color: theme.colors.status.active, fontWeight: '700' },
-    dayCircle: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: theme.borderRadius.m },
-    dayCircleToday: { backgroundColor: theme.colors.status.active },
-    dayNum: { fontSize: 15, color: theme.colors.text.primary, fontWeight: '500' },
-    dayNumToday: { color: theme.colors.text.primary, fontWeight: '700' },
-    dotContainer: { flexDirection: 'row', gap: 2, position: 'absolute', bottom: -6 },
-    workoutDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: theme.colors.status.active },
-    restDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: theme.colors.status.rest },
+    calendarStrip: { 
+        backgroundColor: theme.colors.ui.glass, 
+        borderRadius: theme.borderRadius.l, 
+        padding: theme.spacing.m, 
+        marginBottom: theme.spacing.s, 
+        borderWidth: 0.5, 
+        borderColor: theme.colors.ui.border 
+    },
+    calendarHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: theme.spacing.m,
+    },
+    calendarTitle: {
+        fontSize: theme.typography.sizes.label,
+        fontWeight: '700',
+        color: theme.colors.text.secondary,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    calendarWeek: {
+        fontSize: theme.typography.sizes.s,
+        fontWeight: '700',
+        color: theme.colors.status.active,
+        textTransform: 'uppercase',
+    },
+    calendarRow: { 
+        flexDirection: 'row', 
+        justifyContent: 'space-between',
+        gap: theme.spacing.xs,
+    },
+    dayCell: { 
+        alignItems: 'center', 
+        flex: 1,
+        paddingVertical: theme.spacing.s,
+        paddingHorizontal: theme.spacing.xs,
+        borderRadius: theme.borderRadius.m,
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    },
+    dayCellActive: {
+        backgroundColor: theme.colors.status.active,
+    },
+    dayName: { 
+        fontSize: theme.typography.sizes.label,
+        color: theme.colors.text.secondary, 
+        marginBottom: theme.spacing.xs, 
+        textTransform: 'uppercase',
+        fontWeight: '600',
+    },
+    dayNameActive: { 
+        color: theme.colors.text.primary,
+        fontWeight: '700',
+    },
+    dayDate: {
+        fontSize: theme.typography.sizes.m,
+        color: theme.colors.text.secondary,
+        fontWeight: '600',
+    },
+    dayDateActive: {
+        color: theme.colors.text.primary,
+        fontWeight: '700',
+    },
+    dayDotContainer: {
+        marginTop: theme.spacing.xs,
+        height: 6,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    dayDot: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+    },
+    dayDotActive: {
+        backgroundColor: theme.colors.text.primary,
+    },
+    dayDotWorkout: {
+        backgroundColor: theme.colors.status.active,
+    },
+    dayDotRest: {
+        backgroundColor: theme.colors.text.tertiary,
+    },
 
     // Metrics
     metricsRow: { flexDirection: 'row', gap: theme.spacing.s, marginBottom: theme.spacing.xl },
     metricCard: { flex: 1, backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.l, padding: theme.spacing.m, borderWidth: 0.5, borderColor: theme.colors.ui.border },
+    stepsCard: { backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.l, padding: theme.spacing.m, borderWidth: 0.5, borderColor: theme.colors.ui.border, marginBottom: theme.spacing.m },
     metricHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: theme.spacing.m },
     metricTitle: { fontSize: theme.typography.sizes.m, fontWeight: '600', color: theme.colors.text.primary },
     metricValue: { fontSize: 22, fontWeight: '700', color: theme.colors.text.primary },
