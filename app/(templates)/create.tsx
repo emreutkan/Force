@@ -1,8 +1,7 @@
 import { createTemplateWorkout } from '@/api/Workout';
 import ExerciseSearchModal from '@/components/ExerciseSearchModal';
-import UnifiedHeader from '@/components/UnifiedHeader';
+import { commonStyles, theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -109,206 +108,119 @@ export default function CreateTemplateScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
             style={[styles.container, { paddingTop: insets.top }]}
         >
-            <UnifiedHeader title="Create Template" />
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
+                    <Ionicons name="chevron-back" size={24} color={theme.colors.text.zinc600} />
+                </TouchableOpacity>
+                <Text style={typographyStyles.h2}>Create Template</Text>
+                <View style={{ width: 40 }} />
+            </View>
 
             <ScrollView 
                 style={styles.scrollView}
                 contentContainerStyle={[styles.scrollContent, { paddingTop: 60 + 16, paddingBottom: 100 }]}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Template Name Input */}
                 <View style={styles.inputSection}>
-                    {Platform.OS === 'ios' ? (
-                        <BlurView intensity={80} tint="dark" style={styles.inputBlur}>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons name="document-text-outline" size={20} color="#8E8E93" style={styles.inputIcon} />
-                                <TextInput
-                                    placeholder="Template Name"
-                                    placeholderTextColor="#8E8E93"
-                                    value={title}
-                                    onChangeText={setTitle}
-                                    style={styles.titleInput}
-                                />
-                            </View>
-                        </BlurView>
-                    ) : (
-                        <View style={[styles.inputBlur, styles.androidInput]}>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons name="document-text-outline" size={20} color="#8E8E93" style={styles.inputIcon} />
-                                <TextInput
-                                    placeholder="Template Name"
-                                    placeholderTextColor="#8E8E93"
-                                    value={title}
-                                    onChangeText={setTitle}
-                                    style={styles.titleInput}
-                                />
-                            </View>
+                    <View style={styles.inputBlur}>
+                        <View style={styles.inputWrapper}>
+                            <Ionicons name="document-text-outline" size={20} color="#8E8E93" style={styles.inputIcon} />
+                            <TextInput
+                                placeholder="Template Name"
+                                placeholderTextColor="#8E8E93"
+                                value={title}
+                                onChangeText={setTitle}
+                                style={styles.titleInput}
+                            />
                         </View>
-                    )}
+                    </View>
                 </View>
 
-                {/* Selected Exercises */}
                 {selectedExercises.length > 0 && (
                     <View style={styles.selectedSection}>
                         <Text style={styles.sectionTitle}>Selected Exercises ({selectedExercises.length})</Text>
                         {selectedExercises.map((exerciseId, index) => {
                             return (
                                 <View key={exerciseId} style={styles.selectedExerciseCard}>
-                                    {Platform.OS === 'ios' ? (
-                                        <BlurView intensity={80} tint="dark" style={styles.exerciseCardBlur}>
-                                            <View style={styles.selectedExerciseContent}>
-                                                <View style={styles.selectedExerciseInfo}>
-                                                    <View style={styles.exerciseNumberBadge}>
-                                                        <Text style={styles.selectedExerciseNumber}>{index + 1}</Text>
-                                                    </View>
-                                                    <Text style={styles.selectedExerciseName}>
-                                                        Exercise {exerciseId}
-                                                    </Text>
+                                    <View style={styles.exerciseCardBlur}>
+                                        <View style={styles.selectedExerciseContent}>
+                                            <View style={styles.selectedExerciseInfo}>
+                                                <View style={styles.exerciseNumberBadge}>
+                                                    <Text style={styles.selectedExerciseNumber}>{index + 1}</Text>
                                                 </View>
-                                                <View style={styles.selectedExerciseActions}>
-                                                    <TouchableOpacity
-                                                        onPress={() => moveExercise(index, 'up')}
-                                                        disabled={index === 0}
-                                                        style={[styles.orderButton, index === 0 && styles.orderButtonDisabled]}
-                                                    >
-                                                        <Ionicons name="chevron-up" size={18} color={index === 0 ? "#4A4A4A" : "#0A84FF"} />
-                                                    </TouchableOpacity>
-                                                    <TouchableOpacity
-                                                        onPress={() => moveExercise(index, 'down')}
-                                                        disabled={index === selectedExercises.length - 1}
-                                                        style={[styles.orderButton, index === selectedExercises.length - 1 && styles.orderButtonDisabled]}
-                                                    >
-                                                        <Ionicons name="chevron-down" size={18} color={index === selectedExercises.length - 1 ? "#4A4A4A" : "#0A84FF"} />
-                                                    </TouchableOpacity>
-                                                    <TouchableOpacity
-                                                        onPress={() => removeExercise(index)}
-                                                        style={styles.removeButton}
-                                                    >
-                                                        <Ionicons name="close-circle" size={22} color="#FF3B30" />
-                                                    </TouchableOpacity>
-                                                </View>
+                                                <Text style={styles.selectedExerciseName}>
+                                                    Exercise {exerciseId}
+                                                </Text>
                                             </View>
-                                        </BlurView>
-                                    ) : (
-                                        <View style={[styles.exerciseCardBlur, styles.androidExerciseCard]}>
-                                            <View style={styles.selectedExerciseContent}>
-                                                <View style={styles.selectedExerciseInfo}>
-                                                    <View style={styles.exerciseNumberBadge}>
-                                                        <Text style={styles.selectedExerciseNumber}>{index + 1}</Text>
-                                                    </View>
-                                                    <Text style={styles.selectedExerciseName}>
-                                                        Exercise {exerciseId}
-                                                    </Text>
-                                                </View>
-                                                <View style={styles.selectedExerciseActions}>
-                                                    <TouchableOpacity
-                                                        onPress={() => moveExercise(index, 'up')}
-                                                        disabled={index === 0}
-                                                        style={[styles.orderButton, index === 0 && styles.orderButtonDisabled]}
-                                                    >
-                                                        <Ionicons name="chevron-up" size={18} color={index === 0 ? "#4A4A4A" : "#0A84FF"} />
-                                                    </TouchableOpacity>
-                                                    <TouchableOpacity
-                                                        onPress={() => moveExercise(index, 'down')}
-                                                        disabled={index === selectedExercises.length - 1}
-                                                        style={[styles.orderButton, index === selectedExercises.length - 1 && styles.orderButtonDisabled]}
-                                                    >
-                                                        <Ionicons name="chevron-down" size={18} color={index === selectedExercises.length - 1 ? "#4A4A4A" : "#0A84FF"} />
-                                                    </TouchableOpacity>
-                                                    <TouchableOpacity
-                                                        onPress={() => removeExercise(index)}
-                                                        style={styles.removeButton}
-                                                    >
-                                                        <Ionicons name="close-circle" size={22} color="#FF3B30" />
-                                                    </TouchableOpacity>
-                                                </View>
+                                            <View style={styles.selectedExerciseActions}>
+                                                <TouchableOpacity
+                                                    onPress={() => moveExercise(index, 'up')}
+                                                    disabled={index === 0}
+                                                    style={[styles.orderButton, index === 0 && styles.orderButtonDisabled]}
+                                                >
+                                                    <Ionicons name="chevron-up" size={18} color={index === 0 ? "#4A4A4A" : "#0A84FF"} />
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    onPress={() => moveExercise(index, 'down')}
+                                                    disabled={index === selectedExercises.length - 1}
+                                                    style={[styles.orderButton, index === selectedExercises.length - 1 && styles.orderButtonDisabled]}
+                                                >
+                                                    <Ionicons name="chevron-down" size={18} color={index === selectedExercises.length - 1 ? "#4A4A4A" : "#0A84FF"} />
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    onPress={() => removeExercise(index)}
+                                                    style={styles.removeButton}
+                                                >
+                                                    <Ionicons name="close-circle" size={22} color="#FF3B30" />
+                                                </TouchableOpacity>
                                             </View>
                                         </View>
-                                    )}
+                                    </View>
                                 </View>
                             );
                         })}
                     </View>
                 )}
 
-                {/* Add Exercises Button */}
                 <View style={styles.addExercisesSection}>
                     <Text style={styles.sectionTitle}>Add Exercises</Text>
                     <Animated.View style={exercisesButtonStyle}>
-                        {Platform.OS === 'ios' ? (
-                            <BlurView intensity={80} tint="dark" style={styles.addExercisesBlur}>
-                                <TouchableOpacity
-                                    style={styles.addExercisesButton}
-                                    onPress={handleExercisesButtonPress}
-                                    activeOpacity={0.8}
-                                >
-                                    <View style={styles.addExercisesContent}>
-                                        <Ionicons name="add-circle-outline" size={24} color="#0A84FF" />
-                                        <Text style={styles.addExercisesButtonText}>
-                                            {selectedExercises.length > 0 
-                                                ? `${selectedExercises.length} exercise${selectedExercises.length > 1 ? 's' : ''} selected`
-                                                : 'Tap to add exercises'}
-                                        </Text>
-                                        <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-                                    </View>
-                                </TouchableOpacity>
-                            </BlurView>
-                        ) : (
-                            <View style={[styles.addExercisesBlur, styles.androidAddExercises]}>
-                                <TouchableOpacity
-                                    style={styles.addExercisesButton}
-                                    onPress={handleExercisesButtonPress}
-                                    activeOpacity={0.8}
-                                >
-                                    <View style={styles.addExercisesContent}>
-                                        <Ionicons name="add-circle-outline" size={24} color="#0A84FF" />
-                                        <Text style={styles.addExercisesButtonText}>
-                                            {selectedExercises.length > 0 
-                                                ? `${selectedExercises.length} exercise${selectedExercises.length > 1 ? 's' : ''} selected`
-                                                : 'Tap to add exercises'}
-                                        </Text>
-                                        <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-                                    </View>
-                                </TouchableOpacity>
-                            </View>
-                        )}
+                        <View style={styles.addExercisesBlur}>
+                            <TouchableOpacity
+                                style={styles.addExercisesButton}
+                                onPress={handleExercisesButtonPress}
+                                activeOpacity={0.8}
+                            >
+                                <View style={styles.addExercisesContent}>
+                                    <Ionicons name="add-circle-outline" size={24} color="#0A84FF" />
+                                    <Text style={styles.addExercisesButtonText}>
+                                        {selectedExercises.length > 0 
+                                            ? `${selectedExercises.length} exercise${selectedExercises.length > 1 ? 's' : ''} selected`
+                                            : 'Tap to add exercises'}
+                                    </Text>
+                                    <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                                </View>
+                            </TouchableOpacity>
+                        </View>
                     </Animated.View>
                 </View>
             </ScrollView>
 
-            {/* Create Button - Animated */}
             <Animated.View style={[styles.createButtonContainer, createButtonStyle, { bottom: insets.bottom + 16 }]}>
-                {Platform.OS === 'ios' ? (
-                    <BlurView intensity={80} tint="dark" style={styles.createButtonBlur}>
-                        <TouchableOpacity
-                            style={[styles.createButton, isCreating && styles.createButtonLoading]}
-                            onPress={handleCreate}
-                            disabled={!title.trim() || selectedExercises.length === 0 || isCreating}
-                            activeOpacity={0.8}
-                        >
-                            {isCreating ? (
-                                <ActivityIndicator color="#FFFFFF" />
-                            ) : (
-                                <Text style={styles.createButtonText}>Create Template</Text>
-                            )}
-                        </TouchableOpacity>
-                    </BlurView>
-                ) : (
-                    <View style={[styles.createButtonBlur, styles.androidCreateButton]}>
-                        <TouchableOpacity
-                            style={[styles.createButton, isCreating && styles.createButtonLoading]}
-                            onPress={handleCreate}
-                            disabled={!title.trim() || selectedExercises.length === 0 || isCreating}
-                            activeOpacity={0.8}
-                        >
-                            {isCreating ? (
-                                <ActivityIndicator color="#FFFFFF" />
-                            ) : (
-                                <Text style={styles.createButtonText}>Create Template</Text>
-                            )}
-                        </TouchableOpacity>
-                    </View>
-                )}
+                <View style={styles.createButtonBlur}>
+                    <TouchableOpacity
+                        style={[styles.createButton, isCreating && styles.createButtonLoading]}
+                        onPress={handleCreate}
+                        disabled={!title.trim() || selectedExercises.length === 0 || isCreating}
+                        activeOpacity={0.8}
+                    >
+                        {isCreating ? (
+                            <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                            <Text style={styles.createButtonText}>Create Template</Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
             </Animated.View>
 
             <ExerciseSearchModal
@@ -381,18 +293,16 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     exerciseCardBlur: {
+        backgroundColor: theme.colors.ui.glass,
         borderRadius: 18,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: theme.colors.ui.border,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
         shadowRadius: 4,
         elevation: 2,
-    },
-    androidExerciseCard: {
-        backgroundColor: '#1C1C1E',
     },
     selectedExerciseContent: {
         flexDirection: 'row',
@@ -443,18 +353,16 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     addExercisesBlur: {
+        backgroundColor: theme.colors.ui.glass,
         borderRadius: 22,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: theme.colors.ui.border,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
         elevation: 4,
-    },
-    androidAddExercises: {
-        backgroundColor: '#1C1C1E',
     },
     addExercisesButton: {
         padding: 16,
@@ -477,18 +385,16 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     createButtonBlur: {
+        backgroundColor: theme.colors.ui.glass,
         borderRadius: 22,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: theme.colors.ui.border,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 12,
         elevation: 8,
-    },
-    androidCreateButton: {
-        backgroundColor: '#0A84FF',
     },
     createButton: {
         backgroundColor: '#0A84FF',

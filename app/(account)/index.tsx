@@ -1,9 +1,11 @@
-import { clearTokens } from '@/api/Storage';
 import { changePassword, updateGender, updateHeight } from '@/api/account';
+import { clearTokens } from '@/api/Storage';
+import { getWorkouts } from '@/api/Workout';
+import { theme } from '@/constants/theme';
 import { useUserStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -67,7 +69,6 @@ const SettingsRow = ({
         activeOpacity={0.7}
     >
         <View style={styles.rowLeft}>
-            {/* Optional Icon Box */}
             {icon && (
                 <View style={[styles.iconContainer, { backgroundColor: isDestructive ? 'rgba(255,59,48,0.15)' : 'rgba(10,132,255,0.15)' }]}>
                     <Ionicons name={icon} size={18} color={isDestructive ? '#FF3B30' : iconColor} />
@@ -78,7 +79,6 @@ const SettingsRow = ({
             </Text>
         </View>
         
-        {/* Right Side: Value + Chevron */}
         <View style={styles.rowRight}>
             {value && <Text style={styles.rowValue}>{value}</Text>}
             {showChevron && <Ionicons name="chevron-forward" size={16} color="#545458" style={{ marginLeft: 8 }} />}
@@ -95,6 +95,9 @@ export default function AccountScreen() {
     const { user, fetchUser, clearUser } = useUserStore();
     
     // --- State Management ---
+    const [sessionsCount, setSessionsCount] = useState(0);
+    const [totalVolume, setTotalVolume] = useState(0);
+    const [isLoadingStats, setIsLoadingStats] = useState(true);
     
     // Controls visibility of the 3 modals
     const [modals, setModals] = useState({
@@ -116,10 +119,37 @@ export default function AccountScreen() {
 
     // --- Effects ---
 
-    // Initial fetch on mount
-    useEffect(() => {
-        fetchUser();
+    // Fetch user and stats
+    const fetchStats = useCallback(async () => {
+        try {
+            setIsLoadingStats(true);
+            const workoutsData = await getWorkouts(1, 1000); // Get a large page to calculate totals
+            if (workoutsData?.results) {
+                const workouts = workoutsData.results;
+                setSessionsCount(workouts.length);
+                
+                // Calculate total volume
+                const volume = workouts.reduce((sum: number, workout: any) => {
+                    if (workout.total_volume) {
+                        return sum + parseFloat(String(workout.total_volume));
+                    }
+                    return sum;
+                }, 0);
+                setTotalVolume(volume);
+            }
+        } catch (error) {
+            console.error('Failed to fetch stats:', error);
+        } finally {
+            setIsLoadingStats(false);
+        }
     }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchUser();
+            fetchStats();
+        }, [fetchStats])
+    );
 
     // Sync local form state when the global user object updates
     useEffect(() => {
@@ -131,6 +161,16 @@ export default function AccountScreen() {
             }));
         }
     }, [user]);
+
+    // Format total volume
+    const formattedVolume = useMemo(() => {
+        if (totalVolume >= 1000000) {
+            return `${(totalVolume / 1000000).toFixed(1)}T`;
+        } else if (totalVolume >= 1000) {
+            return `${(totalVolume / 1000).toFixed(1)}K`;
+        }
+        return totalVolume.toFixed(0);
+    }, [totalVolume]);
 
     // --- Handlers ---
 
@@ -197,90 +237,125 @@ export default function AccountScreen() {
     
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]} showsVerticalScrollIndicator={false}>
                 
-                {/* --- Profile Header Card --- */}
-                <View style={styles.headerContainer}>
-                    <View style={styles.avatarRing}>
-                        <View style={styles.avatar}>
-                            <Text style={styles.avatarText}>
-                                {user?.first_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'}
-                            </Text>
+                {/* Stats Cards */}
+                <View style={styles.statsContainer}>
+                    <View style={styles.statCard}>
+                        <Text style={styles.statLabel}>SESSIONS</Text>
+                        <View style={styles.statValueContainer}>
+                            <Text style={styles.statValue}>{sessionsCount}</Text>
+                            <Ionicons name="trophy" size={16} color={theme.colors.status.rest} style={styles.statIcon} />
                         </View>
                     </View>
-                    <Text style={styles.profileName}>
-                        {user?.first_name ? `${user.first_name} ${user.last_name || ''}` : 'User'}
-                    </Text>
-                    <Text style={styles.profileEmail}>{user?.email || 'Loading...'}</Text>
+                    <View style={styles.statCard}>
+                        <Text style={styles.statLabel}>TOTAL VOLUME</Text>
+                        <Text style={styles.statValue}>{formattedVolume}</Text>
+                    </View>
                 </View>
 
-                {/* --- Personal Info Group --- */}
-                <SettingsSection title="Personal Information">
-                    <SettingsRow 
-                        label="Height" 
-                        value={user?.height ? `${user.height} cm` : 'Not set'} 
-                        onPress={() => toggleModal('height', true)} 
-                    />
-                    <SettingsRow 
-                        label="Gender" 
-                        value={user?.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : 'Not set'} 
-                        onPress={() => toggleModal('gender', true)} 
-                        isLast
-                    />
-                </SettingsSection>
+                {/* Settings Cards */}
+                <View style={styles.settingsContainer}>
+                    <TouchableOpacity 
+                        style={styles.settingCard}
+                        onPress={() => {
+                            // TODO: Navigate to edit profile
+                            Alert.alert("Edit Profile", "Profile editing coming soon!");
+                        }}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="person-outline" size={24} color="#FFFFFF" />
+                        <View style={styles.settingContent}>
+                            <Text style={styles.settingTitle}>EDIT PROFILE</Text>
+                            <Text style={styles.settingSubtitle}>BIO, WEIGHT, GOALS</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.secondary} />
+                    </TouchableOpacity>
 
-                {/* --- Security Group --- */}
-                <SettingsSection title="Security & Access">
-                    <SettingsRow 
-                        label="Change Password" 
-                        icon="lock-closed" 
-                        onPress={() => toggleModal('password', true)} 
-                    />
-                    <SettingsRow 
-                        label="Permissions" 
-                        icon="shield-checkmark" 
-                        onPress={() => router.push('/(permissions)')} 
-                        isLast
-                    />
-                </SettingsSection>
+                    <TouchableOpacity 
+                        style={styles.settingCard}
+                        onPress={() => router.push('/(permissions)')}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="pulse-outline" size={24} color="#FFFFFF" />
+                        <View style={styles.settingContent}>
+                            <Text style={styles.settingTitle}>HEALTH CONNECT</Text>
+                            <Text style={styles.settingSubtitle}>SYNC BIOMETRICS</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.secondary} />
+                    </TouchableOpacity>
 
-                {/* --- Resources Group --- */}
-                <SettingsSection title="Resources">
-                    <SettingsRow 
-                        label="Knowledge Base" 
-                        icon="library" 
-                        iconColor="#FF9F0A"
-                        onPress={() => router.push('/(knowledge-base)')} 
-                    />
-                    <SettingsRow 
-                        label="Volume Analysis" 
-                        icon="bar-chart" 
-                        iconColor="#30D158"
-                        onPress={() => router.push('/(volume-analysis)')} 
-                        isLast
-                    />
-                </SettingsSection>
+                    <TouchableOpacity 
+                        style={styles.settingCard}
+                        onPress={() => {
+                            Alert.alert("Notifications", "Notification settings coming soon!");
+                        }}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
+                        <View style={styles.settingContent}>
+                            <Text style={styles.settingTitle}>NOTIFICATIONS</Text>
+                            <Text style={styles.settingSubtitle}>SMART REMINDERS</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.secondary} />
+                    </TouchableOpacity>
 
-                {/* --- Danger Zone --- */}
-                <SettingsSection>
-                    <SettingsRow 
-                        label="Log Out" 
-                        onPress={handleLogout} 
-                        isDestructive 
-                        showChevron={false}
-                        isLast
-                    />
-                </SettingsSection>
+                    <TouchableOpacity 
+                        style={styles.settingCard}
+                        onPress={() => {
+                            Alert.alert("Data Management", "Data export coming soon!");
+                        }}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="server-outline" size={24} color="#FFFFFF" />
+                        <View style={styles.settingContent}>
+                            <Text style={styles.settingTitle}>DATA MANAGEMENT</Text>
+                            <Text style={styles.settingSubtitle}>EXPORT JSON/CSV</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.secondary} />
+                    </TouchableOpacity>
 
-                <Text style={styles.versionText}>v1.0.4 • Build 2024</Text>
+                    <TouchableOpacity 
+                        style={styles.settingCard}
+                        onPress={() => {
+                            Alert.alert("Privacy & Security", "Privacy settings coming soon!");
+                        }}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="shield-checkmark-outline" size={24} color="#FFFFFF" />
+                        <View style={styles.settingContent}>
+                            <Text style={styles.settingTitle}>PRIVACY & SECURITY</Text>
+                            <Text style={styles.settingSubtitle}>AUTH CONTROLS</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.secondary} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={styles.settingCard}
+                        onPress={() => {
+                            if (user?.is_pro) {
+                                Alert.alert("Manage Subscription", "Subscription management coming soon!");
+                            } else {
+                                router.push('/(account)/upgrade');
+                            }
+                        }}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="card-outline" size={24} color="#FFFFFF" />
+                        <View style={styles.settingContent}>
+                            <Text style={styles.settingTitle}>SUBSCRIPTION</Text>
+                            <Text style={[styles.settingSubtitle, styles.subscriptionSubtitle]}>
+                                {user?.is_pro ? 'MANAGE FORCE PRO BILLING' : 'UPGRADE TO PRO'}
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.secondary} />
+                    </TouchableOpacity>
+                </View>
+
+                <Text style={styles.versionText}>FORCE PERFORMANCE {new Date().getFullYear()}</Text>  
 
             </ScrollView>
 
-            {/* ===============================================================
-                MODALS
-            =============================================================== */}
-
-            {/* --- Height Modal --- */}
             <Modal visible={modals.height} transparent animationType="fade" onRequestClose={() => toggleModal('height', false)}>
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
                     <View style={styles.modalCard}>
@@ -289,7 +364,6 @@ export default function AccountScreen() {
                             <Text style={styles.modalSubtitle}>This helps us calculate your calorie needs.</Text>
                         </View>
                         
-                        {/* Big Center Input */}
                         <View style={styles.bigInputContainer}>
                             <TextInput
                                 style={styles.bigInput}
@@ -297,9 +371,9 @@ export default function AccountScreen() {
                                 onChangeText={(t) => setFormData({ ...formData, height: t })}
                                 keyboardType="numeric"
                                 placeholder="0"
-                                placeholderTextColor="#3A3A3C"
+                                placeholderTextColor={theme.colors.text.zinc700}
                                 autoFocus
-                                selectionColor="#0A84FF"
+                                selectionColor={theme.colors.status.active}
                             />
                             <Text style={styles.bigInputSuffix}>cm</Text>
                         </View>
@@ -309,14 +383,13 @@ export default function AccountScreen() {
                                 <Text style={styles.btnCancelText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.btnSave} onPress={() => handleSave('height')} disabled={isSaving}>
-                                {isSaving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.btnSaveText}>Save</Text>}
+                                {isSaving ? <ActivityIndicator color={theme.colors.text.primary} /> : <Text style={styles.btnSaveText}>Save</Text>}
                             </TouchableOpacity>
                         </View>
                     </View>
                 </KeyboardAvoidingView>
             </Modal>
 
-            {/* --- Gender Modal (Visual Cards) --- */}
             <Modal visible={modals.gender} transparent animationType="fade" onRequestClose={() => toggleModal('gender', false)}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalCard}>
@@ -324,7 +397,6 @@ export default function AccountScreen() {
                         <Text style={styles.modalSubtitle}>For physiological calculations.</Text>
                         
                         <View style={styles.genderRow}>
-                            {/* Male Card */}
                             <TouchableOpacity 
                                 style={[styles.genderCard, formData.gender === 'male' && styles.genderCardActive]}
                                 onPress={() => setFormData({ ...formData, gender: 'male' })}
@@ -332,12 +404,11 @@ export default function AccountScreen() {
                                 <Ionicons 
                                     name="male" 
                                     size={32} 
-                                    color={formData.gender === 'male' ? '#FFFFFF' : '#8E8E93'} 
+                                    color={formData.gender === 'male' ? theme.colors.text.primary : theme.colors.text.secondary} 
                                 />
                                 <Text style={[styles.genderLabel, formData.gender === 'male' && styles.genderLabelActive]}>Male</Text>
                             </TouchableOpacity>
 
-                            {/* Female Card */}
                             <TouchableOpacity 
                                 style={[styles.genderCard, formData.gender === 'female' && styles.genderCardActive]}
                                 onPress={() => setFormData({ ...formData, gender: 'female' })}
@@ -345,7 +416,7 @@ export default function AccountScreen() {
                                 <Ionicons 
                                     name="female" 
                                     size={32} 
-                                    color={formData.gender === 'female' ? '#FFFFFF' : '#8E8E93'} 
+                                    color={formData.gender === 'female' ? theme.colors.text.primary : theme.colors.text.secondary} 
                                 />
                                 <Text style={[styles.genderLabel, formData.gender === 'female' && styles.genderLabelActive]}>Female</Text>
                             </TouchableOpacity>
@@ -356,14 +427,13 @@ export default function AccountScreen() {
                                 <Text style={styles.btnCancelText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.btnSave} onPress={() => handleSave('gender')} disabled={isSaving}>
-                                {isSaving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.btnSaveText}>Update</Text>}
+                                {isSaving ? <ActivityIndicator color={theme.colors.text.primary} /> : <Text style={styles.btnSaveText}>Update</Text>}
                             </TouchableOpacity>
                         </View>
                     </View>
                 </View>
             </Modal>
 
-            {/* --- Password Modal --- */}
             <Modal visible={modals.password} transparent animationType="fade" onRequestClose={() => toggleModal('password', false)}>
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
                     <View style={styles.modalCard}>
@@ -376,7 +446,7 @@ export default function AccountScreen() {
                                 value={formData.oldPassword}
                                 onChangeText={(t) => setFormData({ ...formData, oldPassword: t })}
                                 placeholder="Current Password"
-                                placeholderTextColor="#545458"
+                                placeholderTextColor={theme.colors.text.zinc500}
                                 secureTextEntry
                             />
                             <View style={styles.inputSeparator} />
@@ -385,7 +455,7 @@ export default function AccountScreen() {
                                 value={formData.newPassword}
                                 onChangeText={(t) => setFormData({ ...formData, newPassword: t })}
                                 placeholder="New Password"
-                                placeholderTextColor="#545458"
+                                placeholderTextColor={theme.colors.text.zinc500}
                                 secureTextEntry
                             />
                         </View>
@@ -395,7 +465,7 @@ export default function AccountScreen() {
                                 <Text style={styles.btnCancelText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.btnSave} onPress={() => handleSave('password')} disabled={isSaving}>
-                                {isSaving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.btnSaveText}>Change</Text>}
+                                {isSaving ? <ActivityIndicator color={theme.colors.text.primary} /> : <Text style={styles.btnSaveText}>Change</Text>}
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -412,64 +482,98 @@ export default function AccountScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#000000',
+        backgroundColor: theme.colors.background,
     },
     scrollContent: {
-        paddingBottom: 40,
+        padding: theme.spacing.m,
+        paddingTop: theme.spacing.l,
     },
     
-    // --- Header ---
-    headerContainer: {
-        alignItems: 'center',
-        paddingVertical: 32,
+    // --- Stats Cards ---
+    statsContainer: {
+        flexDirection: 'row',
+        gap: theme.spacing.s,
+        marginBottom: theme.spacing.xl,
     },
-    avatarRing: {
-        padding: 3,
-        borderRadius: 50,
+    statCard: {
+        flex: 1,
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.l,
+        padding: theme.spacing.m,
         borderWidth: 1,
-        borderColor: '#2C2C2E',
-        marginBottom: 16,
+        borderColor: theme.colors.ui.border,
     },
-    avatar: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: '#1C1C1E',
-        justifyContent: 'center',
+    statLabel: {
+        fontSize: theme.typography.sizes.label,
+        fontWeight: '600',
+        color: theme.colors.text.secondary,
+        textTransform: 'uppercase',
+        letterSpacing: theme.typography.tracking.labelTight,
+        marginBottom: theme.spacing.s,
+    },
+    statValueContainer: {
+        flexDirection: 'row',
         alignItems: 'center',
+        gap: 6,
     },
-    avatarText: {
-        fontSize: 32,
-        fontWeight: '500',
-        color: '#8E8E93',
+    statValue: {
+        fontSize: theme.typography.sizes.xxl,
+        fontWeight: '800',
+        color: theme.colors.status.rest,
     },
-    profileName: {
-        fontSize: 24,
+    statIcon: {
+        marginTop: 4,
+    },
+    
+    // --- Settings Cards ---
+    settingsContainer: {
+        gap: theme.spacing.s,
+    },
+    settingCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.l,
+        padding: theme.spacing.m,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+        gap: theme.spacing.m,
+    },
+    settingContent: {
+        flex: 1,
+    },
+    settingTitle: {
+        fontSize: theme.typography.sizes.m,
         fontWeight: '700',
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         marginBottom: 4,
     },
-    profileEmail: {
-        fontSize: 15,
-        color: '#8E8E93',
+    settingSubtitle: {
+        fontSize: theme.typography.sizes.xs,
+        color: theme.colors.text.secondary,
+        textTransform: 'uppercase',
+        letterSpacing: theme.typography.tracking.labelTight,
+    },
+    subscriptionSubtitle: {
+        color: theme.colors.status.rest,
     },
 
     // --- Sections ---
     sectionContainer: {
-        marginTop: 24,
-        marginHorizontal: 16,
+        marginTop: theme.spacing.xl,
+        marginHorizontal: theme.spacing.m,
     },
     sectionTitle: {
-        fontSize: 13,
+        fontSize: theme.typography.sizes.xs,
         fontWeight: '600',
-        color: '#636366',
+        color: theme.colors.text.zinc600,
         textTransform: 'uppercase',
-        marginLeft: 16,
-        marginBottom: 8,
+        marginLeft: theme.spacing.m,
+        marginBottom: theme.spacing.s,
     },
     sectionContent: {
-        backgroundColor: '#1C1C1E',
-        borderRadius: 16, 
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.l, 
         overflow: 'hidden',
     },
 
@@ -478,10 +582,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: 16,
-        backgroundColor: '#1C1C1E',
+        padding: theme.spacing.m,
+        backgroundColor: theme.colors.ui.glass,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: '#2C2C2E',
+        borderBottomColor: theme.colors.ui.border,
     },
     rowLast: {
         borderBottomWidth: 0,
@@ -497,49 +601,119 @@ const styles = StyleSheet.create({
         borderRadius: 7,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 12,
+        marginRight: theme.spacing.s,
     },
     rowLabel: {
-        fontSize: 17,
-        color: '#FFFFFF',
+        fontSize: theme.typography.sizes.m,
+        color: theme.colors.text.primary,
         fontWeight: '400',
     },
     rowLabelDestructive: {
-        color: '#FF3B30',
+        color: theme.colors.status.error,
     },
     rowRight: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     rowValue: {
-        fontSize: 17,
-        color: '#8E8E93',
+        fontSize: theme.typography.sizes.m,
+        color: theme.colors.text.secondary,
         marginRight: 4,
     },
 
     versionText: {
         textAlign: 'center',
-        color: '#3A3A3C',
-        fontSize: 13,
-        marginTop: 32,
-        marginBottom: 20,
+        color: theme.colors.text.zinc700,
+        fontSize: theme.typography.sizes.xs,
+        marginTop: theme.spacing.xxl,
+        marginBottom: theme.spacing.l,
+    },
+
+    // --- PRO Subscription Styles ---
+    proCard: {
+        backgroundColor: `${theme.colors.status.rest}15`,
+        borderRadius: theme.borderRadius.l,
+        padding: theme.spacing.l,
+        borderWidth: 1,
+        borderColor: `${theme.colors.status.rest}30`,
+        marginBottom: theme.spacing.s,
+    },
+    proHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    proIconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: `${theme.colors.status.rest}25`,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: theme.spacing.m,
+    },
+    proTextContainer: {
+        flex: 1,
+    },
+    proTitle: {
+        fontSize: theme.typography.sizes.l,
+        fontWeight: '700',
+        color: theme.colors.status.rest,
+        marginBottom: 4,
+    },
+    proSubtitle: {
+        fontSize: theme.typography.sizes.s,
+        color: theme.colors.text.secondary,
+    },
+    upgradeCard: {
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.l,
+        padding: theme.spacing.l,
+        borderWidth: 2,
+        borderColor: theme.colors.status.rest,
+        borderStyle: 'dashed',
+    },
+    upgradeContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    upgradeIconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: `${theme.colors.status.rest}20`,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: theme.spacing.m,
+    },
+    upgradeTextContainer: {
+        flex: 1,
+    },
+    upgradeTitle: {
+        fontSize: theme.typography.sizes.l,
+        fontWeight: '700',
+        color: theme.colors.text.primary,
+        marginBottom: 4,
+    },
+    upgradeSubtitle: {
+        fontSize: theme.typography.sizes.s,
+        color: theme.colors.text.secondary,
     },
 
     // --- Modern Modals ---
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.85)', // Darker overlay for focus
+        backgroundColor: 'rgba(0,0,0,0.85)',
         justifyContent: 'center',
-        padding: 16,
+        padding: theme.spacing.m,
     },
     modalCard: {
-        backgroundColor: '#1C1C1E',
-        borderRadius: 24,
-        padding: 24,
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.xxl,
+        padding: theme.spacing.xl,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#2C2C2E',
-        shadowColor: "#000",
+        borderColor: theme.colors.ui.border,
+        shadowColor: theme.colors.background,
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.5,
         shadowRadius: 20,
@@ -547,20 +721,20 @@ const styles = StyleSheet.create({
     },
     modalHeader: {
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: theme.spacing.l,
     },
     modalTitle: {
-        fontSize: 20,
+        fontSize: theme.typography.sizes.l,
         fontWeight: '700',
-        color: '#FFFFFF',
-        marginBottom: 8,
+        color: theme.colors.text.primary,
+        marginBottom: theme.spacing.s,
         textAlign: 'center',
     },
     modalSubtitle: {
-        fontSize: 15,
-        color: '#8E8E93',
+        fontSize: theme.typography.sizes.s,
+        color: theme.colors.text.secondary,
         textAlign: 'center',
-        marginBottom: 24,
+        marginBottom: theme.spacing.xl,
     },
 
     // Height Specific
@@ -568,102 +742,102 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'baseline',
         justifyContent: 'center',
-        marginBottom: 32,
+        marginBottom: theme.spacing.xxl,
     },
     bigInput: {
-        fontSize: 48,
+        fontSize: theme.typography.sizes.xxxl,
         fontWeight: '700',
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         minWidth: 60,
         textAlign: 'center',
     },
     bigInputSuffix: {
-        fontSize: 20,
+        fontSize: theme.typography.sizes.l,
         fontWeight: '600',
-        color: '#8E8E93',
-        marginLeft: 8,
+        color: theme.colors.text.secondary,
+        marginLeft: theme.spacing.s,
     },
 
     // Gender Specific (Visual Cards)
     genderRow: {
         flexDirection: 'row',
-        gap: 12,
-        marginBottom: 32,
+        gap: theme.spacing.s,
+        marginBottom: theme.spacing.xxl,
         width: '100%',
     },
     genderCard: {
         flex: 1,
-        backgroundColor: '#2C2C2E',
-        borderRadius: 16,
-        paddingVertical: 24,
+        backgroundColor: theme.colors.ui.border,
+        borderRadius: theme.borderRadius.l,
+        paddingVertical: theme.spacing.xl,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 2,
         borderColor: 'transparent',
     },
     genderCardActive: {
-        backgroundColor: '#0A84FF',
-        borderColor: '#007AFF',
+        backgroundColor: theme.colors.status.active,
+        borderColor: theme.colors.status.active,
     },
     genderLabel: {
-        marginTop: 8,
-        fontSize: 15,
-        color: '#8E8E93',
+        marginTop: theme.spacing.s,
+        fontSize: theme.typography.sizes.s,
+        color: theme.colors.text.secondary,
         fontWeight: '600',
     },
     genderLabelActive: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
     },
 
     // Password Specific (Stacked Inputs)
     inputStack: {
         width: '100%',
-        backgroundColor: '#2C2C2E',
-        borderRadius: 14,
-        marginBottom: 24,
+        backgroundColor: theme.colors.ui.border,
+        borderRadius: theme.borderRadius.m,
+        marginBottom: theme.spacing.xl,
     },
     cleanInput: {
-        padding: 16,
-        fontSize: 17,
-        color: '#FFFFFF',
+        padding: theme.spacing.m,
+        fontSize: theme.typography.sizes.m,
+        color: theme.colors.text.primary,
         height: 54,
     },
     inputSeparator: {
         height: StyleSheet.hairlineWidth,
-        backgroundColor: '#3A3A3C',
-        marginLeft: 16,
+        backgroundColor: theme.colors.ui.border,
+        marginLeft: theme.spacing.m,
     },
 
     // Modal Action Buttons
     modalActions: {
         flexDirection: 'row',
-        gap: 12,
+        gap: theme.spacing.s,
         width: '100%',
     },
     btnCancel: {
         flex: 1,
         height: 50,
         borderRadius: 25,
-        backgroundColor: '#2C2C2E',
+        backgroundColor: theme.colors.ui.border,
         alignItems: 'center',
         justifyContent: 'center',
     },
     btnCancelText: {
-        color: '#FFFFFF',
-        fontSize: 17,
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.m,
         fontWeight: '600',
     },
     btnSave: {
         flex: 1,
         height: 50,
         borderRadius: 25,
-        backgroundColor: '#0A84FF',
+        backgroundColor: theme.colors.status.active,
         alignItems: 'center',
         justifyContent: 'center',
     },
     btnSaveText: {
-        color: '#FFFFFF',
-        fontSize: 17,
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.m,
         fontWeight: '600',
     },
 });

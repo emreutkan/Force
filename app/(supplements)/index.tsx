@@ -1,6 +1,5 @@
 import { addUserSupplement, deleteSupplementLog, getSupplementLogs, getSupplements, getTodayLogs, getUserSupplements, logUserSupplement, Supplement, SupplementLog, UserSupplement } from '@/api/Supplements';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
@@ -163,7 +162,6 @@ export default function SupplementsScreen() {
                 activeOpacity={0.7}
                 onPress={() => openHistory(item)}
             >
-                {/* Left: Info */}
                 <View style={styles.rowLeft}>
                     <Text style={styles.rowTitle}>{item.supplement_details.name}</Text>
                     <Text style={styles.rowSubtitle}>
@@ -171,7 +169,6 @@ export default function SupplementsScreen() {
                     </Text>
                 </View>
 
-                {/* Right: Action Button (Pill Style) */}
                 <TouchableOpacity 
                     style={[styles.logButton, isLogged && styles.logButtonDone]}
                     onPress={() => !isLogged && handleLog(item)}
@@ -211,32 +208,18 @@ export default function SupplementsScreen() {
                 }
             />
 
-            {/* Floating Add Button */}
             <View style={[styles.floatingButtonContainer, { bottom: insets.bottom + 80 }]}>
-                {Platform.OS === 'ios' ? (
-                    <BlurView intensity={80} tint="dark" style={styles.floatingButtonBlur}>
-                        <TouchableOpacity 
-                            style={styles.floatingButton}
-                            onPress={() => setModals(m => ({ ...m, add: true }))}
-                            activeOpacity={0.7}
-                        >
-                            <Ionicons name="add" size={24} color="#0A84FF" />
-                        </TouchableOpacity>
-                    </BlurView>
-                ) : (
-                    <View style={[styles.floatingButtonBlur, styles.androidFloatingButton]}>
-                        <TouchableOpacity 
-                            style={styles.floatingButton}
-                            onPress={() => setModals(m => ({ ...m, add: true }))}
-                            activeOpacity={0.7}
-                        >
-                            <Ionicons name="add" size={24} color="#0A84FF" />
-                        </TouchableOpacity>
-                    </View>
-                )}
+                <View style={styles.floatingButtonBlur}>
+                    <TouchableOpacity 
+                        style={styles.floatingButton}
+                        onPress={() => setModals(m => ({ ...m, add: true }))}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="add" size={24} color="#0A84FF" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
-            {/* ================= ADD MODAL ================= */}
             <Modal visible={modals.add} animationType="slide" presentationStyle="pageSheet">
                 <View style={styles.modalContainer}>
                     <View style={styles.modalHeader}>
@@ -327,7 +310,6 @@ export default function SupplementsScreen() {
                 </View>
             </Modal>
 
-            {/* ================= HISTORY MODAL ================= */}
             <Modal visible={modals.history} animationType="slide" presentationStyle="pageSheet">
                 <View style={styles.modalContainer}>
                     <View style={styles.modalHeader}>
@@ -522,9 +504,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 12,
         elevation: 10,
-    },
-    androidFloatingButton: {
-        backgroundColor: '#1C1C1E',
     },
     floatingButton: {
         width: 48,

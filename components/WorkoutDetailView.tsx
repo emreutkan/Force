@@ -1,6 +1,6 @@
 import { useActiveWorkoutStore } from '@/state/userStore';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RestTimerBar from './RestTimerBar';
 import WorkoutDetailsView from './WorkoutDetailsView';
@@ -75,14 +75,12 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEd
 
     return (
         <View style={{ flex: 1, backgroundColor: '#000000',  }}>
-            <View style={[styles.container, 
-                isActive ? { paddingTop: insets.top, paddingBottom: insets.bottom } : { paddingBottom: insets.bottom }]}>
-                <KeyboardAvoidingView 
-                    style={{ flex: 1 } }
-                    behavior={Platform.OS === "ios" ? "padding" : undefined}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+            {isViewOnly && !isActive ? (
+                <ScrollView 
+                    style={{ flex: 1 }}
+                    contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}
+                    showsVerticalScrollIndicator={false}
                 >
-                    {/* Workout Details View - Hidden in edit mode */}
                     {!isEditMode && (
                         <WorkoutDetailsView 
                             workout={workout} 
@@ -91,12 +89,6 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEd
                         />
                     )}
                     
-                    {/* Rest Timer Bar */}
-                    {isActive && !isEditMode && (
-                        <RestTimerBar lastSetTimestamp={lastSetTimestamp} category={lastExerciseCategory} />
-                    )}
-
-                    {/* Workout Exercise Details View */}
                     <WorkoutExerciseDetailsView
                         workout={workout}
                         exercises={exercises}
@@ -111,10 +103,44 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEd
                         onShowStatistics={onShowStatistics}
                         onInputFocus={handleInputFocus}
                     />
-                </KeyboardAvoidingView>
-            </View>
-            
-    
+                </ScrollView>
+            ) : (
+                <View style={[styles.container, 
+                    isActive ? { paddingTop: insets.top, paddingBottom: insets.bottom } : { paddingBottom: insets.bottom }]}>
+                    <KeyboardAvoidingView 
+                        style={{ flex: 1 } }
+                        behavior={Platform.OS === "ios" ? "padding" : undefined}
+                        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+                    >
+                        {!isEditMode && (
+                            <WorkoutDetailsView 
+                                workout={workout} 
+                                elapsedTime={elapsedTime} 
+                                isActive={isActive} 
+                            />
+                        )}
+                        
+                        {isActive && !isEditMode && (
+                            <RestTimerBar lastSetTimestamp={lastSetTimestamp} category={lastExerciseCategory} />
+                        )}
+
+                        <WorkoutExerciseDetailsView
+                            workout={workout}
+                            exercises={exercises}
+                            setExercises={setExercises}
+                            isActive={isActive}
+                            isEditMode={isEditMode}
+                            isViewOnly={isViewOnly}
+                            onRemoveExercise={onRemoveExercise}
+                            onAddSet={handleAddSet}
+                            onDeleteSet={onDeleteSet}
+                            onUpdateSet={onUpdateSet}
+                            onShowStatistics={onShowStatistics}
+                            onInputFocus={handleInputFocus}
+                        />
+                    </KeyboardAvoidingView>
+                </View>
+            )}
         </View>
     );
 }
@@ -124,6 +150,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         flex: 1,
         backgroundColor: '#000000',
+    },
+    scrollContent: {
+        paddingHorizontal: 0,
     },
     text: {
         color: '#FFFFFF',

@@ -20,6 +20,9 @@ export interface GetAccountResponse {
     height: number | null;
     weight: number | null;
     created_at: string;
+    is_pro: boolean;
+    pro_until: string | null; // ISO datetime string
+    subscription_id: string | null;
 }
 
 export interface Workout {
@@ -271,6 +274,8 @@ export interface VolumePeriod {
 export interface VolumeAnalysisResponse {
     period: VolumePeriod;
     weeks: WeeklyVolumeData[];
+    is_pro: boolean;
+    weeks_limit?: number; // Only present for FREE users (default: 4)
 }
 
 export interface VolumeAnalysisFilters {
@@ -368,7 +373,8 @@ export interface CNSRecovery {
 
 export interface RecoveryStatusResponse {
     recovery_status: Record<string, MuscleRecovery>;
-    cns_recovery: CNSRecovery;
+    cns_recovery: CNSRecovery | null; // null for FREE users
+    is_pro: boolean;
     timestamp: string;
 }
 
@@ -495,6 +501,8 @@ export interface VolumePeriod {
 export interface VolumeAnalysisResponse {
     period: VolumePeriod;
     weeks: WeeklyVolumeData[];
+    is_pro: boolean;
+    weeks_limit?: number; // Only present for FREE users (default: 4)
 }
 
 export interface VolumeAnalysisFilters {
@@ -621,6 +629,8 @@ export interface WorkoutSummaryResponse {
         muscles_worked: string[];
         exercises_performed: number;
     };
+    is_pro: boolean;
+    has_advanced_insights: boolean; // true for PRO users (includes 1RM analysis)
 }
 
 // ============================================
@@ -738,4 +748,15 @@ export interface TotalWorkoutsPerformedResponse {
     average_workouts_per_week: number;
     workouts_this_year: number;
     projected_workouts_this_year: number;
+}
+
+// ============================================
+// PRO SUBSCRIPTION TYPES
+// ============================================
+
+export interface PROErrorResponse {
+    error: "PRO feature";
+    message: string;
+    is_pro: false;
+    upgrade_url: string;
 }

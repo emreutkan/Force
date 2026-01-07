@@ -1,9 +1,11 @@
 import { getVolumeAnalysis } from '@/api/VolumeAnalysis';
 import { VolumeAnalysisResponse } from '@/api/types';
-import UnifiedHeader from '@/components/UnifiedHeader';
+import UpgradeModal from '@/components/UpgradeModal';
+import UpgradePrompt from '@/components/UpgradePrompt';
+import { commonStyles, theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
@@ -56,14 +58,23 @@ export default function VolumeAnalysisScreen() {
     const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
     const [filterWeeks, setFilterWeeks] = useState('12');
     const [isFilterVisible, setIsFilterVisible] = useState(false);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     // --- Data Loading ---
     const loadAnalysis = async () => {
         setIsLoading(true);
         try {
-            const weeks = parseInt(filterWeeks) || 12;
-            const data = await getVolumeAnalysis({ weeks_back: weeks });
-            if (data?.weeks) setAnalysis(data);
+            const requestedWeeks = parseInt(filterWeeks) || 12;
+            const data = await getVolumeAnalysis({ weeks_back: requestedWeeks });
+            if (data?.weeks) {
+                setAnalysis(data);
+                // Check if user hit the limit
+                if (!data.is_pro && data.weeks_limit && requestedWeeks > data.weeks_limit) {
+                    setShowUpgradeModal(true);
+                    // Auto-limit to max weeks
+                    setFilterWeeks(data.weeks_limit.toString());
+                }
+            }
         } catch (error) {
             console.error(error);
         } finally {
@@ -189,7 +200,6 @@ export default function VolumeAnalysisScreen() {
                     <Text style={styles.rowValue}>{item.average_volume.toFixed(0)} <Text style={styles.rowUnit}>kg/wk</Text></Text>
                 </View>
 
-                {/* Progress Bar */}
                 <View style={styles.progressTrack}>
                     <View style={[styles.progressFill, { width: `${widthPct}%`, backgroundColor: color }]} />
                 </View>
@@ -220,8 +230,14 @@ export default function VolumeAnalysisScreen() {
                 </View>
             ) : (
                 <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20, marginTop: 58 }]}>
+                    {!analysis.is_pro && analysis.weeks_limit && (
+                        <UpgradePrompt
+                            compact
+                            feature={`Viewing last ${analysis.weeks_limit} weeks only`}
+                            message="Upgrade to PRO for unlimited history"
+                        />
+                    )}
                     
-                    {/* Overview Chips */}
                     <View style={styles.statsRow}>
                         <View style={styles.statChip}>
                             <Text style={styles.statChipValue}>{totalStats.workouts}</Text>
@@ -237,10 +253,8 @@ export default function VolumeAnalysisScreen() {
                         </View>
                     </View>
 
-                    {/* Interactive Chart Section */}
                     {renderChart()}
 
-                    {/* Muscle List */}
                     <Text style={styles.sectionTitle}>MUSCLE GROUPS</Text>
                     <FlatList
                         data={summaryStats}
@@ -252,7 +266,6 @@ export default function VolumeAnalysisScreen() {
                 </ScrollView>
             )}
 
-            {/* Filter Modal */}
             <Modal visible={isFilterVisible} transparent animationType="fade" onRequestClose={() => setIsFilterVisible(false)}>
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
                     <View style={styles.modalCard}>
@@ -280,6 +293,13 @@ export default function VolumeAnalysisScreen() {
                     </View>
                 </KeyboardAvoidingView>
             </Modal>
+
+            <UpgradeModal
+                visible={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+                feature="Unlimited Volume History"
+                message="View volume analysis for any time period"
+            />
         </View>
     );
 }

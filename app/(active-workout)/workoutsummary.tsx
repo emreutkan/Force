@@ -1,5 +1,6 @@
 import { getWorkout, getWorkoutSummary } from '@/api/Workout';
-import UnifiedHeader from '@/components/UnifiedHeader';
+import { WorkoutSummaryResponse } from '@/api/types';
+import UpgradePrompt from '@/components/UpgradePrompt';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -61,7 +62,7 @@ export default function WorkoutSummaryScreen() {
     const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
     const insets = useSafeAreaInsets();
     const [workout, setWorkout] = useState<any>(null);
-    const [summary, setSummary] = useState<any>(null);
+    const [summary, setSummary] = useState<WorkoutSummaryResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -99,7 +100,6 @@ export default function WorkoutSummaryScreen() {
     if (isLoading) {
         return (
             <View style={[styles.container, { paddingTop: insets.top }]}>
-                <UnifiedHeader title="Summary" />
                 <View style={[styles.center, { marginTop: 58 }]}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
                 </View>
@@ -117,13 +117,10 @@ export default function WorkoutSummaryScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <UnifiedHeader title="Workout Summary" />
-            
             <Animated.ScrollView 
                 contentContainerStyle={[styles.scrollContent, { marginTop: 58 }]}
                 showsVerticalScrollIndicator={false}
             >
-                {/* 1. HERO SCORE CARD */}
                 <Animated.View entering={FadeInUp.delay(100).springify()} style={styles.heroCard}>
                     <View style={styles.heroHeader}>
                         <View>
@@ -134,7 +131,6 @@ export default function WorkoutSummaryScreen() {
                                 })}
                             </Text>
                         </View>
-                        {/* Score Ring Representation */}
                         <View style={[styles.scoreRing, { borderColor: scoreColor }]}>
                             <Text style={[styles.scoreText, { color: scoreColor }]}>{score.toFixed(1)}</Text>
                         </View>
@@ -147,7 +143,6 @@ export default function WorkoutSummaryScreen() {
                     </View>
                 </Animated.View>
 
-                {/* 2. STATS GRID (BENTO) */}
                 <View style={styles.gridContainer}>
                     <View style={styles.row}>
                         <StatBox 
@@ -183,12 +178,10 @@ export default function WorkoutSummaryScreen() {
                     </View>
                 </View>
 
-                {/* 3. AI ANALYSIS */}
                 {summary && (
                     <Animated.View entering={FadeInDown.delay(600)} style={styles.section}>
                         <Text style={styles.sectionTitle}>Performance Analysis</Text>
                         
-                        {/* Positives */}
                         {summary.positives && Object.values(summary.positives).length > 0 && (
                             <View style={styles.analysisCard}>
                                 <Text style={[styles.analysisHeader, { color: COLORS.success }]}>Strengths</Text>
@@ -198,7 +191,6 @@ export default function WorkoutSummaryScreen() {
                             </View>
                         )}
 
-                        {/* Negatives */}
                         {summary.negatives && Object.values(summary.negatives).length > 0 && (
                             <View style={styles.analysisCard}>
                                 <Text style={[styles.analysisHeader, { color: COLORS.danger }]}>Areas to Improve</Text>
@@ -207,10 +199,16 @@ export default function WorkoutSummaryScreen() {
                                 ))}
                             </View>
                         )}
+
+                        {!summary.has_advanced_insights && (
+                            <UpgradePrompt
+                                feature="Advanced Workout Insights"
+                                message="See 1RM performance tracking and detailed analysis"
+                            />
+                        )}
                     </Animated.View>
                 )}
 
-                {/* 4. EXERCISE LIST COMPACT */}
                 <Animated.View entering={FadeInDown.delay(700)} style={styles.section}>
                     <Text style={styles.sectionTitle}>Exercise Log</Text>
                     <View style={styles.exerciseCard}>
@@ -227,7 +225,6 @@ export default function WorkoutSummaryScreen() {
                     </View>
                 </Animated.View>
 
-                {/* 5. ACTIONS */}
                 <Animated.View entering={FadeInDown.delay(800)} style={styles.actions}>
                     <TouchableOpacity style={styles.primaryBtn} onPress={() => router.replace('/(home)')}>
                         <Text style={styles.primaryBtnText}>Done</Text>

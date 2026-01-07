@@ -48,7 +48,6 @@ export default function ExerciseStatisticsScreen() {
 
         return (
             <View style={styles.chartWrapper}>
-                {/* Y-axis labels */}
                 <View style={styles.chartYAxis}>
                     {[maxValue, minValue + range * 0.5, minValue].map((value, idx) => (
                         <Text key={idx} style={styles.chartYLabelText}>
@@ -57,9 +56,7 @@ export default function ExerciseStatisticsScreen() {
                     ))}
                 </View>
                 
-                {/* Chart area */}
                 <View style={styles.chartArea}>
-                    {/* Grid lines */}
                     {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => (
                         <View
                             key={idx}
@@ -72,7 +69,6 @@ export default function ExerciseStatisticsScreen() {
                         />
                     ))}
                     
-                    {/* Bars */}
                     <View style={styles.barsContainer}>
                         {values.map((value, index) => {
                             const height = ((value - minValue) / range) * (chartHeight - 40);
@@ -101,7 +97,6 @@ export default function ExerciseStatisticsScreen() {
                     </View>
                 </View>
                 
-                {/* X-axis labels */}
                 <View style={styles.chartLabels}>
                     {data.map((entry, idx) => {
                         const date = new Date(entry.workout_date);

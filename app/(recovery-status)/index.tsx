@@ -1,8 +1,10 @@
 import { getRecoveryStatus } from '@/api/Workout';
 import { CNSRecovery, MuscleRecovery, RecoveryStatusResponse } from '@/api/types';
-import UnifiedHeader from '@/components/UnifiedHeader';
+import UpgradePrompt from '@/components/UpgradePrompt';
+import { commonStyles, theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -10,6 +12,7 @@ import {
     ScrollView,
     StyleSheet,
     Text,
+    TouchableOpacity,
     View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,6 +58,7 @@ export default function RecoveryStatusScreen() {
     // --- State ---
     const [statusMap, setStatusMap] = useState<Record<string, MuscleRecovery>>({});
     const [cnsRecovery, setCnsRecovery] = useState<CNSRecovery | null>(null);
+    const [isPro, setIsPro] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -67,6 +71,9 @@ export default function RecoveryStatusScreen() {
             }
             if (res?.cns_recovery) {
                 setCnsRecovery(res.cns_recovery);
+            }
+            if (res?.is_pro !== undefined) {
+                setIsPro(res.is_pro);
             }
         } catch (e) {
             console.error(e);
@@ -153,7 +160,6 @@ export default function RecoveryStatusScreen() {
                     </View>
                 </View>
 
-                {/* Progress Bar */}
                 <View style={styles.progressContainer}>
                     <View style={styles.track}>
                         <View style={[styles.fill, { width: `${pct}%`, backgroundColor: color }]} />
@@ -179,35 +185,38 @@ export default function RecoveryStatusScreen() {
         const hoursLeft = Number(data.hours_until_recovery);
         const isReady = data.is_recovered || pct >= 90;
 
+        // Format time for display (e.g., "4H", "36H")
+        let timeDisplay = 'Ready';
+        if (!isReady && hoursLeft > 0) {
+            if (hoursLeft < 1) {
+                const minutes = Math.ceil(hoursLeft * 60);
+                timeDisplay = `${minutes}M`;
+            } else if (hoursLeft < 24) {
+                timeDisplay = `${Math.ceil(hoursLeft)}H`;
+            } else {
+                const days = Math.floor(hoursLeft / 24);
+                const hours = Math.ceil(hoursLeft % 24);
+                timeDisplay = hours > 0 ? `${days}D ${hours}H` : `${days}D`;
+            }
+        }
+
         return (
-            <View style={[styles.card, !isReady && styles.cardActive]} key={muscle}>
-                <View style={styles.cardHeader}>
-                    <View style={styles.nameContainer}>
-                        <View style={[styles.indicatorDot, { backgroundColor: color }]} />
-                        <Text style={styles.muscleName}>{muscle.replace(/_/g, ' ')}</Text>
+            <View style={styles.card} key={muscle}>
+                <View style={styles.cardContent}>
+                    <View style={styles.cardLeft}>
+                        <View style={styles.nameContainer}>
+                            <Text style={styles.muscleName}>{muscle.replace(/_/g, ' ').toUpperCase()}</Text>
+                        </View>
                     </View>
-                    <View style={[styles.badge, { backgroundColor: isReady ? 'rgba(48,209,88,0.1)' : 'rgba(255,159,10,0.1)' }]}>
-                        <Text style={[styles.badgeText, { color: isReady ? '#30D158' : '#FF9F0A' }]}>
-                            {isReady ? 'Ready' : formatTimeRemaining(hoursLeft)}
-                        </Text>
+                    <View style={styles.cardRight}>
+                        <Text style={styles.percentageText}>{pct.toFixed(0)}%</Text>
+                        <Text style={styles.timeText}>{timeDisplay}</Text>
                     </View>
                 </View>
-
-                {/* Progress Bar */}
                 <View style={styles.progressContainer}>
                     <View style={styles.track}>
-                        <View style={[styles.fill, { width: `${pct}%`, backgroundColor: color }]} />
+                        <View style={[styles.fill, { width: `${pct}%` }]} />
                     </View>
-                </View>
-
-                <View style={styles.cardFooter}>
-                    <Text style={styles.pctText}>{pct.toFixed(0)}% Recovered</Text>
-                    {!isReady && Number(data.fatigue_score) > 0 && (
-                        <View style={styles.fatigueRow}>
-                            <Ionicons name="flash" size={12} color="#8E8E93" />
-                            <Text style={styles.fatigueText}>Fatigue: {Number(data.fatigue_score).toFixed(1)}</Text>
-                        </View>
-                    )}
                 </View>
             </View>
         );
@@ -215,46 +224,45 @@ export default function RecoveryStatusScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <UnifiedHeader title="Recovery Status" />
+            <LinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={styles.gradientBg}
+            />
+            
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.l, paddingHorizontal: theme.spacing.l, paddingTop: theme.spacing.l }}>
+                <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
+                    <Ionicons name="chevron-back" size={24} color={theme.colors.text.zinc600} />
+                </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                    <Text style={typographyStyles.h2}>RECOVERY</Text>
+                    <Text style={[typographyStyles.labelMuted, { marginTop: theme.spacing.xs, color: theme.colors.text.brand }]}>REAL-TIME TRACKING </Text>
+                </View>
+            </View>
+        
 
             {isLoading ? (
-                <View style={[styles.center, { marginTop: 58 }]}>
-                    <ActivityIndicator size="large" color="#0A84FF" />
+                <View style={[styles.center]}>
+                    <ActivityIndicator size="large" color={theme.colors.status.active} />
                 </View>
             ) : (
                 <ScrollView 
-                    contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 20, marginTop: 58 }]}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0A84FF" />}
+                    contentContainerStyle={[styles.content, { paddingBottom: insets.bottom }]}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.status.active} />}
                 >
-                    {/* Summary Dashboard */}
-                    {stats && (
-                        <View style={styles.dashboard}>
-                            <View style={styles.statBox}>
-                                <Text style={[styles.statValue, { color: '#30D158' }]}>{stats.recovered}</Text>
-                                <Text style={styles.statLabel}>READY</Text>
-                            </View>
-                            <View style={styles.statDivider} />
-                            <View style={styles.statBox}>
-                                <Text style={[styles.statValue, { color: '#FF9F0A' }]}>{stats.recovering}</Text>
-                                <Text style={styles.statLabel}>RECOVERING</Text>
-                            </View>
-                            <View style={styles.statDivider} />
-                            <View style={styles.statBox}>
-                                <Text style={styles.statValue}>{stats.avg}%</Text>
-                                <Text style={styles.statLabel}>AVG LEVEL</Text>
-                            </View>
-                        </View>
-                    )}
+         
 
-                    {/* CNS Recovery Card */}
-                    {cnsRecovery && !cnsRecovery.is_recovered && cnsRecovery.cns_load > 0 && (
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>System Recovery</Text>
-                            {renderCNSCard(cnsRecovery)}
-                        </View>
-                    )}
+                    <View style={styles.section }>
+                        <Text style={styles.sectionTitle}>System Recovery</Text>
+                        {cnsRecovery ? (
+                            !cnsRecovery.is_recovered && cnsRecovery.cns_load > 0 && renderCNSCard(cnsRecovery)
+                        ) : (
+                            <UpgradePrompt
+                                feature="CNS Recovery Tracking"
+                                message="Track your Central Nervous System recovery to optimize training"
+                            />
+                        )}
+                    </View>
 
-                    {/* Muscle Groups */}
                     {(['Upper Body', 'Lower Body', 'Core'] as const).map(category => {
                         const items = groupedData[category];
                         if (!items || items.length === 0) return null;
@@ -271,7 +279,7 @@ export default function RecoveryStatusScreen() {
 
                     {(!stats || stats.avg === 0 && stats.recovered === 0) && (
                         <View style={styles.emptyState}>
-                            <Ionicons name="fitness-outline" size={64} color="#2C2C2E" />
+                            <Ionicons name="fitness-outline" size={64} color={theme.colors.ui.border} />
                             <Text style={styles.emptyText}>No recovery data available.</Text>
                             <Text style={styles.emptySub}>Complete workouts to track muscle fatigue.</Text>
                         </View>
@@ -283,69 +291,172 @@ export default function RecoveryStatusScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#000000' },
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    content: { padding: 16 },
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+    },
+    gradientBg: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+    center: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    content: {
+        padding: theme.spacing.m,
+    },
 
     // Dashboard
     dashboard: {
         flexDirection: 'row',
-        backgroundColor: '#1C1C1E',
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 32,
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.l,
+        padding: theme.spacing.l,
+        marginBottom: theme.spacing.xxl,
         borderWidth: 1,
-        borderColor: '#2C2C2E',
+        borderColor: theme.colors.ui.border,    
     },
-    statBox: { flex: 1, alignItems: 'center' },
-    statValue: { fontSize: 24, fontWeight: '700', color: '#FFF', marginBottom: 4 },
-    statLabel: { fontSize: 11, fontWeight: '600', color: '#8E8E93', letterSpacing: 0.5 },
-    statDivider: { width: 1, backgroundColor: '#2C2C2E', height: '80%', alignSelf: 'center' },
+    statBox: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    statValue: {
+        fontSize: theme.typography.sizes.xl,
+        fontWeight: '700',
+        color: theme.colors.text.primary,
+        marginBottom: 4,
+    },
+    statLabel: {
+        fontSize: theme.typography.sizes.label,
+        fontWeight: '600',
+        color: theme.colors.text.secondary,
+        letterSpacing: theme.typography.tracking.labelTight,
+    },
+    statDivider: {
+        width: 1,
+        backgroundColor: theme.colors.ui.border,
+        height: '80%',
+        alignSelf: 'center',
+    },
 
     // Section
-    section: { marginBottom: 24 },
-    sectionTitle: { fontSize: 13, fontWeight: '600', color: '#636366', marginBottom: 12, marginLeft: 4, textTransform: 'uppercase' },
+    section: {
+        marginBottom: theme.spacing.xl,
+        marginTop: theme.spacing.xl,
+    },
+    sectionTitle: {
+        fontSize: theme.typography.sizes.xs,
+        fontWeight: '600',
+        color: theme.colors.text.zinc600,
+        marginBottom: theme.spacing.s,
+        marginLeft: 4,
+        textTransform: 'uppercase',
+    },
     
     // Grid/List
-    grid: { gap: 12 },
+    grid: {
+        gap: theme.spacing.s,
+    },
 
     // Card
     card: {
-        backgroundColor: '#1C1C1E',
-        borderRadius: 16,
-        padding: 16,
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.l,
+        paddingHorizontal: theme.spacing.l,
+        paddingVertical: theme.spacing.m,
         borderWidth: 1,
-        borderColor: '#2C2C2E',
+        borderColor: theme.colors.ui.border,
+        marginBottom: theme.spacing.s,
+    },
+    cardContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: theme.spacing.m,
+    },
+    cardLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+        gap: theme.spacing.m,
+    },
+    iconSquare: {
+        width: 40,
+        height: 40,
+        borderRadius: theme.borderRadius.m,
+    },
+    nameContainer: {
+        flex: 1,
+    },
+    muscleName: {
+        fontSize: theme.typography.sizes.l,
+        fontWeight: '800',
+        color: theme.colors.text.primary,
+    },
+    cardRight: {
+        alignItems: 'flex-end',
+    },
+    percentageText: {
+        ...typographyStyles.h2,
+    },
+    timeText: {
+        ...typographyStyles.labelMuted,
     },
     cnsCard: {
         borderWidth: 2,
-        borderColor: '#3A3A3C',
+        borderColor: theme.colors.ui.border,
     },
     cardActive: {
-        borderColor: '#3A3A3C', // Slightly lighter border for active items
-        backgroundColor: '#232325', // Slightly lighter bg
+        borderColor: theme.colors.ui.border,
+        backgroundColor: theme.colors.ui.glass,
     },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-    nameContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     indicatorDot: { width: 8, height: 8, borderRadius: 4 },
-    muscleName: { fontSize: 17, fontWeight: '600', color: '#FFF', textTransform: 'capitalize' },
     
     badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
     badgeText: { fontSize: 12, fontWeight: '600' },
 
     // Progress Bar
-    progressContainer: { marginBottom: 10 },
-    track: { height: 6, backgroundColor: '#2C2C2E', borderRadius: 3, overflow: 'hidden' },
-    fill: { height: '100%', borderRadius: 3 },
+    progressContainer: {
+        marginTop: theme.spacing.s,
+    },
+    track: {
+        height: 6,
+        backgroundColor: theme.colors.ui.progressBg,
+        borderRadius: theme.borderRadius.full,
+        overflow: 'hidden',
+    },
+    fill: {
+        height: '100%',
+        backgroundColor: theme.colors.status.active, // Bright blue
+        borderRadius: theme.borderRadius.full,
+    },
 
     // Footer
     cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    pctText: { color: '#8E8E93', fontSize: 13, fontWeight: '500' },
+    pctText: { color: theme.colors.text.secondary, fontSize: 13, fontWeight: '500' },
     fatigueRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    fatigueText: { color: '#8E8E93', fontSize: 12 },
+    fatigueText: { color: theme.colors.text.secondary, fontSize: 12 },
 
     // Empty
-    emptyState: { alignItems: 'center', marginTop: 60 },
-    emptyText: { color: '#FFF', fontSize: 18, fontWeight: '600', marginTop: 16 },
-    emptySub: { color: '#8E8E93', fontSize: 14, marginTop: 4 },
+    emptyState: {
+        alignItems: 'center',
+        marginTop: 60,
+    },
+    emptyText: {
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.l,
+        fontWeight: '600',
+        marginTop: theme.spacing.m,
+    },
+    emptySub: {
+        color: theme.colors.text.secondary,
+        fontSize: theme.typography.sizes.s,
+        marginTop: 4,
+    },
 });

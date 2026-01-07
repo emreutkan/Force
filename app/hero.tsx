@@ -64,7 +64,6 @@ export default function HeroScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-            {/* Background Decorative Elements */}
             <LinearGradient
                 colors={['rgba(99, 102, 241, 0.3)', 'rgba(99, 102, 241, 0.1)', 'transparent']}
                 style={styles.bgGlow}
@@ -76,7 +75,6 @@ export default function HeroScreen() {
 
   
 
-            {/* Top Brand Tag */}
             <Animated.View 
                 style={[
                     styles.topSection,
@@ -90,7 +88,6 @@ export default function HeroScreen() {
                 <Text style={styles.footerText}>FORCE PERFORMANCE © {new Date().getFullYear()}</Text>
             </Animated.View>
 
-            {/* Hero Section */}
             <Animated.View 
                 style={[
                     styles.middleSection,
@@ -99,7 +96,6 @@ export default function HeroScreen() {
                     }
                 ]}
             >
-                {/* Main Title */}
                 <View style={styles.titleContainer}>
                     <Text style={typographyStyles.hero}>
                         FORCE
@@ -107,12 +103,10 @@ export default function HeroScreen() {
                     </Text>
                 </View>
 
-                {/* Description */}
                 <Text style={styles.description}>
                     Precision gym tracking engineered with research-badcked metrics and advanced recovery biometrics.
                 </Text>
 
-                {/* Feature Highlight */}
                 <View style={styles.featureContainer}>
                     <View style={styles.dividerLine} />
                     <View style={styles.featureContent}>
@@ -123,7 +117,6 @@ export default function HeroScreen() {
                 </View>
             </Animated.View>
 
-            {/* Auth Controls */}
             <Animated.View 
                 style={[
                     styles.bottomSection,
@@ -132,7 +125,6 @@ export default function HeroScreen() {
                     }
                 ]}
             >
-                {/* Primary Button */}
                 <TouchableOpacity 
                     style={styles.primaryButton}
                     onPress={handleStartLogging}

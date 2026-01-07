@@ -1,26 +1,14 @@
 import { MuscleRecovery } from '@/api/types';
-import { theme } from '@/constants/theme';
+import { theme, typographyStyles } from '@/constants/theme';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 
 interface MuscleRecoverySectionProps {
     recoveryStatus: Record<string, MuscleRecovery>;
     onPress?: () => void;
 }
 
-// Waveform icon component
-const WaveformIcon = ({ color = theme.colors.text.primary }: { color?: string }) => (
-    <Svg width="20" height="16" viewBox="0 0 20 16" fill="none">
-        <Path
-            d="M2 8L4 4L6 10L8 2L10 8L12 6L14 10L16 4L18 8"
-            stroke={color}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-    </Svg>
-);
+
 
 const MuscleRecoveryCard = ({ 
     muscle, 
@@ -35,19 +23,8 @@ const MuscleRecoveryCard = ({
     
     // Determine colors based on recovery percentage
     // Purple for most cases, green for low recovery, pink for very high
-    let iconBgColor: string;
     let percentageColor: string;
-    
-    if (pct >= 95) {
-        iconBgColor = theme.colors.status.rest; // Purple icon
-        percentageColor = '#FF10F0'; // Pink/Magenta percentage
-    } else if (pct >= 50) {
-        iconBgColor = theme.colors.status.rest; // Purple
-        percentageColor = theme.colors.status.rest; // Purple
-    } else {
-        iconBgColor = theme.colors.status.success; // Green
-        percentageColor = theme.colors.status.success; // Green
-    }
+ 
 
     const timeText = isReady ? 'Ready' : `${Math.round(hoursLeft)}H TO 100%`;
     const displayName = muscle.replace(/_/g, ' ').split(' ').map(w => 
@@ -58,16 +35,15 @@ const MuscleRecoveryCard = ({
         <View style={styles.card}>
             <View style={styles.cardContent}>
                 <View style={styles.cardLeft}>
-                    <View style={[styles.iconContainer, { backgroundColor: iconBgColor }]}>
-                        <WaveformIcon color={theme.colors.text.primary} />
+                    <View >
                     </View>
                     <View style={styles.textContainer}>
-                        <Text style={styles.muscleName}>{displayName}</Text>
-                        <Text style={styles.timeText}>{timeText}</Text>
+                        <Text style={typographyStyles.muscleName}>{displayName}</Text>
+                        <Text style={typographyStyles.labelMuted}>{timeText}</Text>
                     </View>
                 </View>
                 <View style={styles.cardRight}>
-                    <Text style={[styles.percentageText, { color: percentageColor }]}>
+                    <Text style={typographyStyles.data}>
                         {pct.toFixed(0)}%
                     </Text>
                     <View style={styles.progressBar}>
@@ -113,8 +89,8 @@ export default function MuscleRecoverySection({
             activeOpacity={onPress ? 0.7 : 1}
         >
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>MUSCLE RECOVERY</Text>
-                <Text style={styles.headerSubtitle}>BIO-ANALYTICS</Text>
+                <Text style={typographyStyles.h3}>MUSCLE RECOVERY</Text>
+                <Text style={typographyStyles.labelMuted}>ANALYTICS</Text>
             </View>
             
             <View style={styles.cardsContainer}>
@@ -141,20 +117,7 @@ const styles = StyleSheet.create({
         marginBottom: theme.spacing.m,
         paddingHorizontal: theme.spacing.xs,
     },
-    headerTitle: {
-        fontSize: theme.typography.sizes.label,
-        fontWeight: '900',
-        color: theme.colors.text.primary,
-        textTransform: 'uppercase',
-        letterSpacing: theme.typography.tracking.label,
-    },
-    headerSubtitle: {
-        fontSize: theme.typography.sizes.label,
-        fontWeight: '900',
-        color: theme.colors.text.primary,
-        textTransform: 'uppercase',
-        letterSpacing: theme.typography.tracking.label,
-    },
+
     cardsContainer: {
         gap: theme.spacing.s,
     },
@@ -176,38 +139,18 @@ const styles = StyleSheet.create({
         flex: 1,
         gap: theme.spacing.s,
     },
-    iconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: theme.colors.text.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
+
     textContainer: {
         flex: 1,
+        gap: theme.spacing.xs,
     },
-    muscleName: {
-        fontSize: theme.typography.sizes.m,
-        fontWeight: '600',
-        color: theme.colors.text.primary,
-        marginBottom: 4,
-    },
-    timeText: {
-        fontSize: theme.typography.sizes.xs,
-        fontWeight: '500',
-        color: theme.colors.text.secondary,
-    },
+ 
     cardRight: {
         alignItems: 'flex-end',
         minWidth: 80,
+        gap: theme.spacing.s,
     },
-    percentageText: {
-        fontSize: theme.typography.sizes.xxl,
-        fontWeight: '900',
-        marginBottom: theme.spacing.xs,
-    },
+
     progressBar: {
         width: 80,
         height: 4,

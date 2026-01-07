@@ -2,16 +2,15 @@ import { addSetToExercise, deleteSet, removeExerciseFromWorkout } from '@/api/Ex
 import { Workout } from '@/api/types';
 import { addExerciseToPastWorkout, deleteWorkout, getWorkout } from '@/api/Workout';
 import ExerciseSearchModal from '@/components/ExerciseSearchModal';
-import UnifiedHeader from '@/components/UnifiedHeader';
 import WorkoutDetailView from '@/components/WorkoutDetailView';
+import { commonStyles, theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    Platform,
+    Modal,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -152,50 +151,33 @@ export default function WorkoutDetailScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            
-            <UnifiedHeader
-                title={workout?.title || 'Workout Details'}
-                // Dynamic Right Button based on Mode
-                rightButton={!isEditMode ? {
-                    icon: 'ellipsis-horizontal',
-                    onPress: () => setIsMenuVisible(true)
-                } : undefined}
-                // Text Button for "Done" state
-                rightButtonText={isEditMode ? "Done" : undefined}
-                onRightButtonPress={() => setIsEditMode(false)}
-                
-                // Menu Modal Content
-                modalVisible={isMenuVisible}
-                onModalClose={() => setIsMenuVisible(false)}
-                modalContent={
-                    <View style={styles.menuContainer}>
-                        <Text style={styles.menuHeader}>Options</Text>
-                        <TouchableOpacity 
-                            style={styles.menuItem} 
-                            onPress={() => { setIsMenuVisible(false); setIsEditMode(true); }}
-                        >
-                            <Ionicons name="create-outline" size={22} color="#FFF" />
-                            <Text style={styles.menuText}>Edit Workout</Text>
-                            <Ionicons name="chevron-forward" size={16} color="#545458" />
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
+                    <Ionicons name="chevron-back" size={24} color={theme.colors.text.zinc600} />
+                </TouchableOpacity>
+                <View style={{ flex: 1 }} />
+                {!isEditMode ? (
+                    <View style={styles.headerActions}>
+                        <TouchableOpacity onPress={() => setIsEditMode(true)} style={commonStyles.iconButton}>
+                            <Ionicons name="create-outline" size={24} color={theme.colors.text.primary} />
                         </TouchableOpacity>
-                        <View style={styles.menuDivider} />
-                        <TouchableOpacity 
-                            style={styles.menuItem} 
-                            onPress={handleDeleteWorkout}
-                        >
-                            <Ionicons name="trash-outline" size={22} color="#FF3B30" />
-                            <Text style={[styles.menuText, { color: '#FF3B30' }]}>Delete Workout</Text>
+                        <TouchableOpacity onPress={handleDeleteWorkout} style={commonStyles.iconButton}>
+                            <Ionicons name="trash-outline" size={24} color="#FF3B30" />
                         </TouchableOpacity>
                     </View>
-                }
-            />
+                ) : (
+                    <TouchableOpacity onPress={() => setIsEditMode(false)} style={commonStyles.iconButton}>
+                        <Text style={styles.doneText}>Done</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
             
             {isLoading ? (
-                <View style={[styles.loadingContainer, { marginTop: 58 }]}>
-                    <ActivityIndicator size="large" color="#0A84FF" />
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={theme.colors.status.active} />
                 </View>
             ) : (
-                <View style={{ marginTop: 58, flex: 1 }}>
+                <View style={{ flex: 1 }}>
                     <WorkoutDetailView 
                         workout={workout} 
                         elapsedTime={formatDuration(workout?.duration || 0)} 
@@ -211,6 +193,32 @@ export default function WorkoutDetailScreen() {
                 </View>
             )}
 
+            <Modal visible={isMenuVisible} transparent animationType="fade" onRequestClose={() => setIsMenuVisible(false)}>
+                <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setIsMenuVisible(false)}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.menuContainer}>
+                            <Text style={styles.menuHeader}>Options</Text>
+                            <TouchableOpacity 
+                                style={styles.menuItem} 
+                                onPress={() => { setIsMenuVisible(false); setIsEditMode(true); }}
+                            >
+                                <Ionicons name="create-outline" size={22} color="#FFF" />
+                                <Text style={styles.menuText}>Edit Workout</Text>
+                                <Ionicons name="chevron-forward" size={16} color="#545458" />
+                            </TouchableOpacity>
+                            <View style={styles.menuDivider} />
+                            <TouchableOpacity 
+                                style={styles.menuItem} 
+                                onPress={handleDeleteWorkout}
+                            >
+                                <Ionicons name="trash-outline" size={22} color="#FF3B30" />
+                                <Text style={[styles.menuText, { color: '#FF3B30' }]}>Delete Workout</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
             <ExerciseSearchModal
                 visible={isSearchVisible}
                 onClose={() => setIsSearchVisible(false)}
@@ -218,32 +226,18 @@ export default function WorkoutDetailScreen() {
                 title="Add Exercise"
             />
 
-            {/* Floating "Add Exercise" Pill (Only in Edit Mode) */}
             {isEditMode && (
                 <View style={[styles.floatingBarContainer, { bottom: insets.bottom + 20 }]}>
-                    {Platform.OS === 'ios' ? (
-                        <BlurView intensity={80} tint="dark" style={styles.blurPill}>
-                            <TouchableOpacity 
-                                style={styles.addButton}
-                                onPress={() => setIsSearchVisible(true)}
-                                activeOpacity={0.7}
-                            >
-                                <Ionicons name="add-circle-outline" size={24} color="#FFF" />
-                                <Text style={styles.addButtonText}>Add Exercise</Text>
-                            </TouchableOpacity>
-                        </BlurView>
-                    ) : (
-                        <View style={[styles.blurPill, { backgroundColor: '#1C1C1E' }]}>
-                            <TouchableOpacity 
-                                style={styles.addButton}
-                                onPress={() => setIsSearchVisible(true)}
-                                activeOpacity={0.7}
-                            >
-                                <Ionicons name="add-circle-outline" size={24} color="#FFF" />
-                                <Text style={styles.addButtonText}>Add Exercise</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
+                    <View style={styles.blurPill}>
+                        <TouchableOpacity 
+                            style={styles.addButton}
+                            onPress={() => setIsSearchVisible(true)}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="add-circle-outline" size={24} color="#FFF" />
+                            <Text style={styles.addButtonText}>Add Exercise</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             )}
         </View>
@@ -253,12 +247,43 @@ export default function WorkoutDetailScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#000000',
+        backgroundColor: theme.colors.background,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.l,
+        paddingHorizontal: theme.spacing.l,
+        paddingTop: theme.spacing.l,
+        paddingBottom: theme.spacing.s,
+    },
+    headerActions: {
+        flexDirection: 'row',
+        gap: theme.spacing.s,
+    },
+    doneText: {
+        fontSize: theme.typography.sizes.m,
+        fontWeight: '600',
+        color: theme.colors.status.active,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.l,
+        padding: theme.spacing.m,
+        minWidth: 280,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
     },
     
     // Menu Modal Styles
@@ -302,10 +327,11 @@ const styles = StyleSheet.create({
         zIndex: 100,
     },
     blurPill: {
+        backgroundColor: theme.colors.ui.glass,
         borderRadius: 30,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: theme.colors.ui.border,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,

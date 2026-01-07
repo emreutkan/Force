@@ -1,8 +1,8 @@
+import { theme } from '@/constants/theme';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { usePathname, useRouter, useSegments } from 'expo-router';
 import React, { useEffect } from 'react';
-import { LayoutChangeEvent, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
     interpolate,
     useAnimatedStyle,
@@ -10,7 +10,6 @@ import Animated, {
     withSpring
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { theme } from '@/constants/theme';
 
 // --- Types & Config ---
 
@@ -119,13 +118,10 @@ const TabButton = ({ tab, isActive, onPress }: TabButtonProps) => {
                     <Animated.View style={animatedIconStyle}>
                         {tab.icon({ 
                             size: 24, 
-                            color: isActive ? theme.colors.text.primary : theme.colors.text.secondary 
+                            color: isActive ? theme.colors.text.secondary : theme.colors.text.primary 
                         })}
                     </Animated.View>
                     
-                    {/* We render text always to measure it, but hide it visually 
-                      and clip it via the container's overflow: hidden 
-                    */}
                     <Animated.View style={[styles.textContainer, animatedTextStyle]}>
                         <Text 
                             numberOfLines={1} 
@@ -152,7 +148,7 @@ export default function BottomNavigator() {
     // 1. Determine Visibility
     // Hide on Auth screens, specific flows, loading states, or workout detail pages
     const isWorkoutDetailPage = (pathname.includes('/workouts/') && pathname.split('/workouts/')[1]?.length > 0 && !pathname.endsWith('/workouts')) || 
-                                (segments.includes('(workouts)') && segments.length > 2);
+                                (segments.some(s => String(s) === '(workouts)') && segments.length > 2);
     const shouldHide = segments.some(s => 
         ['(auth)', 'auth', 'hero', 'active-workout', '(active-workout)', 'recovery-status', '(recovery-status)', 'templates', '(templates)', 'loadingHome', 'permissions', '(permissions)', 'knowledge-base', '(knowledge-base)', 'volume-analysis', '(volume-analysis)'].includes(String(s))
     ) || pathname.includes('/auth') || pathname.includes('/hero') || pathname.includes('/active-workout') || pathname.includes('/recovery-status') || pathname.includes('/templates') || pathname.includes('/permissions') || pathname.includes('/knowledge-base') || pathname.includes('/volume-analysis') || isWorkoutDetailPage;
@@ -173,15 +169,9 @@ export default function BottomNavigator() {
 
     return (
         <View style={[styles.container, { bottom: insets.bottom }]}>
-            {Platform.OS === 'ios' ? (
-                <BlurView intensity={80} tint="dark" style={styles.blurContainer}>
-                    <TabList activeKey={activeTab.key} router={router} />
-                </BlurView>
-            ) : (
-                <View style={[styles.blurContainer, styles.androidContainer]}>
-                    <TabList activeKey={activeTab.key} router={router} />
-                </View>
-            )}
+            <View style={styles.blurContainer}>
+                <TabList activeKey={activeTab.key} router={router} />
+            </View>
         </View>
     );
 }
@@ -210,18 +200,16 @@ const styles = StyleSheet.create({
         paddingBottom: theme.spacing.s,
     },
     blurContainer: {
-        borderRadius: theme.borderRadius.xxl, // Slightly rounder for modern look
+        backgroundColor: theme.colors.ui.glassStrong,
+        borderRadius: theme.borderRadius.xxl,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: theme.colors.ui.border, // Subtle border
+        borderColor: theme.colors.ui.border,
         shadowColor: theme.colors.background,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 12,
         elevation: 10,
-    },
-    androidContainer: {
-        backgroundColor: theme.colors.ui.glassStrong,
     },
     tabsContainer: {
         flexDirection: 'row',

@@ -8,6 +8,7 @@ import { Alert, Dimensions, Modal, Platform, ScrollView, StyleSheet, Text, TextI
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useRestTimer } from './RestTimerBar';
+import { ViewOnlyExerciseCard } from './ViewOnlyExerciseCard';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IS_WEB_SMALL = Platform.OS === 'web' && SCREEN_WIDTH <= 750;
 
@@ -474,7 +475,6 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
                 )}
             </View>
             
-            {/* Insights Modal */}
             <Modal
                 visible={showInsights}
                 transparent
@@ -988,7 +988,6 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
     return (
         <>
             <View style={[styles.setRow, styles.addSetRowContainer]}>
-                {/* Set Number - Always visible */}
                 <TouchableOpacity
                     onPress={() => !isTracking && setInputs(p => ({ ...p, isWarmup: !p.isWarmup }))}
                     disabled={isTracking}
@@ -999,7 +998,6 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
                     </Text>
                 </TouchableOpacity>
 
-                {/* Rest Time - Always visible, editable unless tracking */}
                 <RestTimePicker
                     value={inputs.restTime }
                     onValueChange={(value) => setInputs(p => ({ ...p, restTime: value }))}
@@ -1007,7 +1005,6 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
                     editable={!isTracking}
                 />
 
-                {/* Weight - Always visible, editable unless tracking */}
                 <TextInput
                     style={[styles.setInput, styles.addSetInput, isTracking && { opacity: 0.6 }]}
                     value={inputs.weight}
@@ -1033,7 +1030,6 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
                     editable={!isTracking}
                 />
 
-                {/* Reps - Visible when tracking or stopped, editable only when stopped */}
                 {(isTracking || isStopped) && (
                     <RepsPicker
                         value={inputs.reps}
@@ -1043,7 +1039,6 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
                     />
                 )}
 
-                {/* RIR - Visible when tracking or stopped, editable only when stopped */}
                 {(isTracking || isStopped) && (
                     <RIRPicker
                         value={inputs.rir}
@@ -1054,7 +1049,6 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
                 )}
             </View>
 
-            {/* TUT Display - Visible when tracking or stopped */}
             {(isTracking || isStopped) && (
                 <View style={styles.tutTimerContainer}>
                     <Text style={styles.tutTimerLabel}>Time Under Tension:</Text>
@@ -1083,7 +1077,6 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
                 </View>
             )}
 
-            {/* Button - Show based on state */}
             {inputs.weight && (
                 <TouchableOpacity
                     style={[
@@ -1134,6 +1127,11 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
 export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly, onToggleLock, onRemove, onAddSet, onDeleteSet, swipeControl, onInputFocus, onShowInfo, onShowStatistics, isActive, drag, onUpdateSet }: any) => {
     const exercise = workoutExercise.exercise || (workoutExercise.name ? workoutExercise : null);
     if (!exercise) return null;
+
+    // Simple view-only mode - use separate component
+    if (isViewOnly && !isActive) {
+        return <ViewOnlyExerciseCard exercise={exercise} sets={workoutExercise.sets || []} />;
+    }
 
     const idToLock = workoutExercise.id;
     const exerciseKey = `exercise-${idToLock}`;
@@ -1240,13 +1238,11 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
                 />
                 <View style={styles.exerciseRow}>
                 <TouchableOpacity
-                    onLongPress={isViewOnly ? undefined : drag}
-                    disabled={isActive || isViewOnly} 
+                    onLongPress={drag}
+                    disabled={isActive} 
                     delayLongPress={Platform.OS === 'android' ? 300 : 200}
                     activeOpacity={0.7}
-                    
                     style={{ flex: 1 }}
-
                 >
                     <View style={styles.exerciseInfo}>
                         <View style={styles.exerciseNameRow}>
@@ -1294,20 +1290,21 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
                                     <Text style={styles.exerciseTagText}>{exercise.equipment_type}</Text>
                                 </View>
                             )}
-                            </View>
+                        </View>
                     </View>
                     </TouchableOpacity>
                 </View>
 
                 {(sets.length > 0 || !isLocked) && (
-                        <View 
+                    <View 
                         style={styles.setsContainer}
                         onStartShouldSetResponder={() => true}
                         onMoveShouldSetResponder={() => false}
                         onResponderGrant={() => {
                             // Stop drag from activating when touching sets area
                         }}
->                        <View style={styles.setsHeader}>
+                    >
+                        <View style={styles.setsHeader}>
                             <Text style={[styles.setHeaderText, {maxWidth: 30}]}>Set</Text>
                             <Text style={[styles.setHeaderText, {}]}>Rest</Text>
                             <Text style={[styles.setHeaderText, {}]}>Weight</Text>
@@ -1361,7 +1358,6 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
                 )}
             </View>
             
-            {/* Exercise Menu Modal */}
             <Modal
                 visible={showMenu}
                 transparent={true}

@@ -123,3 +123,13 @@ export const useHomeLoadingStore = create<HomeLoadingState>((set) => ({
         recoveryStatus: null 
     }),
 }));
+
+interface DateState {
+    today: Date;
+    setToday: (date: Date) => void;
+}
+
+export const useDateStore = create<DateState>((set) => ({
+    today: new Date(),
+    setToday: (date) => set({ today: date }),
+}));

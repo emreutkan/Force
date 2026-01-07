@@ -2,12 +2,12 @@ import { addExerciseToWorkout, addSetToExercise, deleteSet, removeExerciseFromWo
 import { completeWorkout, getActiveWorkout, getRestTimerState } from '@/api/Workout';
 import ExerciseSearchModal from '@/components/ExerciseSearchModal';
 import WorkoutDetailView from '@/components/WorkoutDetailView';
+import { theme } from '@/constants/theme';
 import { useActiveWorkoutStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ActiveWorkoutScreen() {
@@ -263,45 +263,24 @@ export default function ActiveWorkoutScreen() {
                 onSelectExercise={handleAddExercise}
                 title="Add Exercise"
             />
-            {Platform.OS === 'ios' ? (
-                <BlurView intensity={80} tint="dark" style={[styles.WorkoutFooter, {marginBottom: insets.bottom}]}>
-                    <View style={styles.footerContent}>
-                        <TouchableOpacity 
-                            style={styles.completeWorkoutButton}
-                            onPress={handleFinishWorkout}
-                        >
-                            <Text style={styles.completeWorkoutButtonText}>Finish Workout</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => {
-                                setIsModalVisible(true);
-                            }}
-                            style={styles.fabButton}
-                        >
-                            <Ionicons name="add" size={28} color="white" />
-                        </TouchableOpacity>
-                    </View>
-                </BlurView>
-            ) : (
-                <View style={[styles.WorkoutFooter, { backgroundColor: 'rgba(28, 28, 30, 0.95)' }]}>
-                    <View style={styles.footerContent}>
-                        <TouchableOpacity 
-                            style={styles.completeWorkoutButton}
-                            onPress={handleFinishWorkout}
-                        >
-                            <Text style={styles.completeWorkoutButtonText}>Finish Workout</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => {
-                                setIsModalVisible(true);
-                            }}
-                            style={styles.fabButton}
-                        >
-                            <Ionicons name="add" size={28} color="white" />
-                        </TouchableOpacity>
-                    </View>
+            <View style={[styles.WorkoutFooter, {marginBottom: insets.bottom}]}>
+                <View style={styles.footerContent}>
+                    <TouchableOpacity 
+                        style={styles.completeWorkoutButton}
+                        onPress={handleFinishWorkout}
+                    >
+                        <Text style={styles.completeWorkoutButtonText}>Finish Workout</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => {
+                            setIsModalVisible(true);
+                        }}
+                        style={styles.fabButton}
+                    >
+                        <Ionicons name="add" size={28} color="white" />
+                    </TouchableOpacity>
                 </View>
-            )}
+            </View>
         </>
     );
 }
@@ -317,6 +296,7 @@ const styles = StyleSheet.create({
         borderRadius: 50,
         marginHorizontal: 16,
         overflow: 'hidden',
+        backgroundColor: theme.colors.ui.glass,
     },
     footerContent: {
         flexDirection: 'row',

@@ -1,3 +1,4 @@
+import { theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -9,83 +10,95 @@ interface WorkoutDetailsViewProps {
 }
 
 export default function WorkoutDetailsView({ workout, elapsedTime, isActive }: WorkoutDetailsViewProps) {
+    if (isActive) return null;
+
+    const formatDate = (dateString: string) => {
+        const d = new Date(dateString);
+        return d.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }).toUpperCase();
+    };
+
+    const formatDuration = (timeStr: string) => {
+        // Convert "00:52:00" to "52m"
+        const parts = timeStr.split(':');
+        const hours = parseInt(parts[0] || '0');
+        const minutes = parseInt(parts[1] || '0');
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        }
+        return `${minutes}m`;
+    };
+
+    const formatVolume = (volume: number) => {
+        if (!volume || volume === 0) return '0KG';
+        const formatted = Math.round(volume).toLocaleString('en-US');
+        return `${formatted}KG`;
+    };
+
+    const workoutTitle = workout?.title 
+        ? workout.title.toUpperCase()
+        : 'WORKOUT';
+
     return (
-        <View style={styles.workoutHeader}>
-            <View style={styles.workoutHeaderTop}>
-                <View style={styles.workoutTitleContainer}>
-                    <Text style={styles.workoutTitle}>
-                        {workout?.title 
-                            ? workout.title.split(' ').map((word: string) => 
-                                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                              ).join(' ')
-                            : 'Workout'}
-                    </Text>
-                    <Text style={styles.workoutDate}>
-                        {new Date(workout?.datetime || workout?.created_at).toLocaleDateString(undefined, {
-                            weekday: 'long', year: 'numeric', month: 'short', day: 'numeric'
-                        })}
-                    </Text>
-                </View>
-                <Text style={styles.workoutDuration}>
-                    {elapsedTime}
+        <View style={styles.container}>
+            <View style={styles.dateRow}>
+                <Ionicons name="calendar-outline" size={14} color={theme.colors.text.secondary} />
+                <Text style={styles.dateText}>
+                    {formatDate(workout?.datetime || workout?.created_at)}
                 </Text>
             </View>
-            
-            {/* Workout Stats */}
-            {!isActive && (workout?.total_volume || workout?.primary_muscles_worked?.length || workout?.intensity || workout?.notes || workout?.calories_burned) && (
-                <View style={styles.workoutStatsContainer}>
-                    {/* Calories and Volume in horizontal row */}
-                    {(workout.calories_burned && parseFloat(String(workout.calories_burned)) > 0) || (workout.total_volume !== undefined && workout.total_volume > 0) ? (
-                        <View style={styles.horizontalStatsRow}>
-                            {workout.calories_burned && parseFloat(String(workout.calories_burned)) > 0 && (
-                                <View style={styles.horizontalStatItem}>
-                                    <Text style={styles.horizontalStatLabel}>Calories</Text>
-                                    <Text style={styles.horizontalStatValue}>{parseFloat(String(workout.calories_burned)).toFixed(0)} kcal</Text>
+
+            <Text style={styles.workoutTitle}>{workoutTitle}</Text>
+
+            <View style={styles.metricsRow}>
+                <View style={styles.metricCard}>
+                    <Text style={styles.metricLabel}>DURATION</Text>
+                    <Text style={styles.metricValue}>{formatDuration(elapsedTime)}</Text>
+                </View>
+                <View style={styles.metricCard}>
+                    <View style={styles.volumeHeader}>
+                        <Ionicons name="flash" size={14} color={theme.colors.status.active} />
+                        <Text style={styles.metricLabel}>TOTAL VOLUME</Text>
+                    </View>
+                    <Text style={[styles.metricValue, styles.volumeValue]}>
+                        {formatVolume(workout?.total_volume || 0)}
+                    </Text>
+                </View>
+            </View>
+
+            {(workout?.primary_muscles_worked?.length > 0 || workout?.secondary_muscles_worked?.length > 0) && (
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>NEURAL MAPPING</Text>
+                    <View style={styles.neuralCard}>
+                        {workout?.primary_muscles_worked?.length > 0 && (
+                            <View style={styles.muscleGroup}>
+                                <Text style={styles.primaryLabel}>PRIMARY FOCUS</Text>
+                                <View style={styles.tagsRow}>
+                                    {workout.primary_muscles_worked.map((muscle: string, idx: number) => (
+                                        <View key={idx} style={styles.primaryTag}>
+                                            <Text style={styles.tagText}>{muscle.toUpperCase()}</Text>
+                                        </View>
+                                    ))}
                                 </View>
-                            )}
-                            {workout.total_volume !== undefined && workout.total_volume > 0 && (
-                                <View style={styles.horizontalStatItem}>
-                                    <Text style={styles.horizontalStatLabel}>Volume</Text>
-                                    <Text style={styles.horizontalStatValue}>{workout.total_volume.toFixed(0)} kg</Text>
+                            </View>
+                        )}
+                        {workout?.secondary_muscles_worked?.length > 0 && (
+                            <View style={styles.muscleGroup}>
+                                <Text style={styles.synergistLabel}>SYNERGISTS</Text>
+                                <View style={styles.tagsRow}>
+                                    {workout.secondary_muscles_worked.map((muscle: string, idx: number) => (
+                                        <View key={idx} style={styles.synergistTag}>
+                                            <Text style={styles.tagText}>{muscle.toUpperCase()}</Text>
+                                        </View>
+                                    ))}
                                 </View>
-                            )}
-                        </View>
-                    ) : null}
-                    
-                    {/* Primary and Secondary Muscles combined in one row */}
-                    {(workout.primary_muscles_worked && workout.primary_muscles_worked.length > 0) || (workout.secondary_muscles_worked && workout.secondary_muscles_worked.length > 0) ? (
-                        <View style={styles.compactStatRow}>
-                            <Text style={styles.compactStatLabel}>Muscles</Text>
-                            <View style={styles.muscleTagsContainer}>
-                                {workout.primary_muscles_worked && workout.primary_muscles_worked.map((muscle: string, idx: number) => (
-                                    <View key={idx} style={styles.muscleTag}>
-                                        <Text style={styles.muscleTagText}>{muscle}</Text>
-                                    </View>
-                                ))}
-                                {workout.secondary_muscles_worked && workout.secondary_muscles_worked.map((muscle: string, idx: number) => (
-                                    <View key={idx} style={[styles.muscleTag, styles.secondaryMuscleTag]}>
-                                        <Text style={styles.secondaryMuscleTagText}>{muscle}</Text>
-                                    </View>
-                                ))}
                             </View>
-                        </View>
-                    ) : null}
-                    
-                    {workout.intensity && workout.intensity !== '' && (
-                        <View style={styles.compactStatRow}>
-                            <Text style={styles.compactStatLabel}>Intensity</Text>
-                            <View style={[styles.intensityBadge, (styles as any)[`intensity${workout.intensity.charAt(0).toUpperCase() + workout.intensity.slice(1)}`]]}>
-                                <Text style={styles.intensityText}>{workout.intensity.toUpperCase()}</Text>
-                            </View>
-                        </View>
-                    )}
-                    
-                    {workout.notes && (
-                        <View style={styles.statItem}>
-                            <Text style={styles.statLabel}>Notes</Text>
-                            <Text style={styles.notesText}>{workout.notes}</Text>
-                        </View>
-                    )}
+                        )}
+                    </View>
                 </View>
             )}
         </View>
@@ -93,144 +106,123 @@ export default function WorkoutDetailsView({ workout, elapsedTime, isActive }: W
 }
 
 const styles = StyleSheet.create({
-    workoutHeader: {
-        paddingBottom: 16,
-        borderBottomColor: '#1C1C1E',
+    container: {
+        paddingHorizontal: theme.spacing.l,
     },
-    workoutHeaderTop: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-    },
-    workoutTitleContainer: {
-        width: '75%',
-        flexDirection: 'column',
-        justifyContent: 'flex-start',
-        alignItems: 'flex-start',
-        gap: 8,
-        paddingBottom: 16,
-    },
-    workoutTitle: {
-        fontSize: 34,
-        fontWeight: '700',
-        color: '#FFFFFF',
-        marginBottom: 8,
-    },
-    workoutDate: {
-        fontSize: 17,
-        color: '#8E8E93',
-        fontWeight: '400',
-    },
-    workoutDuration: {
-        fontSize: 17,
-        fontWeight: '400',
-        color: '#8E8E93',
-        fontVariant: ['tabular-nums'],
-    },
-    workoutStatsContainer: {
-        gap: 16,
-    },
-    horizontalStatsRow: {
-        flexDirection: 'row',
-        gap: 16,
-        marginBottom: 16,
-    },
-    horizontalStatItem: {
-        flex: 1,
-    },
-    horizontalStatLabel: {
-        color: '#8E8E93',
-        fontSize: 13,
-        fontWeight: '300',
-        marginBottom: 8,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    horizontalStatValue: {
-        color: '#FFFFFF',
-        fontSize: 17,
-        fontWeight: '400',
-    },
-    compactStatRow: {
+    dateRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 16,
-        marginBottom: 16,
+        gap: theme.spacing.xs,
+        marginBottom: theme.spacing.m,
     },
-    compactStatLabel: {
-        color: '#8E8E93',
-        fontSize: 13,
-        fontWeight: '300',
+    dateText: {
+        fontSize: theme.typography.sizes.xs,
+        fontWeight: '600',
+        color: theme.colors.text.secondary,
         textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        minWidth: 64,
+        letterSpacing: theme.typography.tracking.tight,
     },
-    statItem: {
-        marginBottom: 16,
-    },
-    statLabel: {
-        color: '#8E8E93',
-        fontSize: 13,
-        fontWeight: '300',
-        marginBottom: 8,
+    workoutTitle: {
+        fontSize: theme.typography.sizes.xxl,
+        fontWeight: '900',
+        color: theme.colors.text.primary,
+        fontStyle: 'italic',
         textTransform: 'uppercase',
-        letterSpacing: 0.5,
+        marginBottom: theme.spacing.l,
     },
-    statValue: {
-        color: '#FFFFFF',
-        fontSize: 24,
+    metricsRow: {
+        flexDirection: 'row',
+        gap: theme.spacing.m,
+        marginBottom: theme.spacing.xl,
+    },
+    metricCard: {
+        flex: 1,
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.l,
+        padding: theme.spacing.m,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+    },
+    volumeHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
+    metricLabel: {
+        fontSize: theme.typography.sizes.label,
+        fontWeight: '600',
+        color: theme.colors.text.secondary,
+        textTransform: 'uppercase',
+        letterSpacing: theme.typography.tracking.labelTight,
+        marginBottom: theme.spacing.xs,
+    },
+    metricValue: {
+        fontSize: theme.typography.sizes.xxl,
+        fontWeight: '800',
+        color: theme.colors.text.primary,
+    },
+    volumeValue: {
+        color: theme.colors.status.active,
+    },
+    section: {
+        marginBottom: theme.spacing.xl,
+    },
+    sectionTitle: {
+        fontSize: theme.typography.sizes.label,
+        fontWeight: '600',
+        color: theme.colors.text.secondary,
+        textTransform: 'uppercase',
+        letterSpacing: theme.typography.tracking.labelTight,
+        marginBottom: theme.spacing.m,
+    },
+    neuralCard: {
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.l,
+        padding: theme.spacing.m,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+        gap: theme.spacing.m,
+    },
+    muscleGroup: {
+        gap: theme.spacing.s,
+    },
+    primaryLabel: {
+        fontSize: theme.typography.sizes.s,
         fontWeight: '700',
+        color: theme.colors.status.active,
+        textTransform: 'uppercase',
+        letterSpacing: theme.typography.tracking.tight,
+        marginBottom: theme.spacing.xs,
     },
-    muscleTagsContainer: {
+    synergistLabel: {
+        fontSize: theme.typography.sizes.s,
+        fontWeight: '600',
+        color: theme.colors.text.secondary,
+        textTransform: 'uppercase',
+        letterSpacing: theme.typography.tracking.tight,
+        marginBottom: theme.spacing.xs,
+    },
+    tagsRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 8,
-        flex: 1,
+        gap: theme.spacing.s,
     },
-    muscleTag: {
-        backgroundColor: '#2C2C2E',
-        paddingHorizontal: 8,
-        paddingVertical: 8,
-        borderRadius: 8,
+    primaryTag: {
+        backgroundColor: theme.colors.ui.glassStrong,
+        paddingHorizontal: theme.spacing.m,
+        paddingVertical: theme.spacing.xs,
+        borderRadius: theme.borderRadius.m,
     },
-    muscleTagText: {
-        color: '#A1A1A6',
-        fontSize: 13,
-        fontWeight: '300',
+    synergistTag: {
+        backgroundColor: theme.colors.ui.glassStrong,
+        paddingHorizontal: theme.spacing.m,
+        paddingVertical: theme.spacing.xs,
+        borderRadius: theme.borderRadius.m,
     },
-    secondaryMuscleTag: {
-        backgroundColor: '#1C1C1E',
-        opacity: 0.8,
-    },
-    secondaryMuscleTagText: {
-        color: '#8E8E93',
-        fontSize: 12,
-        fontWeight: '300',
-    },
-    intensityBadge: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 8,
-        backgroundColor: '#2C2C2E',
-    },
-    intensityText: {
-        fontSize: 13,
-        fontWeight: '300',
-        color: '#FFFFFF',
-    },
-    intensityLow: {
-        backgroundColor: 'rgba(52, 199, 89, 0.2)',
-    },
-    intensityMedium: {
-        backgroundColor: 'rgba(255, 159, 10, 0.2)',
-    },
-    intensityHigh: {
-        backgroundColor: 'rgba(255, 59, 48, 0.2)',
-    },
-    notesText: {
-        color: '#FFFFFF',
-        fontSize: 17,
-        lineHeight: 24,
+    tagText: {
+        fontSize: theme.typography.sizes.s,
+        fontWeight: '600',
+        color: theme.colors.text.primary,
     },
 });
 

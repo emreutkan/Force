@@ -128,6 +128,7 @@ export const theme = {
     tracking: {
       tight: -0.5,
       wide: 1.5,      // tracking-widest
+      wider: 2,
       ultra: 3,       // tracking-[0.2em]
       hero: -4.8,     // -0.05em for hero (4.5rem * -0.05)
       h1: -1.8,       // -0.05em for h1 (2.25rem * -0.05)
@@ -206,6 +207,19 @@ export const typographyStyles = {
     color: theme.colors.text.primary,
   } as TextStyle,
   
+  labelMuted: { 
+    fontSize: theme.typography.sizes.s,
+    fontWeight: '600',
+    letterSpacing: theme.typography.tracking.wider,
+    color: theme.colors.text.tertiary,
+    textTransform: 'uppercase',
+   } as TextStyle,
+
+   muscleName: {
+    fontSize: theme.typography.sizes.m,
+    fontWeight: '900',
+    color: theme.colors.text.primary,
+   } as TextStyle,
   // Color variants
   textIndigo: { color: theme.colors.status.active } as TextStyle,
   textZincDim: { color: palette.zinc500 } as TextStyle,
@@ -306,5 +320,13 @@ export const commonStyles = {
   iconButtonDark: {
     backgroundColor: theme.colors.ui.glass,
     borderColor: theme.colors.ui.border,
+  } as ViewStyle,
+
+  backButton: {
+    padding: theme.spacing.s,
+    borderRadius: theme.borderRadius.m,
+    borderWidth: 1,
+    borderColor: theme.colors.ui.border,
+    backgroundColor: theme.colors.ui.glass,
   } as ViewStyle,
 };

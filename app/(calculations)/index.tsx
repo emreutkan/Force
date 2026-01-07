@@ -97,7 +97,6 @@ const ProgressChart = ({
                         </LinearGradient>
                     </Defs>
                     
-                    {/* Main line path */}
                     <Polyline
                         points={points}
                         fill="none"
@@ -107,7 +106,6 @@ const ProgressChart = ({
                         strokeLinejoin="round"
                     />
 
-                    {/* Data point markers */}
                     {values.map((val, index) => {
                         const x = (index / (values.length - 1 || 1)) * CHART_WIDTH;
                         const y = CHART_HEIGHT - ((val - minVal) / range) * (CHART_HEIGHT - 20) - 10;
@@ -425,7 +423,6 @@ export default function MeasurementsScreen() {
                     { paddingBottom: insets.bottom + 100, paddingTop: 20 }
                 ]}
             >
-                {/* Weight Card - Quick access to current weight */}
                 <TouchableOpacity 
                     style={styles.weightCard} 
                     onPress={openWeightModal} 
@@ -444,7 +441,6 @@ export default function MeasurementsScreen() {
                     <Ionicons name="add-circle" size={20} color="#0A84FF" />
                 </TouchableOpacity>
 
-                {/* Body Fat Calculator Button */}
                 <TouchableOpacity 
                     style={styles.calcButton}
                     onPress={openBodyFatModal}
@@ -453,11 +449,9 @@ export default function MeasurementsScreen() {
                     <Text style={styles.calcButtonText}>Calculate Body Fat</Text>
                 </TouchableOpacity>
 
-                {/* Progress Charts Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Progress Trends</Text>
                     
-                    {/* Weight Chart */}
                     <View style={styles.chartCard}>
                         <View style={styles.chartTitleRow}>
                             <Ionicons 
@@ -477,7 +471,6 @@ export default function MeasurementsScreen() {
                         />
                     </View>
 
-                    {/* Body Fat Chart */}
                     <View style={[styles.chartCard, { marginTop: 16 }]}>
                         <View style={styles.chartTitleRow}>
                             <Ionicons 
@@ -498,7 +491,6 @@ export default function MeasurementsScreen() {
                     </View>
                 </View>
 
-                {/* History List Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Recent Logs</Text>
                     {sortedHistory.length > 0 ? (
@@ -519,11 +511,6 @@ export default function MeasurementsScreen() {
                 </View>
             </ScrollView>
 
-            {/* ====================================================================
-                MODALS
-            ==================================================================== */}
-
-            {/* Weight Input Modal */}
             <Modal 
                 visible={modals.weight} 
                 transparent 
@@ -571,7 +558,6 @@ export default function MeasurementsScreen() {
                 </KeyboardAvoidingView>
             </Modal>
 
-            {/* Body Fat Calculator Modal */}
             <Modal 
                 visible={modals.bodyFat} 
                 animationType="slide" 
@@ -589,7 +575,6 @@ export default function MeasurementsScreen() {
                     </View>
                     
                     <ScrollView contentContainerStyle={styles.sheetContent}>
-                        {/* Input Grid */}
                         <View style={styles.grid}>
                             <View style={styles.inputGroup}>
                                 <Text style={styles.inputLabel}>Weight (kg)</Text>
@@ -624,7 +609,6 @@ export default function MeasurementsScreen() {
                                     placeholderTextColor="#545458"
                                 />
                             </View>
-                            {/* Hips input for women only */}
                             {isFemale && (
                                 <View style={styles.inputGroup}>
                                     <Text style={styles.inputLabel}>Hips (cm)</Text>
@@ -640,7 +624,6 @@ export default function MeasurementsScreen() {
                             )}
                         </View>
 
-                        {/* Notes Input */}
                         <Text style={styles.inputLabel}>Notes (Optional)</Text>
                         <TextInput 
                             style={[styles.sheetInput, { marginBottom: 24 }]} 
@@ -650,7 +633,6 @@ export default function MeasurementsScreen() {
                             placeholderTextColor="#545458"
                         />
 
-                        {/* Preview Result Display */}
                         {previewResult && (
                             <View style={styles.resultBox}>
                                 <Text style={styles.resultLabel}>ESTIMATED BODY FAT</Text>
@@ -663,7 +645,6 @@ export default function MeasurementsScreen() {
                             </View>
                         )}
 
-                        {/* Action Buttons */}
                         <View style={styles.sheetActions}>
                             <TouchableOpacity 
                                 style={[styles.sheetBtn, styles.sheetBtnOutline]} 

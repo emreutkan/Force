@@ -1,4 +1,5 @@
 import { updateExerciseOrder } from '@/api/Exercises';
+import { theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useRef, useState } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -6,6 +7,7 @@ import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatli
 import { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ExerciseCard } from './ExerciseCard';
+import { ViewOnlyExerciseCard } from './ViewOnlyExerciseCard';
 
 interface WorkoutExerciseDetailsViewProps {
     workout: any;
@@ -112,30 +114,37 @@ export default function WorkoutExerciseDetailsView({
     const hasSets = exercises.some((ex: any) => ex.sets && ex.sets.length > 0);
 
     const renderItems = ({item, drag, isActive: isDragging, getIndex}: {item: any, drag: () => void, isActive: boolean, getIndex: () => number | undefined}) => {
+        const exerciseCard = (
+            <ExerciseCard
+                key={item.order}
+                workoutExercise={item}
+                isLocked={lockedExerciseIds.has(item.id)}
+                isEditMode={isEditMode}
+                isViewOnly={isViewOnly}
+                onToggleLock={toggleLock}
+                onRemove={onRemoveExercise}
+                onAddSet={handleAddSet}
+                onDeleteSet={onDeleteSet}
+                onUpdateSet={handleUpdateSet}
+                swipeControl={swipeControl}
+                onInputFocus={() => {
+                    onInputFocus?.(getIndex() ?? 0);
+                }}
+                onShowInfo={(exercise: any) => setSelectedExerciseInfo(exercise)}
+                onShowStatistics={onShowStatistics}
+                isActive={isActive}
+                drag={drag}
+            />
+        );
+
+        // Only use ScaleDecorator when inside DraggableFlatList
+        if (isViewOnly && !isActive) {
+            return exerciseCard;
+        }
+
         return (
             <ScaleDecorator activeScale={0.95}>
-
-                    <ExerciseCard
-                        key={item.order}
-                        workoutExercise={item}
-                        isLocked={lockedExerciseIds.has(item.id)}
-                        isEditMode={isEditMode}
-                        isViewOnly={isViewOnly}
-                        onToggleLock={toggleLock}
-                        onRemove={onRemoveExercise}
-                        onAddSet={handleAddSet}
-                        onDeleteSet={onDeleteSet}
-                        onUpdateSet={handleUpdateSet}
-                        swipeControl={swipeControl}
-                        onInputFocus={() => {
-                            onInputFocus?.(getIndex() ?? 0);
-                        }}
-                        onShowInfo={(exercise: any) => setSelectedExerciseInfo(exercise)}
-                        onShowStatistics={onShowStatistics}
-                        isActive={isActive}
-                        drag={drag}
-                    />
-                
+                {exerciseCard}
             </ScaleDecorator>
         );
     };
@@ -144,26 +153,47 @@ export default function WorkoutExerciseDetailsView({
         <>
             <View style={styles.content}>
                 {exercises && exercises.length > 0 ? (
-                    <DraggableFlatList
-                        data={exercises}
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: hasSets && isActive ? 200 : 120 }}
-                        onDragEnd={isViewOnly ? undefined : async ({ data }: { data: any }) => {
-                            setExercises(data);
-                            const exerciseOrders = data.map((item: any, index: number) => ({ id: item.id, order: index + 1 }));
-                            const response = await updateExerciseOrder(workout.id, exerciseOrders);
-                            if (response) {
-                                console.log('Exercise order updated successfully');
-                            } else {
-                                console.log('Failed to update exercise order');
-                            }
-                        }}
-                        keyExtractor={(item) => item.id.toString()}
-                        renderItem={renderItems}
-                        simultaneousHandlers={[]}
-                        activationDistance={Platform.OS === 'android' ? 20 : 10}
-                        dragItemOverflow={false}
-                    />
+                    <>
+                        {isViewOnly && !isActive && (
+                            <Text style={styles.sectionTitle}>RAW OUTPUT</Text>
+                        )}
+                        {isViewOnly && !isActive ? (
+                            <View>
+                                {exercises.map((item: any, index: number) => {
+                                    const exercise = item.exercise || (item.name ? item : null);
+                                    if (!exercise) return null;
+                                    return (
+                                        <ViewOnlyExerciseCard
+                                            key={item.id || index}
+                                            exercise={exercise}
+                                            sets={item.sets || []}
+                                        />
+                                    );
+                                })}
+                            </View>
+                        ) : (
+                            <DraggableFlatList
+                                data={exercises}
+                                showsVerticalScrollIndicator={false}
+                                contentContainerStyle={{ paddingBottom: hasSets && isActive ? 200 : 120 }}
+                                onDragEnd={async ({ data }: { data: any }) => {
+                                    setExercises(data);
+                                    const exerciseOrders = data.map((item: any, index: number) => ({ id: item.id, order: index + 1 }));
+                                    const response = await updateExerciseOrder(workout.id, exerciseOrders);
+                                    if (response) {
+                                        console.log('Exercise order updated successfully');
+                                    } else {
+                                        console.log('Failed to update exercise order');
+                                    }
+                                }}
+                                keyExtractor={(item) => item.id.toString()}
+                                renderItem={renderItems}
+                                simultaneousHandlers={[]}
+                                activationDistance={Platform.OS === 'android' ? 20 : 10}
+                                dragItemOverflow={false}
+                            />
+                        )}
+                    </>
                 ) : (
                     <View style={styles.placeholderContainer}>
                         <Text style={styles.placeholderText}>No exercises yet. Tap the + button to add exercises.</Text>
@@ -171,7 +201,6 @@ export default function WorkoutExerciseDetailsView({
                 )}
             </View>
 
-            {/* Exercise Info Modal */}
             <Modal
                 visible={selectedExerciseInfo !== null}
                 animationType="slide"
@@ -237,7 +266,15 @@ export default function WorkoutExerciseDetailsView({
 
 const styles = StyleSheet.create({
     content: {
-        flex: 1,
+        paddingHorizontal: theme.spacing.s,
+    },
+    sectionTitle: {
+        fontSize: theme.typography.sizes.label,
+        fontWeight: '600',
+        color: theme.colors.text.secondary,
+        textTransform: 'uppercase',
+        letterSpacing: theme.typography.tracking.labelTight,
+        marginBottom: theme.spacing.m,
     },
     placeholderContainer: {
         flex: 1,

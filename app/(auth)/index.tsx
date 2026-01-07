@@ -1,7 +1,8 @@
 import { checkEmail, CheckEmailResponse, checkName, CheckNameResponse, checkPassword, CheckPasswordResponse, googleLogin, login, register } from '@/api/Auth';
+import { theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as Google from 'expo-auth-session/providers/google';
-import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState } from 'react';
@@ -60,16 +61,7 @@ export default function AuthScreen() {
     // Animation for back button (hide when typing)
     const backButtonWidth = useSharedValue(40);
     const backButtonOpacity = useSharedValue(1);
-    const backButtonMarginRight = useSharedValue(2);
-    
-    
-    // Animation for hero subtitle text rotation
-    const subtitleIndex = useSharedValue(0);
-    const subtitleOpacity = useSharedValue(1);
-    const subtitleTranslateY = useSharedValue(0);
-    const [currentSubtitleIndex, setCurrentSubtitleIndex] = useState(0);
-    
-    const subtitlePhrases = ['by Discipline', 'with Science', 'for Excellence', 'for You'];    
+    const backButtonMarginRight = useSharedValue(2);    
     
     const setEmailValue = (text: string) => {
         if (text.length > 0) {
@@ -140,16 +132,16 @@ export default function AuthScreen() {
         }
     }, [password.length, currentStep]);
     
-    // Hide social buttons when not on email step
+    // Hide social buttons when not on email step or when user is typing email
     useEffect(() => {
-        if (currentStep !== 'email') {
+        if (currentStep !== 'email' || email.length > 0) {
             socialButtonsHeight.value = withTiming(0, { duration: 300 });
             socialButtonsOpacity.value = withTiming(0, { duration: 300 });
         } else {
             socialButtonsHeight.value = withTiming(56, { duration: 300 });
             socialButtonsOpacity.value = withTiming(1, { duration: 300 });
         }
-    }, [currentStep]);
+    }, [currentStep, email.length]);
 
     
     const animatedEmailButtonStyle = useAnimatedStyle(() => ({
@@ -170,10 +162,9 @@ export default function AuthScreen() {
         overflow: 'hidden',
     }));
     
-    const animatedSocialButtonsStyle = useAnimatedStyle(() => ({
+    const     animatedSocialButtonsStyle = useAnimatedStyle(() => ({
         height: socialButtonsHeight.value,
         opacity: socialButtonsOpacity.value,
-
         marginBottom: 24,
     }));
     
@@ -183,11 +174,6 @@ export default function AuthScreen() {
         marginRight: backButtonMarginRight.value,
         overflow: 'hidden',
         pointerEvents: backButtonOpacity.value > 0.5 ? 'auto' : 'none',
-    }));
-    
-    const animatedSubtitleStyle = useAnimatedStyle(() => ({
-        opacity: subtitleOpacity.value,
-        transform: [{ translateY: subtitleTranslateY.value }],
     }));
     
     const handleContinueFromEmail = async () => {
@@ -289,29 +275,6 @@ export default function AuthScreen() {
         };
     }, []);
     
-    // Animate subtitle text rotation
-    useEffect(() => {
-        const interval = setInterval(() => {
-            // Fade out and move up
-            subtitleOpacity.value = withTiming(0, { duration: 300 });
-            subtitleTranslateY.value = withTiming(-10, { duration: 300 });
-            
-            setTimeout(() => {
-                // Change text index
-                const nextIndex = (currentSubtitleIndex + 1) % subtitlePhrases.length;
-                setCurrentSubtitleIndex(nextIndex);
-                subtitleIndex.value = nextIndex;
-                // Reset position
-                subtitleTranslateY.value = 10;
-                // Fade in and move to center
-                subtitleOpacity.value = withTiming(1, { duration: 300 });
-                subtitleTranslateY.value = withTiming(0, { duration: 300 });
-            }, 300);
-        }, 2000); // Change every 3 seconds
-        
-        return () => clearInterval(interval);
-    }, [currentSubtitleIndex]);
-    
 
     const handleForceTap = () => {
         tapCount.current += 1;
@@ -412,53 +375,69 @@ export default function AuthScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+            <LinearGradient
+                colors={['rgba(99, 102, 241, 0.3)', 'rgba(99, 102, 241, 0.1)', 'transparent']}
+                style={styles.bgGlow}
+            />
+            <LinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={styles.gradientBg}
+            />
             <KeyboardAvoidingView 
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={[styles.content, { paddingTop: insets.top }]}
+                style={styles.content}
             >
-                <View style={styles.heroSection}>
-                    <TouchableOpacity 
-                        onPress={handleForceTap}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.heroTitle}>FORCE</Text>
-                    </TouchableOpacity>
-                    <View style={styles.heroSubtitleContainer}>
-                        <Text style={styles.heroSubtitleStatic}>Built </Text>
-                        <Animated.View style={[styles.heroSubtitleAnimated, animatedSubtitleStyle]}>
-                            <Text style={styles.heroSubtitleDynamic}>
-                                {subtitlePhrases[currentSubtitleIndex]}
+                {/* Header with waveform icon and FORCE PERFORMANCE V2.0 */}
+                <View style={styles.topSection}>
+                    <Ionicons name="pulse" size={16} color={theme.colors.status.rest} />
+                    <Text style={styles.footerText}>FORCE PERFORMANCE V2.0</Text>
+                </View>
+
+                <View style={styles.middleSection}>
+                    <View style={styles.titleContainer}>
+                        <TouchableOpacity 
+                            onPress={handleForceTap}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={typographyStyles.hero}>
+                                FORCE
+                                <Text style={{ color: theme.colors.status.rest }}>.</Text>
                             </Text>
-                        </Animated.View>
+                        </TouchableOpacity>
                     </View>
+                    <Text style={styles.heroSubtitle}>
+                        {currentStep === 'password' ? 'BUILT FOR YOU' : 'BUILT FOR EXCELLENCE'}
+                    </Text>
                 </View>
       
                 <View style={styles.contentContainer}>
-                <BlurView intensity={80} style={styles.blurView}>
                 <View style={styles.inputGroup}>
                     {currentStep === 'email' ? (
                         // Email Step
                         <>
-                            <TextInput 
-                                style={[styles.inputTop, emailValidation && !emailValidation.is_valid && styles.inputError]} 
-                                placeholder="Email" 
-                                placeholderTextColor="#8E8E93"
-                                value={email} 
-                                onChangeText={setEmailValue}
-                                autoCapitalize="none"
-                                keyboardType="email-address"
-                                returnKeyType="next"
-                                onSubmitEditing={() => {
-                                    if (email.length > 0 && (!emailValidation || emailValidation.is_valid)) {
-                                        if (isRegistering) {
-                                            handleStartRegister();
-                                        } else {
-                                            handleContinueFromEmail();
+                            <View style={[styles.inputWrapper, emailValidation && !emailValidation.is_valid && styles.inputWrapperError]}>
+                                <Ionicons name="mail-outline" size={20} color="#FFFFFF" style={styles.inputIcon} />
+                                <TextInput 
+                                    style={styles.inputTop} 
+                                    placeholder="Email" 
+                                    placeholderTextColor="#8E8E93"
+                                    value={email} 
+                                    onChangeText={setEmailValue}
+                                    autoCapitalize="none"
+                                    keyboardType="email-address"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => {
+                                        if (email.length > 0 && (!emailValidation || emailValidation.is_valid)) {
+                                            if (isRegistering) {
+                                                handleStartRegister();
+                                            } else {
+                                                handleContinueFromEmail();
+                                            }
                                         }
-                                    }
-                                }}
-                            />
+                                    }}
+                                />
+                            </View>
                             <Animated.View style={animatedEmailButtonStyle}>
                                 <View style={styles.seperatorWide} />
                                 <View style={styles.splitButtonContainer}>
@@ -474,12 +453,12 @@ export default function AuthScreen() {
                                         {validating && currentStep === 'email' ? (
                                             <ActivityIndicator size="small" color="#FFFFFF" />
                                         ) : (
-                                            <Text style={styles.splitButtonText}>Register</Text>
+                                            <Text style={styles.splitButtonText}>REGISTER</Text>
                                         )}
                                     </TouchableOpacity>
                                     <View style={styles.splitButtonDivider} />
                                     <TouchableOpacity 
-                                        style={[styles.splitButton, styles.splitButtonRight]}
+                                        style={[styles.splitButton, styles.splitButtonRight, styles.splitButtonPrimary]}
                                         onPress={(e) => {
                                             e.preventDefault();
                                             handleContinueFromEmail();
@@ -487,7 +466,7 @@ export default function AuthScreen() {
                                         activeOpacity={0.8}
                                         disabled={email.length === 0 || validating}
                                     >
-                                        <Text style={styles.splitButtonText}>Continue</Text>
+                                        <Text style={[styles.splitButtonText, styles.splitButtonTextPrimary]}>CONTINUE</Text>
                                     </TouchableOpacity>
                                 </View>
                             </Animated.View>
@@ -533,7 +512,7 @@ export default function AuthScreen() {
                             <Animated.View style={animatedNameButtonStyle}>
                                 <View style={styles.seperatorWide} />
                                 <TouchableOpacity 
-                                    style={styles.inputBottom}
+                                    style={[styles.inputBottom, styles.inputBottomPrimary]}
                                     onPress={(e) => {
                                         e.preventDefault();
                                         handleContinueFromName();
@@ -544,7 +523,7 @@ export default function AuthScreen() {
                                     {validating && currentStep === 'name' ? (
                                         <ActivityIndicator size="small" color="#FFFFFF" />
                                     ) : (
-                                        <Text style={styles.splitButtonText}>Continue</Text>
+                                        <Text style={[styles.splitButtonText, styles.splitButtonTextPrimary]}>CONTINUE</Text>
                                     )}
                                 </TouchableOpacity>
                             </Animated.View>
@@ -569,24 +548,27 @@ export default function AuthScreen() {
                                         <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
                                     </TouchableOpacity>
                                 </Animated.View>
-                                <TextInput 
-                                    style={styles.inputTop} 
-                                    placeholder="Password" 
-                                    placeholderTextColor="#8E8E93"
-                                    value={password} 
-                                    onChangeText={setPassword} 
-                                    secureTextEntry
-                                    returnKeyType={isRegistering ? "done" : "go"}
-                                    onSubmitEditing={() => {
-                                        if (password.length > 0) {
-                                            if (isRegistering) {
-                                                handleRegister();
-                                            } else {
-                                                handleLogin();
+                                <View style={styles.inputWrapper}>
+                                    <Ionicons name="lock-closed-outline" size={20} color="#FFFFFF" style={styles.inputIcon} />
+                                    <TextInput 
+                                        style={styles.inputTop} 
+                                        placeholder="Password" 
+                                        placeholderTextColor="#8E8E93"
+                                        value={password} 
+                                        onChangeText={setPassword} 
+                                        secureTextEntry
+                                        returnKeyType={isRegistering ? "done" : "go"}
+                                        onSubmitEditing={() => {
+                                            if (password.length > 0) {
+                                                if (isRegistering) {
+                                                    handleRegister();
+                                                } else {
+                                                    handleLogin();
+                                                }
                                             }
-                                        }
-                                    }}
-                                />
+                                        }}
+                                    />
+                                </View>
                             </View>
                             {validating && currentStep === 'password' && (
                                 <View style={styles.validatingContainer}>
@@ -598,7 +580,7 @@ export default function AuthScreen() {
                                 <View style={styles.seperatorWide} />
                                 {isRegistering ? (
                                     <TouchableOpacity 
-                                        style={styles.inputBottom}
+                                        style={[styles.inputBottom, styles.inputBottomPrimary]}
                                         onPress={(e) => {
                                             e.preventDefault();
                                             handleRegister();
@@ -609,57 +591,35 @@ export default function AuthScreen() {
                                         {loading || validating ? (
                                             <ActivityIndicator size="small" color="#FFFFFF" />
                                         ) : (
-                                            <Text style={styles.splitButtonText}>Register</Text>
+                                            <Text style={[styles.splitButtonText, styles.splitButtonTextPrimary]}>REGISTER</Text>
                                         )}
                                     </TouchableOpacity>
                                 ) : (
-                                    <View style={styles.splitButtonContainer}>
-                                        <TouchableOpacity 
-                                            style={[styles.splitButton, styles.splitButtonLeft]}
-                                            onPress={handleForgotPassword}
-                                            activeOpacity={0.8}
-                                        >
-                                            <Text style={styles.splitButtonText}>Forgot?</Text>
-                                        </TouchableOpacity>
-                                        <View style={styles.splitButtonDivider} />
-                                        <TouchableOpacity 
-                                            style={[styles.splitButton, styles.splitButtonRight]}
-                                            onPress={(e) => {
-                                                e.preventDefault();
-                                                handleLogin();
-                                            }}
-                                            activeOpacity={0.8}
-                                            disabled={loading || password.length === 0}
-                                        >
-                                            {loading ? (
-                                                <ActivityIndicator size="small" color="#FFFFFF" />
-                                            ) : (
-                                                <Text style={styles.splitButtonText}>Login</Text>
-                                            )}
-                                        </TouchableOpacity>
-                                    </View>
+                                    <TouchableOpacity 
+                                        style={[styles.inputBottom, styles.inputBottomPrimary]}
+                                        onPress={(e) => {
+                                            e.preventDefault();
+                                            handleLogin();
+                                        }}
+                                        activeOpacity={0.8}
+                                        disabled={loading || password.length === 0}
+                                    >
+                                        {loading ? (
+                                            <ActivityIndicator size="small" color="#FFFFFF" />
+                                        ) : (
+                                            <Text style={[styles.splitButtonText, styles.splitButtonTextPrimary]}>LOGIN</Text>
+                                        )}
+                                    </TouchableOpacity>
                                 )}
                             </Animated.View>
                         </>
                     )}
                 </View>
 
-                {/* Social Buttons */}
                 <Animated.View style={animatedSocialButtonsStyle}>
                     <View style={styles.socialContainer}>
-                        {Platform.OS === 'ios' && (
-                            <TouchableOpacity 
-                                style={styles.socialButton} 
-                                onPress={() => handleSocialLogin('Apple')}
-                                activeOpacity={0.8}
-                            >
-                                <Ionicons name="logo-apple" size={24} color="#FFFFFF" />
-                                <Text style={styles.socialButtonText}>Apple</Text>
-                            </TouchableOpacity>
-                        )}
-
                         <TouchableOpacity 
-                            style={[styles.socialButton, Platform.OS !== 'ios' && styles.socialButtonFull]}
+                            style={styles.socialButton} 
                             onPress={() => handleSocialLogin('Google')}
                             activeOpacity={0.8}
                             disabled={!request}
@@ -669,15 +629,26 @@ export default function AuthScreen() {
                             ) : (
                                  <>
                                     <Ionicons name="logo-google" size={24} color="#FFFFFF" />
-                                    <Text style={styles.socialButtonText}>Google</Text>
+                                    <Text style={styles.socialButtonText}>GOOGLE</Text>
                                  </>
                             )}
                         </TouchableOpacity>
+
+                        {Platform.OS === 'ios' && (
+                            <TouchableOpacity 
+                                style={styles.socialButton} 
+                                onPress={() => handleSocialLogin('Apple')}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="logo-apple" size={24} color="#FFFFFF" />
+                                <Text style={styles.socialButtonText}>APPLE</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </Animated.View>
-                </BlurView>
                 </View>
-         
+
+ 
             </KeyboardAvoidingView>
         </View>
     );
@@ -686,58 +657,72 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "black",
-        padding: 20,
-        paddingBottom: 40,
-        
-        
+        backgroundColor: theme.colors.background,
+        paddingHorizontal: theme.spacing.xl,
+    },
+    bgGlow: {
+        position: 'absolute',
+        top: '25%',
+        left: '50%',
+        width: 300,
+        height: 300,
+        borderRadius: 9999,
+        transform: [{ translateX: -150 }],
+    },
+    gradientBg: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
     },
     content: {
         flex: 1,
-        padding: 1 
-        
+        position: 'relative',
+        zIndex: 10,
+    },
+    topSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.s,
+        justifyContent: 'center',
+        paddingTop: theme.spacing.xxl,
+        paddingBottom: theme.spacing.xxl,
+        position: 'relative',
+        zIndex: 10,
+    },
+    footerText: {
+        fontSize: theme.typography.sizes.label,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        letterSpacing: theme.typography.tracking.wide,
+        color: theme.colors.text.zinc700,
+        textAlign: 'center',
     },
     contentContainer: {
         flex: 1,
-        justifyContent: 'flex-end',
-        paddingBottom: 10,
-
+        justifyContent: 'center',
+        paddingBottom: theme.spacing.m,
+        position: 'relative',
+        zIndex: 10,
     },
-    blurView: {
-        
-        borderRadius: 22,
-        borderColor: '#2C2C2E',
-        padding: 12,
-        overflow: 'hidden',
-    },
-    heroSection: {
-        paddingTop: "20%",
-        paddingBottom: "25%",
-        alignItems: 'flex-start',
-    },
-    heroTitle: {
-        fontWeight: '200',
-        fontSize: 72,
-        color: 'white',
-        letterSpacing: 5,
-    },
-    heroSubtitleContainer: {
-        flexDirection: 'row',
+    middleSection: {
         alignItems: 'center',
-        marginTop: 8,
+        paddingTop: theme.spacing.xxxxxl,
+        paddingBottom: theme.spacing.xl,
+        zIndex: 10,
+        gap: theme.spacing.m,
     },
-    heroSubtitleStatic: {
-        fontSize: 16,
-        fontWeight: '400',
-        color: '#8E8E93',
+    titleContainer: {
+        alignItems: 'center',
+        marginBottom: theme.spacing.m,
     },
-    heroSubtitleAnimated: {
-        overflow: 'hidden',
-    },
-    heroSubtitleDynamic: {
-        fontSize: 16,
-        fontWeight: '400',
-        color: '#8E8E93',
+    heroSubtitle: {
+        fontSize: theme.typography.sizes.s,
+        fontWeight: '600',
+        color: theme.colors.status.rest,
+        textTransform: 'uppercase',
+        letterSpacing: theme.typography.tracking.wide,
     },
   
     inputGroup: {
@@ -746,18 +731,40 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: '#2C2C2E',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 16,
+        marginBottom: 12,
+    },
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        backgroundColor: '#1C1C1E',
+        minHeight: 56,
+    },
+    inputWrapperError: {
+        borderColor: '#FF3B30',
+        borderWidth: 1,
+        borderTopLeftRadius: 0,
+        borderTopRightRadius: 22,
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
+        borderLeftWidth: 0,
+        borderRightWidth: 1,
+        borderTopWidth: 1,
+        borderBottomWidth: 1,
+        marginLeft: -16,
+        paddingLeft: 16,
+        marginRight: -16,
+        paddingRight: 16,
+    },
+    inputIcon: {
+        marginRight: 12,
     },
     inputTop: {
-        width: '100%',
+        flex: 1,
         minHeight: 56,
-        paddingHorizontal: 16,
         fontSize: 17,
-        color: '#FFFFFF',
-        backgroundColor: '#1C1C1E',
+        color: theme.colors.text.primary,
+        backgroundColor: 'transparent',
     },
     passwordStepContainer: {
         flexDirection: 'row',
@@ -779,39 +786,53 @@ const styles = StyleSheet.create({
         backgroundColor: '#1C1C1E',
     },
     inputBottom: {
-        height: 70,
+        height: 56,
         paddingHorizontal: 16,
         fontSize: 17,
-        backgroundColor: '#151517',
+        backgroundColor: '#1C1C1E',
         justifyContent: 'center',
         alignItems: 'center',
     },
+    inputBottomPrimary: {
+        backgroundColor: theme.colors.status.rest,
+    },
     splitButtonContainer: {
         flexDirection: 'row',
-        height: 70,
-        backgroundColor: '#151517',
+        height: 56,
+        backgroundColor: '#1C1C1E',
+        width: '100%',
     },
     splitButton: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#1C1C1E',
     },
     splitButtonLeft: {
+        borderBottomLeftRadius: 22,
         borderTopLeftRadius: 0,
         borderTopRightRadius: 0,
     },
     splitButtonRight: {
+        borderBottomRightRadius: 22,
         borderTopLeftRadius: 0,
         borderTopRightRadius: 0,
     },
+    splitButtonPrimary: {
+        backgroundColor: theme.colors.status.rest,
+    },
     splitButtonDivider: {
-        width: StyleSheet.hairlineWidth,
+        width: 1,
         backgroundColor: '#3C3C43',
     },
     splitButtonText: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 16,
         fontWeight: '800',
+        textTransform: 'uppercase',
+    },
+    splitButtonTextPrimary: {
+        color: theme.colors.text.primary,
     },
     separator: {
         height: StyleSheet.hairlineWidth,
@@ -820,7 +841,7 @@ const styles = StyleSheet.create({
         marginRight: 16,
     },
     seperatorWide: {
-        height: StyleSheet.hairlineWidth,
+        height: 1,
         backgroundColor: '#3C3C43',
     },
     loginButtonText: {
@@ -832,8 +853,6 @@ const styles = StyleSheet.create({
     socialContainer: {
         flexDirection: 'row',
         gap: 12,
-        paddingTop: 16,
-        paddingBottom: 16,
     },
     socialButton: {
         flex: 1,
@@ -846,22 +865,35 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#2C2C2E',
         gap: 8,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 16,
-    },
-    socialButtonFull: {
-        flex: 1,
-        width: '100%',
     },
     socialButtonText: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 17,
-        fontWeight: '400',
+        fontWeight: '600',
+        textTransform: 'uppercase',
     },
     footer: {
         alignItems: 'center',
+        paddingBottom: 40,
+        paddingHorizontal: 20,
+    },
+    footerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 8,
+    },
+    footerDivider: {
+        flex: 1,
+        height: 1,
+        backgroundColor: theme.colors.text.tertiary,
+    },
+    footerSubtext: {
+        fontSize: 10,
+        fontWeight: '400',
+        color: theme.colors.text.secondary,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     linkText: {
         color: '#8E8E93',
@@ -874,14 +906,6 @@ const styles = StyleSheet.create({
     forgotPasswordText: {
         color: '#0A84FF',
         fontSize: 17,
-    },
-    inputError: {
-        borderColor: '#FF3B30',
-        borderWidth: 1,
-        borderTopLeftRadius: 22,
-        borderTopRightRadius: 22,
-        borderBottomLeftRadius: 0,
-        borderBottomRightRadius: 0,
     },
     errorContainer: {
         paddingHorizontal: 16,

@@ -119,7 +119,6 @@ export default function LoadingHome() {
                 </View>
             </View>
 
-            {/* Progress Bar at bottom */}
             <View style={styles.progressBarContainer}>
                 <Animated.View style={[styles.progressBar, progressBarStyle]} />
             </View>

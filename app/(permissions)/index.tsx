@@ -1,5 +1,5 @@
 import { healthService } from '@/api/Health';
-import UnifiedHeader from '@/components/UnifiedHeader';
+import { commonStyles, theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -120,11 +120,14 @@ export default function PermissionsScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <UnifiedHeader 
-                title="Integrations" 
-                onBackPress={() => router.back()} 
-                backButtonText="Settings"
-            />
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
+                    <Ionicons name="chevron-back" size={24} color={theme.colors.text.zinc600} />
+                    <Text style={styles.backButtonText}>Settings</Text>
+                </TouchableOpacity>
+                <Text style={typographyStyles.h2}>Integrations</Text>
+                <View style={{ width: 40 }} />
+            </View>
 
             <ScrollView contentContainerStyle={[styles.content, { marginTop: 58 }]}>
                 {renderStatusHero()}

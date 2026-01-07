@@ -1,6 +1,6 @@
 import { getResearch } from '@/api/KnowledgeBase';
 import { ResearchFilters, TrainingResearch } from '@/api/types';
-import UnifiedHeader from '@/components/UnifiedHeader';
+import { commonStyles, theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -144,7 +144,6 @@ export default function KnowledgeBaseScreen() {
                 <Text style={styles.cardTitle}>{item.title}</Text>
                 <Text style={styles.cardSummary}>{item.summary}</Text>
 
-                {/* Dynamic Diagram Insertion */}
                 <DiagramPlaceholder category={item.category} />
 
                 <View style={styles.cardFooter}>
@@ -165,9 +164,14 @@ export default function KnowledgeBaseScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <UnifiedHeader title="Research Hub" />
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
+                    <Ionicons name="chevron-back" size={24} color={theme.colors.text.zinc600} />
+                </TouchableOpacity>
+                <Text style={typographyStyles.h2}>Research Hub</Text>
+                <View style={{ width: 40 }} />
+            </View>
 
-            {/* Sticky Controls Area */}
             <View style={[styles.controlsContainer, { marginTop: 58 }]}>
                 <View style={styles.searchBar}>
                     <Ionicons name="search" size={18} color="#8E8E93" />
@@ -186,7 +190,6 @@ export default function KnowledgeBaseScreen() {
                     )}
                 </View>
 
-                {/* Compact Filters */}
                 <View style={styles.filterStack}>
                     <FilterRow 
                         label="TOPIC"
@@ -197,7 +200,6 @@ export default function KnowledgeBaseScreen() {
                             setFilters(prev => ({ ...prev, category: val }));
                         }}
                     />
-                    {/* Only show muscle filter if generic category or muscle specific */}
                     <FilterRow 
                         label="ANATOMY"
                         options={MUSCLE_GROUPS}
