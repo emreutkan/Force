@@ -98,6 +98,15 @@ export const getTemplateWorkouts = async (): Promise<TemplateWorkout[] | any> =>
     }
 }
 
+export const deleteTemplateWorkout = async (templateID: number): Promise<any> => {
+    try {
+        const response = await apiClient.delete(`/workout/template/${templateID}/delete/`);
+        return response.data;
+    } catch (error: any) {
+        return error.message || 'An unknown error occurred';
+    }
+}
+
 export const startTemplateWorkout = async (request: StartTemplateWorkoutRequest): Promise<Workout | any> => {
     try {
         const response = await apiClient.post('/workout/template/start/', request);

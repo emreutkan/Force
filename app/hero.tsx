@@ -60,8 +60,6 @@ export default function HeroScreen() {
         }
     };
 
-
-
     return (
         <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <LinearGradient
@@ -72,8 +70,6 @@ export default function HeroScreen() {
                 colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
                 style={styles.gradientBg}
             />
-
-  
 
             <Animated.View 
                 style={[
@@ -104,7 +100,7 @@ export default function HeroScreen() {
                 </View>
 
                 <Text style={styles.description}>
-                    Precision gym tracking engineered with research-badcked metrics and advanced recovery biometrics.
+                    Precision gym tracking engineered with research-backed metrics and advanced recovery biometrics.
                 </Text>
 
                 <View style={styles.featureContainer}>
@@ -133,9 +129,6 @@ export default function HeroScreen() {
                     <Text style={styles.primaryButtonText}>START LOGGING</Text>
                     <Ionicons name="arrow-forward" size={20} color={theme.colors.text.primary} />
                 </TouchableOpacity>
-
-
-         
             </Animated.View>
 
         </View>
@@ -147,8 +140,6 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: theme.colors.background,
         paddingHorizontal: theme.spacing.xl,
-
-        
     },
     bgGlow: {
         position: 'absolute',
@@ -157,7 +148,6 @@ const styles = StyleSheet.create({
         width: 300,
         height: 300,
         borderRadius: 9999,
-
         transform: [{ translateX: -150 }],
     },
     gradientBg: {
@@ -167,24 +157,15 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
     },
-
     topSection: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.s,
         justifyContent: 'center',
         paddingTop: theme.spacing.xxl,
-                paddingBottom: theme.spacing.xxl,
-
+        paddingBottom: theme.spacing.xxl,
         position: 'relative',
         zIndex: 10,
-    },
-    versionText: {
-        fontSize: theme.typography.sizes.labelTight,
-        fontWeight: '900',
-        textTransform: 'uppercase',
-        letterSpacing: 4,
-        color: theme.colors.text.zinc500,
     },
     middleSection: {
         alignItems: 'center',
@@ -192,13 +173,11 @@ const styles = StyleSheet.create({
         paddingBottom: theme.spacing.xxl,
         zIndex: 10,
         gap: theme.spacing.xl,
-        
     },
     titleContainer: {
         alignItems: 'center',
         marginBottom: theme.spacing.m,
     },
-
     description: {
         fontSize: theme.typography.sizes.s,
         fontWeight: '500',
@@ -217,7 +196,7 @@ const styles = StyleSheet.create({
     dividerLine: {
         height: 1,
         width: 32,
-        backgroundColor: theme.colors.text.zinc800,
+        backgroundColor: theme.colors.ui.border,
     },
     featureContent: {
         flexDirection: 'row',
@@ -232,13 +211,11 @@ const styles = StyleSheet.create({
         color: theme.colors.text.tertiary,
     },
     bottomSection: {
-   
         width: '100%',
         gap: theme.spacing.m,
         position: 'relative',
         zIndex: 10,
         paddingTop: theme.spacing.xxxxxl,
-
     },
     primaryButton: {
         width: '100%',
@@ -265,29 +242,6 @@ const styles = StyleSheet.create({
         color: theme.colors.text.primary,
         letterSpacing: theme.typography.tracking.wide,
     },
-    secondaryRow: {
-        flexDirection: 'row',
-        gap: theme.spacing.m,
-    },
-    secondaryButton: {
-        flex: 1,
-        backgroundColor: Platform.OS === 'ios' ? theme.colors.ui.glass : 'rgba(24, 24, 27, 0.8)',
-        borderWidth: 1,
-        borderColor: theme.colors.ui.border,
-        borderRadius: theme.borderRadius.lg,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: theme.spacing.l,
-    },
-    secondaryButtonText: {
-        fontSize: theme.typography.sizes.labelTight,
-        fontWeight: '900',
-        textTransform: 'uppercase',
-        letterSpacing: theme.typography.tracking.wide,
-        color: theme.colors.text.primary,
- 
-    },
-
     footerText: {
         fontSize: theme.typography.sizes.label,
         fontWeight: '700',
@@ -295,36 +249,5 @@ const styles = StyleSheet.create({
         letterSpacing: theme.typography.tracking.wide,
         color: theme.colors.text.zinc700,
         textAlign: 'center',
-    },
-
-    bottomLeftGlow: {
-        position: 'absolute',
-        bottom: 0,
-        left: 1,
-        width: 3,
-        height: 300,
-        zIndex: 1,
-        borderRadius: 60,
-
-    },
-    bottomRightGlow: {
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-        width: 3,
-        height: 300,
-        zIndex: 1,
-        borderRadius: 60,
-
-    },
-    bottomCenterGlow: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        
-        height: 2,
-        zIndex: 1,
-        borderRadius: 9999,
     },
 });

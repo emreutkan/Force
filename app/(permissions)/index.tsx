@@ -1,6 +1,7 @@
 import { healthService } from '@/api/Health';
 import { commonStyles, theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -120,6 +121,10 @@ export default function PermissionsScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
+            <LinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={StyleSheet.absoluteFillObject}
+            />
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
                     <Ionicons name="chevron-back" size={24} color={theme.colors.text.zinc600} />

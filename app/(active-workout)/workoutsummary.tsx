@@ -1,7 +1,9 @@
 import { getWorkout, getWorkoutSummary } from '@/api/Workout';
 import { WorkoutSummaryResponse } from '@/api/types';
 import UpgradePrompt from '@/components/UpgradePrompt';
+import { theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -117,6 +119,10 @@ export default function WorkoutSummaryScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
+            <LinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={StyleSheet.absoluteFillObject}
+            />
             <Animated.ScrollView 
                 contentContainerStyle={[styles.scrollContent, { marginTop: 58 }]}
                 showsVerticalScrollIndicator={false}
@@ -237,7 +243,7 @@ export default function WorkoutSummaryScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg },
+    container: { flex: 1, backgroundColor: theme.colors.background },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     scrollContent: { padding: 16, paddingBottom: 50 },
 

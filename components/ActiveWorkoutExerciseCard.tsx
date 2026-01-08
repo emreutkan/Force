@@ -6,11 +6,10 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
+import { SwipeAction } from './SwipeAction';
 import { useRestTimer } from './RestTimerBar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const IS_WEB_SMALL = Platform.OS === 'web' && SCREEN_WIDTH <= 750;
 
 // Validation functions
 const validateSetData = (data: any): { isValid: boolean, errors: string[] } => {
@@ -109,34 +108,6 @@ const formatRestTimeForInput = (seconds: number): string => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return s > 0 ? `${m}.${s.toString().padStart(2, '0')}` : `${m}`;
-};
-
-interface SwipeActionProps {
-    progress: any;
-    dragX: any;
-    onPress: () => void;
-    iconName: keyof typeof Ionicons.glyphMap;
-    color?: string;
-}
-
-const SwipeAction = ({ progress, dragX, onPress, iconName, color = "#FFFFFF" }: SwipeActionProps) => {
-    const animatedStyle = useAnimatedStyle(() => {
-        const scale = interpolate(progress.value, [0, 1], [0.5, 1], Extrapolation.CLAMP);
-        return { transform: [{ scale }] };
-    });
-
-    return (
-        <TouchableOpacity 
-            onPress={onPress} 
-            activeOpacity={0.7} 
-            style={styles.swipeAction}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-            <Animated.View style={[animatedStyle, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
-                <Ionicons name={iconName} size={20} color={color} />
-            </Animated.View>
-        </TouchableOpacity>
-    );
 };
 
 // SetRow Component
@@ -258,6 +229,7 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
             dragX={dragX}
             onPress={() => onDelete(set.id)}
             iconName="trash-outline"
+            side="right"
         />
     );
 
@@ -269,6 +241,7 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                     dragX={dragX}
                     onPress={() => setShowInsights(true)}
                     iconName="bulb-outline"
+                    side="left"
                 />
             );
         }
@@ -279,6 +252,7 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                     dragX={dragX}
                     onPress={() => onShowStatistics(exerciseId)}
                     iconName="stats-chart-outline"
+                    side="left"
                 />
             );
         }
@@ -306,11 +280,12 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                 overshootLeft={false}
                 overshootRight={false}
                 friction={2}
+                enableTrackpadTwoFingerGesture
                 leftThreshold={40}
                 rightThreshold={40}
             >
                 <View style={[styles.setRow, hasBadInsights && styles.setRowWithBadInsights]}>
-                    <Text style={[styles.setText, {maxWidth: 30}, set.is_warmup && { color: '#FF9F0A', fontWeight: 'bold' }]}>
+                    <Text style={[styles.setText, {maxWidth: 30}, set.is_warmup && { color: theme.colors.status.warning, fontWeight: 'bold' }]}>
                         {set.is_warmup ? 'W' : String(index + 1)}
                     </Text>
                     {isEditable ? (
@@ -318,7 +293,6 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                             style={styles.setInput}
                             value={localValues.restTime}
                             onChangeText={(value) => {
-                                // Allow numbers and one decimal point
                                 const numericRegex = /^[0-9]*\.?[0-9]*$/;
                                 if (value === '' || numericRegex.test(value)) {
                                     setLocalValues(prev => ({ ...prev, restTime: value }));
@@ -331,7 +305,7 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                             onBlur={() => handleBlur('restTime')}
                             keyboardType="numbers-and-punctuation"
                             placeholder="Rest"
-                            placeholderTextColor="#8E8E93"
+                            placeholderTextColor={theme.colors.text.tertiary}
                         />
                     ) : (
                         <Text style={styles.setText}>{formatRestTimeForDisplay(set.rest_time_before_set) || '-'}</Text>
@@ -357,7 +331,7 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                             onBlur={() => handleBlur('weight')}
                             keyboardType="numeric"
                             placeholder="kg"
-                            placeholderTextColor="#8E8E93"
+                            placeholderTextColor={theme.colors.text.tertiary}
                         />
                     ) : (
                         <Text style={styles.setText}>{formatWeight(set.weight)}</Text>
@@ -382,7 +356,7 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                             onBlur={() => handleBlur('reps')}
                             keyboardType="numeric"
                             placeholder="reps"
-                            placeholderTextColor="#8E8E93"
+                            placeholderTextColor={theme.colors.text.tertiary}
                         />
                     ) : (
                         <Text style={styles.setText}>{String(set.reps)}</Text>
@@ -407,7 +381,7 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                             onBlur={() => handleBlur('rir')}
                             keyboardType="numeric"
                             placeholder="RIR"
-                            placeholderTextColor="#8E8E93"
+                            placeholderTextColor={theme.colors.text.tertiary}
                         />
                     ) : (
                         <Text style={styles.setText}>{set.reps_in_reserve != null ? set.reps_in_reserve.toString() : '-'}</Text>
@@ -428,7 +402,7 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                                 <View style={styles.insightsModalHeader}>
                                     <Text style={styles.insightsModalTitle}>Set {set.set_number} Insights</Text>
                                     <TouchableOpacity onPress={() => setShowInsights(false)}>
-                                        <Ionicons name="close" size={24} color="#FFFFFF" />
+                                        <Ionicons name="close" size={24} color={theme.colors.text.primary} />
                                     </TouchableOpacity>
                                 </View>
                                 
@@ -436,7 +410,7 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                                     {set.insights?.good && Object.keys(set.insights.good).length > 0 && (
                                         <View style={styles.insightsSection}>
                                             <View style={styles.insightsSectionHeader}>
-                                                <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+                                                <Ionicons name="checkmark-circle" size={20} color={theme.colors.status.success} />
                                                 <Text style={styles.insightsSectionTitle}>Good</Text>
                                             </View>
                                             {Object.entries(set.insights.good).map(([key, insight]: [string, any]) => (
@@ -450,7 +424,7 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                                     {set.insights?.bad && Object.keys(set.insights.bad).length > 0 && (
                                         <View style={styles.insightsSection}>
                                             <View style={styles.insightsSectionHeader}>
-                                                <Ionicons name="alert-circle" size={20} color="#FF3B30" />
+                                                <Ionicons name="alert-circle" size={20} color={theme.colors.status.error} />
                                                 <Text style={styles.insightsSectionTitle}>Areas to Improve</Text>
                                             </View>
                                             {Object.entries(set.insights.bad).map(([key, insight]: [string, any]) => (
@@ -569,7 +543,6 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
 
     const handleStartSet = async () => {
         try {
-            // Capture current rest time from global timer if not manually entered
             const finalRest = inputs.restTime ? parseRestTime(inputs.restTime) : elapsedSeconds;
             setCapturedRestTime(finalRest);
             
@@ -620,7 +593,6 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
 
     return (
         <>
-            {/* Status Indicator */}
             <View style={styles.statusIndicatorContainer}>
                 <View style={[styles.statusDot, isTracking && { backgroundColor: theme.colors.status.error }, isStopped && { backgroundColor: theme.colors.status.active }]} />
                 <Text style={[styles.statusIndicatorText, isTracking && { color: theme.colors.status.error }, isStopped && { color: theme.colors.status.active }]}>
@@ -634,7 +606,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
                     disabled={isTracking}
                     style={{ width: 30, alignItems: 'center', paddingVertical: 10, opacity: isTracking ? 0.4 : 1 }}
                 >
-                    <Text style={[styles.setText, { color: inputs.isWarmup ? '#FF9F0A' : '#8E8E93', fontWeight: inputs.isWarmup ? 'bold' : 'normal' }]}>
+                    <Text style={[styles.setText, { color: inputs.isWarmup ? theme.colors.status.warning : theme.colors.text.tertiary, fontWeight: inputs.isWarmup ? 'bold' : 'normal' }]}>
                         {inputs.isWarmup ? 'W' : String(nextSetNumber)}
                     </Text>
                 </TouchableOpacity>
@@ -651,7 +623,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
                     }}
                     keyboardType="numbers-and-punctuation"
                     placeholder="Rest"
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={theme.colors.text.tertiary}
                     onFocus={onFocus}
                     editable={isInitial}
                 />
@@ -672,7 +644,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
                     }}
                     keyboardType="numeric"
                     placeholder={lastSet?.weight?.toString() || "kg"}
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={theme.colors.text.tertiary}
                     onFocus={onFocus}
                     editable={!isTracking}
                 />
@@ -692,7 +664,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
                     }}
                     keyboardType="numeric"
                     placeholder="reps"
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={theme.colors.text.tertiary}
                     onFocus={onFocus}
                     editable={isStopped}
                 />
@@ -712,7 +684,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
                     }}
                     keyboardType="numeric"
                     placeholder="RIR"
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={theme.colors.text.tertiary}
                     onFocus={onFocus}
                     editable={isStopped}
                 />
@@ -737,7 +709,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
                                     }}
                                     keyboardType="numeric"
                                     placeholder="0"
-                                    placeholderTextColor="#8E8E93"
+                                    placeholderTextColor={theme.colors.text.tertiary}
                                 />
                                 <Text style={styles.tutInputSuffix}>s</Text>
                             </>
@@ -818,12 +790,6 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
                 }
                 return;
             }
-            
-            if (result && typeof result === 'object' && !result.error) {
-                // Update successful
-            } else if (result && typeof result === 'string') {
-                Alert.alert('Update Failed', result);
-            }
         } catch (error) {
             console.error('Failed to update set - exception:', error);
             Alert.alert('Update Error', 'Failed to update set. Please try again.');
@@ -836,6 +802,7 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
             dragX={dragX}
             onPress={() => onToggleLock(idToLock)}
             iconName={isLocked ? "lock-open-outline" : "lock-closed"}
+            side="left"
         />
     );
 
@@ -845,6 +812,7 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
             dragX={dragX}
             onPress={() => onRemove(idToLock)}
             iconName="trash-outline"
+            side="right"
         />
     );
 
@@ -860,6 +828,7 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
             overshootLeft={false}
             overshootRight={false}
             friction={2}
+            enableTrackpadTwoFingerGesture
             leftThreshold={40}
             rightThreshold={40}
         >
@@ -878,7 +847,7 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
                                     {isLocked && (
                                         <>
                                             {' '}
-                                            <Ionicons name="lock-closed" size={14} color="#8E8E93" />
+                                            <Ionicons name="lock-closed" size={14} color={theme.colors.text.tertiary} />
                                         </>
                                     )}
                                 </Text>
@@ -887,7 +856,7 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
                                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                                     style={styles.exerciseMenuButton}
                                 >
-                                    <Ionicons name="ellipsis-horizontal" size={20} color="#8E8E93" />
+                                    <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.text.tertiary} />
                                 </TouchableOpacity>
                             </View>
 
@@ -988,7 +957,7 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
                                     onShowInfo?.(exercise);
                                 }}
                             >
-                                <Ionicons name="information-circle-outline" size={22} color="#FFFFFF" style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
+                                <Ionicons name="information-circle-outline" size={22} color={theme.colors.text.primary} style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
                                 <Text style={styles.menuItemText}>Info</Text>
                             </TouchableOpacity>
                             
@@ -999,7 +968,7 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
                                     onShowStatistics?.(exercise.id);
                                 }}
                             >
-                                <Ionicons name="stats-chart-outline" size={22} color="#FFFFFF" style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
+                                <Ionicons name="stats-chart-outline" size={22} color={theme.colors.text.primary} style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
                                 <Text style={styles.menuItemText}>Statistics</Text>
                             </TouchableOpacity>
                             
@@ -1014,7 +983,7 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
                                     <Ionicons 
                                         name={isLocked ? "lock-open-outline" : "lock-closed-outline"} 
                                         size={22} 
-                                        color={isLocked ? "#FF9F0A" : "#FFFFFF"}
+                                        color={isLocked ? theme.colors.status.warning : theme.colors.text.primary}
                                         style={Platform.OS === 'web' ? { marginRight: 12 } : {}}
                                     />
                                     <Text style={styles.menuItemText}>
@@ -1048,7 +1017,7 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
                                         );
                                     }}
                                 >
-                                    <Ionicons name="trash-outline" size={22} color="#FF3B30" style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
+                                    <Ionicons name="trash-outline" size={22} color={theme.colors.status.error} style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
                                     <Text style={[styles.menuItemText, styles.menuItemTextDelete]}>Delete All Sets</Text>
                                 </TouchableOpacity>
                             )}
@@ -1072,7 +1041,7 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
                                         );
                                     }}
                                 >
-                                    <Ionicons name="trash-outline" size={22} color="#FF3B30" style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
+                                    <Ionicons name="trash-outline" size={22} color={theme.colors.status.error} style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
                                     <Text style={[styles.menuItemText, styles.menuItemTextDelete]}>Delete Exercise</Text>
                                 </TouchableOpacity>
                             )}
@@ -1130,35 +1099,28 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         flexWrap: 'wrap',
         flex: 1,
-        ...Platform.select({
-            web: {},
-            default: { gap: 8 },
-        }),
+        gap: 8,
     },
     exerciseTag: {
-        backgroundColor: '#2C2C2E',
+        backgroundColor: theme.colors.ui.glassStrong,
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#3A3A3C',
-        ...Platform.select({
-            web: { marginRight: 6, marginBottom: 6 },
-            default: {},
-        }),
+        borderColor: theme.colors.ui.border,
     },
     primaryMuscleTag: {
-        backgroundColor: '#3A3A3C',
-        borderColor: '#48484A',
+        backgroundColor: theme.colors.ui.glassStrong,
+        borderColor: theme.colors.status.active,
     },
     exerciseTagText: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 12,
         fontWeight: '500',
         letterSpacing: 0.2,
     },
     secondaryMuscleTagText: {
-        color: '#8E8E93',
+        color: theme.colors.text.secondary,
         fontSize: 11,
         fontWeight: '400',
         letterSpacing: 0.1,
@@ -1194,13 +1156,13 @@ const styles = StyleSheet.create({
     },
     setRowWithBadInsights: {
         borderWidth: 2,
-        borderColor: '#FF453A',
+        borderColor: theme.colors.status.error,
         backgroundColor: 'rgba(255, 69, 58, 0.08)',
         borderStyle: 'solid',
     },
     setText: {
         flex: 1,
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 15,
         fontWeight: '500',
         textAlign: 'center',
@@ -1211,12 +1173,12 @@ const styles = StyleSheet.create({
         flex: 1,
         textAlign: 'center',
         textAlignVertical: 'center',
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 16,
         fontVariant: ['tabular-nums'],
         backgroundColor: 'transparent',
         borderBottomWidth: 1,
-        borderBottomColor: '#3A3A3C',
+        borderBottomColor: theme.colors.ui.border,
         paddingVertical: 6,
         paddingBottom: 6,
         marginHorizontal: 6,
@@ -1224,31 +1186,23 @@ const styles = StyleSheet.create({
         lineHeight: 18,
     },
     addSetRowContainer: {
-        backgroundColor: '#1E1E20',
+        backgroundColor: theme.colors.ui.glass,
         borderRadius: 10,
         paddingHorizontal: 10,
         marginTop: 8,
         borderWidth: 1.5,
-        borderColor: '#3A3A3C',
+        borderColor: theme.colors.ui.border,
         borderStyle: 'dashed',
     },
     addSetInput: {
-        backgroundColor: '#252528',
+        backgroundColor: theme.colors.ui.glassStrong,
         borderBottomWidth: 1.5,
-        borderBottomColor: '#48484A',
+        borderBottomColor: theme.colors.ui.border,
         borderRadius: 6,
-    },
-    swipeAction: {
-        backgroundColor: '#FF3B30',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 60,
-        height: '100%',
-        borderRadius: 0,
     },
     addSetButton: {
         marginTop: 12,
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        backgroundColor: theme.colors.ui.glass,
         borderWidth: 1,
         borderColor: theme.colors.ui.border,
         borderRadius: 12,
@@ -1326,14 +1280,14 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(99, 102, 241, 0.05)',
     },
     tutTimerContainer: {
-        backgroundColor: '#1E1E20',
+        backgroundColor: theme.colors.ui.glass,
         borderRadius: 12,
         paddingVertical: 12,
         paddingHorizontal: 16,
         marginTop: 12,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#2A2A2E',
+        borderColor: theme.colors.ui.border,
     },
     tutTimerContainerStopped: {
         borderColor: theme.colors.status.active,
@@ -1385,12 +1339,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     menuModalContent: {
-        backgroundColor: '#1A1A1C',
+        backgroundColor: theme.colors.ui.glassStrong,
         borderRadius: 24,
         padding: 8,
         minWidth: 220,
         borderWidth: 1,
-        borderColor: '#2A2A2E',
+        borderColor: theme.colors.ui.border,
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.2,
@@ -1408,17 +1362,17 @@ const styles = StyleSheet.create({
     },
     menuItemDelete: {
         borderTopWidth: 1,
-        borderTopColor: '#2C2C2E',
+        borderTopColor: theme.colors.ui.border,
         marginTop: 8,
     },
     menuItemText: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 17,
         fontWeight: '500',
         letterSpacing: -0.2,
     },
     menuItemTextDelete: {
-        color: '#FF3B30',
+        color: theme.colors.status.error,
     },
     insightsModalOverlay: {
         flex: 1,
@@ -1427,12 +1381,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     insightsModalContent: {
-        backgroundColor: '#1A1A1C',
+        backgroundColor: theme.colors.ui.glassStrong,
         borderRadius: 24,
         width: '90%',
         maxHeight: '80%',
         borderWidth: 1.5,
-        borderColor: '#2A2A2E',
+        borderColor: theme.colors.ui.border,
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.3,
@@ -1445,10 +1399,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 20,
         borderBottomWidth: 1,
-        borderBottomColor: '#2C2C2E',
+        borderBottomColor: theme.colors.ui.border,
     },
     insightsModalTitle: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 20,
         fontWeight: '700',
     },
@@ -1466,34 +1420,33 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     insightsSectionTitle: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 18,
         fontWeight: '600',
     },
     insightItem: {
-        backgroundColor: '#252528',
+        backgroundColor: theme.colors.ui.glass,
         borderRadius: 12,
         padding: 16,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: '#323236',
+        borderColor: theme.colors.ui.border,
     },
     insightReason: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 15,
         lineHeight: 22,
         marginBottom: 8,
     },
     insightDetail: {
-        color: '#8E8E93',
+        color: theme.colors.text.secondary,
         fontSize: 13,
         marginTop: 4,
     },
     noInsightsText: {
-        color: '#8E8E93',
+        color: theme.colors.text.secondary,
         fontSize: 15,
         textAlign: 'center',
         fontStyle: 'italic',
     },
 });
-

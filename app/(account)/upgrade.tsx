@@ -1,5 +1,6 @@
 import { theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -64,7 +65,10 @@ export default function UpgradeScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            
+            <LinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={styles.gradientBg}
+            />
             <ScrollView 
                 contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20, marginTop: 58 }]}
                 showsVerticalScrollIndicator={false}
@@ -130,6 +134,13 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000000',
+    },
+    gradientBg: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
     },
     scrollContent: {
         padding: 16,

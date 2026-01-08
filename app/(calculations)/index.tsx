@@ -1,6 +1,7 @@
 import { calculateBodyFatMen, calculateBodyFatWomen, createMeasurement, getMeasurements } from '@/api/Measurements';
 import { getAccount, getWeightHistory } from '@/api/account';
 import { BodyMeasurement, WeightHistoryEntry } from '@/api/types';
+import { SwipeAction } from '@/components/SwipeAction';
 import { theme, typographyStyles } from '@/constants/theme';
 import { useUserStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,7 +22,6 @@ import {
     View
 } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
@@ -211,21 +211,6 @@ const NeuralTrendChart = ({ weightData, bodyFatData }: { weightData: number[]; b
     );
 };
 
-const SwipeAction = ({ progress, onPress }: any) => {
-    const animatedStyle = useAnimatedStyle(() => {
-        const scale = interpolate(progress.value, [0, 1], [0.5, 1], Extrapolation.CLAMP);
-        return { transform: [{ scale }] };
-    });
-
-    return (
-        <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.deleteAction}>
-            <Animated.View style={animatedStyle}>
-                <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
-            </Animated.View>
-        </TouchableOpacity>
-    );
-};
-
 // ============================================================================
 // MAIN SCREEN COMPONENT
 // ============================================================================
@@ -344,11 +329,8 @@ export default function MeasurementsScreen() {
         }
     };
 
-    // ... (Keep existing handlers: handleSaveWeight, handleCalculateBodyFat, handleDeleteEntry) ...
-    // Note: I am omitting the handler implementations to keep the focus on the UI changes, 
-    // insert your existing logic functions here.
     const openWeightModal = () => { setTempVal(currentWeight?.toString() || ''); setModals(prev => ({ ...prev, weight: true })); };
-    const handleSaveWeight = async () => { /* Insert existing logic */ };
+    const handleSaveWeight = async () => { /* Logic would go here */ };
     const handleCalculateBodyFat = async (previewOnly = false) => {
         if (!userHeight) {
             Alert.alert("Height Required", "Please set height in account");
@@ -388,7 +370,6 @@ export default function MeasurementsScreen() {
             if (result.body_fat_percentage) {
                 setPreviewResult(result);
                 if (!previewOnly) {
-                    // Save the measurement
                     await createMeasurement({
                         height: userHeight,
                         weight: weight,
@@ -411,7 +392,7 @@ export default function MeasurementsScreen() {
             setIsProcessing(false);
         }
     };
-    const handleDeleteEntry = (entry: WeightHistoryEntry) => { /* Insert existing logic */ };
+    const handleDeleteEntry = (entry: WeightHistoryEntry) => { /* Logic would go here */ };
     const openBodyFatModal = () => { if (!userHeight) { Alert.alert("Height Required", "Please set height in account"); return; } setModals(prev => ({ ...prev, bodyFat: true })); if (currentWeight) setBfForm(prev => ({ ...prev, weight: currentWeight.toString() })); };
 
 
@@ -525,7 +506,7 @@ export default function MeasurementsScreen() {
                 <View style={styles.historySection}>
                     <View style={styles.historyHeader}>
                         <Text style={styles.historySectionTitle}> HISTORY</Text>
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={loadData}>
                             <Ionicons name="refresh" size={16} color={theme.colors.text.secondary} />
                         </TouchableOpacity>
                     </View>
@@ -534,8 +515,18 @@ export default function MeasurementsScreen() {
                             {sortedHistory.map((item) => (
                                 <ReanimatedSwipeable
                                     key={item.id}
-                                    renderRightActions={(p) => <SwipeAction progress={p} onPress={() => handleDeleteEntry(item)} />}
+                                    renderRightActions={(p, d) => (
+                                        <SwipeAction 
+                                            progress={p} 
+                                            dragX={d}
+                                            onPress={() => handleDeleteEntry(item)} 
+                                            iconName="trash-outline"
+                                            side="right"
+                                        />
+                                    )}
                                     friction={2}
+                                    enableTrackpadTwoFingerGesture
+                                    rightThreshold={40}
                                 >
                                     <TouchableOpacity style={styles.historyCard} activeOpacity={0.7}>
                                         <View style={styles.historyContent}>
@@ -613,7 +604,7 @@ export default function MeasurementsScreen() {
                                  <View style={styles.previewContainer}>
                                      <Text style={styles.previewTitle}>ESTIMATED BODY FAT</Text>
                                      <View style={styles.previewValueContainer}>
-                                         <Text style={styles.previewValue}>{previewResult.body_fat_percentage.toFixed(1)}</Text>
+                                         <Text style={previewResult.body_fat_percentage.toFixed(1)}>{previewResult.body_fat_percentage.toFixed(1)}</Text>
                                          <Text style={styles.previewUnit}>%</Text>
                                      </View>
                                      <Text style={styles.previewMethod}>US NAVY METHOD: {previewResult.method.toUpperCase()}</Text>
@@ -757,7 +748,6 @@ const styles = StyleSheet.create({
     headerLeft: { flex: 1 },
     mainTitle: { ...typographyStyles.h3, marginBottom: theme.spacing.xs },
     addButton: { 
-        
         width: 40, height: 40, borderRadius: theme.borderRadius.l, 
         backgroundColor: theme.colors.status.rest, alignItems: 'center', justifyContent: 'center' },
 
@@ -897,12 +887,11 @@ const styles = StyleSheet.create({
     // Utilities
     emptyState: { alignItems: 'center', justifyContent: 'center', padding: theme.spacing.xl },
     emptyText: { color: theme.colors.text.secondary, marginTop: 8 },
-    deleteAction: { backgroundColor: theme.colors.status.error, width: 80, alignItems: 'center', justifyContent: 'center' },
     
     // Modal Styles (Kept consistent)
     modalOverlay: { flex: 1, backgroundColor: theme.colors.background, justifyContent: 'center', padding: theme.spacing.l },
-        modalCard: { backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.xl, padding: theme.spacing.xl, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.ui.border },
-        modalTitle: { ...typographyStyles.h4, color: theme.colors.text.primary, marginBottom: theme.spacing.l },
+    modalCard: { backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.xl, padding: theme.spacing.xl, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.ui.border },
+    modalTitle: { ...typographyStyles.h4, color: theme.colors.text.primary, marginBottom: theme.spacing.l },
     bigInputWrapper: { flexDirection: 'row', alignItems: 'baseline', marginBottom: theme.spacing.xl },
     bigInput: { ...typographyStyles.h3, color: theme.colors.status.rest, minWidth: 60, textAlign: 'center' },
     bigInputSuffix: { ...typographyStyles.labelTight, color: theme.colors.text.secondary, marginLeft: 8 },
@@ -910,9 +899,9 @@ const styles = StyleSheet.create({
     btnCancel: { flex: 1, backgroundColor: theme.colors.ui.border, padding: theme.spacing.m, borderRadius: theme.borderRadius.xl, alignItems: 'center' },
     btnSave: { flex: 1, backgroundColor: theme.colors.status.rest, padding: theme.spacing.m, borderRadius: theme.borderRadius.xl, alignItems: 'center' },
     btnText: { ...typographyStyles.labelTight, color: theme.colors.text.primary },
-     sheetContainer: { flex: 1, backgroundColor: theme.colors.background },
-     sheetContent: { flex: 1, paddingTop: Platform.OS === 'ios' ? 20 : 20 },
-     sheetHeader: { 
+    sheetContainer: { flex: 1, backgroundColor: theme.colors.background },
+    sheetContent: { flex: 1, paddingTop: Platform.OS === 'ios' ? 20 : 20 },
+    sheetHeader: { 
         flexDirection: 'row', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
@@ -921,9 +910,9 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1, 
         borderBottomColor: theme.colors.ui.border 
     },
-     sheetTitle: { fontSize: 18, fontWeight: '900', color: theme.colors.text.primary, letterSpacing: 0.5 },
-     sheetSubtitle: { fontSize: 10, fontWeight: '700', color: theme.colors.text.tertiary, letterSpacing: 1 },
-     closeButton: {
+    sheetTitle: { fontSize: 18, fontWeight: '900', color: theme.colors.text.primary, letterSpacing: 0.5 },
+    sheetSubtitle: { fontSize: 10, fontWeight: '700', color: theme.colors.text.tertiary, letterSpacing: 1 },
+    closeButton: {
         width: 32,
         height: 32,
         borderRadius: 16,
@@ -932,12 +921,12 @@ const styles = StyleSheet.create({
         borderColor: theme.colors.ui.border,
         alignItems: 'center',
         justifyContent: 'center'
-     },
-     sheetScroll: { flex: 1, paddingHorizontal: 24, paddingTop: 24 },
-     inputGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginBottom: 8 },
-     inputGroup: { marginBottom: 24, flexBasis: '47%', flexGrow: 1 },
-     inputLabel: { fontSize: 10, fontWeight: '800', color: theme.colors.text.tertiary, marginBottom: 8, letterSpacing: 1 },
-     inputWrapper: {
+    },
+    sheetScroll: { flex: 1, paddingHorizontal: 24, paddingTop: 24 },
+    inputGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginBottom: 8 },
+    inputGroup: { marginBottom: 24, flexBasis: '47%', flexGrow: 1 },
+    inputLabel: { fontSize: 10, fontWeight: '800', color: theme.colors.text.tertiary, marginBottom: 8, letterSpacing: 1 },
+    inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: theme.colors.ui.glass,
@@ -945,18 +934,18 @@ const styles = StyleSheet.create({
         borderColor: theme.colors.ui.border,
         borderRadius: 16,
         paddingHorizontal: 12,
-     },
-     inputIcon: { marginRight: 8 },
-     input: { 
+    },
+    inputIcon: { marginRight: 8 },
+    input: { 
         flex: 1,
         height: 48,
         color: theme.colors.text.primary, 
         fontSize: 16,
         fontWeight: '600'
     },
-     textArea: { minHeight: 100, textAlignVertical: 'top', paddingTop: 12, flexBasis: '100%' },
-     sheetActions: { flexDirection: 'row', gap: 16, marginTop: 12, marginBottom: 40 },
-     btnPrimary: { 
+    textArea: { minHeight: 100, textAlignVertical: 'top', paddingTop: 12, flexBasis: '100%' },
+    sheetActions: { flexDirection: 'row', gap: 16, marginTop: 12, marginBottom: 40 },
+    btnPrimary: { 
         flex: 2,
         backgroundColor: theme.colors.status.rest, 
         height: 56, 
@@ -969,18 +958,18 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4
     },
-     btnSecondary: { 
+    btnSecondary: { 
         flex: 1,
         backgroundColor: theme.colors.ui.glass, 
         height: 56, 
         borderRadius: 18, 
-        borderWidth: 1,
+        borderWidth: 1, 
         borderColor: theme.colors.ui.border,
         alignItems: 'center', 
         justifyContent: 'center' 
     },
-     btnTextPrimary: { fontSize: 14, fontWeight: '900', color: '#FFFFFF', letterSpacing: 1 },
-     previewContainer: { 
+    btnTextPrimary: { fontSize: 14, fontWeight: '900', color: '#FFFFFF', letterSpacing: 1 },
+    previewContainer: { 
         backgroundColor: 'rgba(99, 102, 241, 0.05)', 
         borderRadius: 24, 
         padding: 24, 
@@ -989,9 +978,9 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(99, 102, 241, 0.2)', 
         alignItems: 'center' 
     },
-     previewTitle: { fontSize: 10, fontWeight: '800', color: theme.colors.text.tertiary, marginBottom: 12, letterSpacing: 1 },
-     previewValueContainer: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 8 },
-     previewValue: { fontSize: 48, fontWeight: '900', color: theme.colors.status.rest, fontStyle: 'italic' },
-     previewUnit: { fontSize: 20, fontWeight: '900', color: theme.colors.status.rest, marginLeft: 4, opacity: 0.6 },
-     previewMethod: { fontSize: 9, fontWeight: '700', color: theme.colors.text.tertiary, letterSpacing: 0.5 },
+    previewTitle: { fontSize: 10, fontWeight: '800', color: theme.colors.text.tertiary, marginBottom: 12, letterSpacing: 1 },
+    previewValueContainer: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 8 },
+    previewValue: { fontSize: 48, fontWeight: '900', color: theme.colors.status.rest, fontStyle: 'italic' },
+    previewUnit: { fontSize: 20, fontWeight: '900', color: theme.colors.status.rest, marginLeft: 4, opacity: 0.6 },
+    previewMethod: { fontSize: 9, fontWeight: '700', color: theme.colors.text.tertiary, letterSpacing: 0.5 },
 });

@@ -1,4 +1,5 @@
 import { getWorkout } from "@/api/Workout";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Button, Modal, StyleSheet, Text, View } from "react-native";
@@ -34,6 +35,10 @@ export default function AddExerciseScreen() {
                 onRequestClose={handleClose}
             >
                 <View style={styles.sheet}>
+                    <LinearGradient
+                        colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                        style={styles.gradientBg}
+                    />
                     <View style={styles.handle} />
                     <Text style={styles.text}>Add Exercise</Text>
                     <Button title="Close" onPress={handleClose} />
@@ -58,6 +63,14 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         padding: 20,
+        overflow: 'hidden',
+    },
+    gradientBg: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
     },
     handle: {
         width: 40,

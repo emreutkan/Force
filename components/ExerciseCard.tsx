@@ -1,20 +1,24 @@
 import { updateSet } from '@/api/Exercises';
 import { getRestTimerState, stopRestTimer } from '@/api/Workout';
+import { SwipeAction } from '@/components/SwipeAction';
+import { theme } from '@/constants/theme';
 import { useActiveWorkoutStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useRestTimer } from './RestTimerBar';
 import { ViewOnlyExerciseCard } from './ViewOnlyExerciseCard';
 import { ActiveWorkoutExerciseCard } from './ActiveWorkoutExerciseCard';
 import { EditWorkoutExerciseCard } from './EditWorkoutExerciseCard';
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IS_WEB_SMALL = Platform.OS === 'web' && SCREEN_WIDTH <= 750;
 
-// Validation functions (shared between AddSetRow and ExerciseCard)
+// ============================================================================
+// 1. HELPERS
+// ============================================================================
 const validateSetData = (data: any): { isValid: boolean, errors: string[] } => {
     const errors: string[] = [];
 
@@ -100,39 +104,9 @@ const formatValidationErrors = (validationErrors: any): string => {
     return messages.join('\n');
 };
 
-
-
-interface SwipeActionProps {
-    progress: any;
-    dragX: any;
-    onPress: () => void;
-    drag?: () => void;
-    iconSize?: number;
-    style?: any;    
-    iconName: keyof typeof Ionicons.glyphMap;
-    color?: string;
-}
-
-const SwipeAction = ({ progress, dragX, onPress, drag, iconSize = 24, style, iconName, color = "#FFFFFF" }: SwipeActionProps) => {
-    const animatedStyle = useAnimatedStyle(() => {
-        const scale = interpolate(progress.value, [0, 1], [0.5, 1], Extrapolation.CLAMP);
-        return { transform: [{ scale }] };
-    });
-
-    return (
-        <TouchableOpacity 
-            onPress={onPress} 
-            activeOpacity={0.7} 
-            style={style}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            delayPressIn={0}
-        >
-            <Animated.View style={[animatedStyle, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
-                <Ionicons name={iconName} size={iconSize} color={color} />
-            </Animated.View>
-        </TouchableOpacity>
-    );
-};
+// ============================================================================
+// 2. COMPONENTS
+// ============================================================================
 
 // SetRow Component
 const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMode, swipeRef, onOpen, onClose, onUpdate, onInputFocus, onShowStatistics, exerciseId }: any) => {
@@ -304,9 +278,8 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
             progress={progress}
             dragX={dragX}
             onPress={() => onDelete(set.id)}
-            iconSize={20}
-            style={styles.deleteSetAction}
             iconName="trash-outline"
+            side="right"
         />
     );
 
@@ -318,9 +291,8 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
                     progress={progress}
                     dragX={dragX}
                     onPress={() => setShowInsights(true)}
-                    iconSize={20}
-                    style={styles.insightsSetAction}
                     iconName="bulb-outline"
+                    side="left"
                 />
             );
         }
@@ -331,9 +303,8 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
                     progress={progress}
                     dragX={dragX}
                     onPress={() => onShowStatistics(exerciseId)}
-                    iconSize={20}
-                    style={styles.analysisSetAction}
                     iconName="stats-chart-outline"
+                    side="left"
                 />
             );
         }
@@ -368,6 +339,7 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
             overshootLeft={false}
             overshootRight={false}
             friction={2}
+            enableTrackpadTwoFingerGesture
             leftThreshold={40}
             rightThreshold={40}
         >
@@ -1237,9 +1209,8 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
             progress={progress}
             dragX={dragX}
             onPress={() => onToggleLock(idToLock)}
-            iconSize={24}
-            style={[styles.lockAction, { backgroundColor: isLocked ? '#FF9F0A' : '#0A84FF' }]}
             iconName={isLocked ? "lock-open-outline" : "lock-closed"}
+            side="left"
         />
     );
 
@@ -1248,9 +1219,8 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
             progress={progress}
             dragX={dragX}
             onPress={() => onRemove(idToLock)}
-            iconSize={24}
-            style={styles.deleteAction}
             iconName="trash-outline"
+            side="right"
         />
     );
 
@@ -1266,6 +1236,7 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
             overshootLeft={false}
             overshootRight={false}
             friction={2}
+            enableTrackpadTwoFingerGesture
             leftThreshold={40}
             rightThreshold={40}
         >
@@ -1791,30 +1762,6 @@ const styles = StyleSheet.create({
             },
         }),
     },
-    deleteSetAction: {
-        backgroundColor: '#FF3B30',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 60,
-        height: '100%',
-        borderRadius: 0,
-    },
-    analysisSetAction: {
-        backgroundColor: '#48484A',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 60,
-        height: '100%',
-        borderRadius: 0,
-    },
-    insightsSetAction: {
-        backgroundColor: '#FF9F0A',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 60,
-        height: '100%',
-        borderRadius: 0,
-    },
     addSetButton: {
         marginTop: 12,
         backgroundColor: 'transparent',
@@ -2013,24 +1960,6 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 17,
         fontWeight: '400',
-    },
-    deleteAction: {
-        backgroundColor: '#FF3B30',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 80,
-        height: '100%',
-        borderRadius: 22,
-        marginLeft: 8,
-    },
-    lockAction: {
-        backgroundColor: '#0A84FF',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 80,
-        height: '100%',
-        borderRadius: 22,
-        marginRight: 8,
     },
     insightsModalOverlay: {
         flex: 1,

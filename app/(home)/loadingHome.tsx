@@ -1,5 +1,6 @@
 import { checkToday, getRecoveryStatus } from '@/api/Workout';
 import { useHomeLoadingStore } from '@/state/userStore';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -105,6 +106,10 @@ export default function LoadingHome() {
 
     return (
         <View style={styles.container}>
+            <LinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={StyleSheet.absoluteFillObject}
+            />
             <View style={[styles.content, { paddingTop: insets.top }]}>
                 <View style={styles.heroSection}>
                     <Text style={styles.heroTitle}>FORCE</Text>

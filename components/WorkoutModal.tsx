@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.ui.glass,
         borderRadius: theme.borderRadius.l,
         overflow: 'hidden',
-        paddingBottom: theme.spacing.navHeight,
+        paddingBottom: theme.spacing.navHeight + 20,
         bottom: -40,
     },
     header: {
@@ -299,29 +299,33 @@ const styles = StyleSheet.create({
     },
     modalTitle: {
         fontSize: theme.typography.sizes.xl,
-        fontWeight: '700',
+        fontWeight: '900',
         color: theme.colors.text.primary,
+        fontStyle: 'italic',
+        textTransform: 'uppercase',
         letterSpacing: theme.typography.tracking.tight,
     },
     closeIcon: {
         padding: theme.spacing.xs,
-        backgroundColor: theme.colors.ui.surfaceHighlight,
+        backgroundColor: theme.colors.ui.glassStrong,
         borderRadius: theme.borderRadius.full,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
     },
     formContainer: {
         paddingHorizontal: theme.spacing.m,
         gap: theme.spacing.s,
     },
     label: {
-        fontSize: theme.typography.sizes.s,
-        fontWeight: '600',
+        fontSize: theme.typography.sizes.label,
+        fontWeight: '700',
         color: theme.colors.text.secondary,
         paddingHorizontal: theme.spacing.xs,
         textTransform: 'uppercase',
         letterSpacing: theme.typography.tracking.wide,
     },
     inputWrapper: {
-        backgroundColor: theme.colors.ui.surfaceHighlight,
+        backgroundColor: theme.colors.ui.glassStrong,
         borderRadius: theme.borderRadius.m,
         borderWidth: 1,
         borderColor: theme.colors.ui.border,
@@ -330,7 +334,7 @@ const styles = StyleSheet.create({
         padding: theme.spacing.m,
         color: theme.colors.text.primary,
         fontSize: theme.typography.sizes.m,
-        fontWeight: '500',
+        fontWeight: '600',
     },
     dateSection: {
         marginTop: theme.spacing.xs,
@@ -339,7 +343,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: theme.colors.ui.surfaceHighlight,
+        backgroundColor: theme.colors.ui.glassStrong,
         padding: theme.spacing.m,
         borderRadius: theme.borderRadius.m,
         borderWidth: 1,
@@ -347,7 +351,7 @@ const styles = StyleSheet.create({
     },
     dateButtonActive: {
         backgroundColor: theme.colors.ui.primaryLight,
-        borderColor: theme.colors.ui.primaryBorder,
+        borderColor: theme.colors.status.active,
     },
     dateRow: {
         flexDirection: 'row',
@@ -357,7 +361,7 @@ const styles = StyleSheet.create({
     dateText: {
         color: theme.colors.text.primary,
         fontSize: theme.typography.sizes.m,
-        fontWeight: '500',
+        fontWeight: '600',
     },
     timeRow: {
         flexDirection: 'row',
@@ -367,12 +371,15 @@ const styles = StyleSheet.create({
     timeText: {
         color: theme.colors.text.secondary,
         fontSize: theme.typography.sizes.m,
+        fontWeight: '500',
     },
     datePickerContainer: {
         marginTop: theme.spacing.s,
-        backgroundColor: theme.colors.ui.glass,
+        backgroundColor: theme.colors.ui.glassStrong,
         borderRadius: theme.borderRadius.m,
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
     },
     picker: {
         height: 180,
@@ -383,15 +390,23 @@ const styles = StyleSheet.create({
         borderRadius: theme.borderRadius.l,
         alignItems: 'center',
         marginTop: theme.spacing.s,
+        shadowColor: theme.colors.status.active,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
     },
     btnDisabled: {
-        backgroundColor: theme.colors.text.zinc800,
+        backgroundColor: theme.colors.ui.glassStrong,
+        opacity: 0.5,
         shadowOpacity: 0,
     },
     primaryButtonText: {
         color: theme.colors.text.primary,
         fontSize: theme.typography.sizes.m,
-        fontWeight: '300',
+        fontWeight: '900',
+        fontStyle: 'italic',
+        textTransform: 'uppercase',
         letterSpacing: theme.typography.tracking.wide,
     },
 });

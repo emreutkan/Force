@@ -58,7 +58,7 @@ const SettingsRow = ({
     label, 
     value, 
     icon, 
-    iconColor = '#0A84FF', 
+    iconColor = theme.colors.status.active, 
     onPress, 
     isDestructive = false,
     showChevron = true,
@@ -72,7 +72,7 @@ const SettingsRow = ({
         <View style={styles.rowLeft}>
             {icon && (
                 <View style={[styles.iconContainer, { backgroundColor: isDestructive ? 'rgba(255,59,48,0.15)' : 'rgba(10,132,255,0.15)' }]}>
-                    <Ionicons name={icon} size={18} color={isDestructive ? '#FF3B30' : iconColor} />
+                    <Ionicons name={icon} size={18} color={isDestructive ? theme.colors.status.error : iconColor} />
                 </View>
             )}
             <Text style={[styles.rowLabel, isDestructive && styles.rowLabelDestructive]}>
@@ -82,7 +82,7 @@ const SettingsRow = ({
         
         <View style={styles.rowRight}>
             {value && <Text style={styles.rowValue}>{value}</Text>}
-            {showChevron && <Ionicons name="chevron-forward" size={16} color="#545458" style={{ marginLeft: 8 }} />}
+            {showChevron && <Ionicons name="chevron-forward" size={16} color={theme.colors.text.tertiary} style={{ marginLeft: 8 }} />}
         </View>
     </TouchableOpacity>
 );
@@ -248,7 +248,7 @@ export default function AccountScreen() {
                 colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
                 style={styles.gradientBg}
             />
-            <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]} showsVerticalScrollIndicator={false}>
                 
                 {/* Profile Header */}
                 <View style={styles.profileHeader}>
@@ -368,10 +368,10 @@ export default function AccountScreen() {
                         activeOpacity={0.7}
                     >
                         <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 69, 58, 0.1)' }]}>
-                            <Ionicons name="log-out-outline" size={20} color="#FF453A" />
+                            <Ionicons name="log-out-outline" size={20} color={theme.colors.status.error} />
                         </View>
                         <View style={styles.settingContent}>
-                            <Text style={[styles.settingTitle, { color: '#FF453A' }]}>LOG OUT</Text>
+                            <Text style={[styles.settingTitle, { color: theme.colors.status.error }]}>LOG OUT</Text>
                             <Text style={styles.settingSubtitle}>EXIT SESSION</Text>
                         </View>
                     </TouchableOpacity>

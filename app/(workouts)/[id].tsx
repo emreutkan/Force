@@ -5,6 +5,7 @@ import ExerciseSearchModal from '@/components/ExerciseSearchModal';
 import WorkoutDetailView from '@/components/WorkoutDetailView';
 import { commonStyles, theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
@@ -151,6 +152,10 @@ export default function WorkoutDetailScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
+            <LinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={StyleSheet.absoluteFillObject}
+            />
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
                     <Ionicons name="chevron-back" size={24} color={theme.colors.text.zinc600} />

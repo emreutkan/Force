@@ -1,15 +1,17 @@
+import { SwipeAction } from './SwipeAction';
 import { updateSet } from '@/api/Exercises';
 import { theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Alert, Dimensions, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IS_WEB_SMALL = Platform.OS === 'web' && SCREEN_WIDTH <= 750;
 
-// Validation functions
+// ============================================================================
+// 1. HELPERS
+// ============================================================================
 const validateSetData = (data: any): { isValid: boolean, errors: string[] } => {
     const errors: string[] = [];
 
@@ -108,33 +110,9 @@ const formatRestTimeForDisplay = (seconds: number): string => {
     return s > 0 ? `${m}.${s.toString().padStart(2, '0')}` : `${m}`;
 };
 
-interface SwipeActionProps {
-    progress: any;
-    dragX: any;
-    onPress: () => void;
-    iconName: keyof typeof Ionicons.glyphMap;
-    color?: string;
-}
-
-const SwipeAction = ({ progress, dragX, onPress, iconName, color = "#FFFFFF" }: SwipeActionProps) => {
-    const animatedStyle = useAnimatedStyle(() => {
-        const scale = interpolate(progress.value, [0, 1], [0.5, 1], Extrapolation.CLAMP);
-        return { transform: [{ scale }] };
-    });
-
-    return (
-        <TouchableOpacity 
-            onPress={onPress} 
-            activeOpacity={0.7} 
-            style={styles.swipeAction}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-            <Animated.View style={[animatedStyle, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
-                <Ionicons name={iconName} size={20} color={color} />
-            </Animated.View>
-        </TouchableOpacity>
-    );
-};
+// ============================================================================
+// 2. COMPONENTS
+// ============================================================================
 
 // SetRow Component
 const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onUpdate, onInputFocus, onShowStatistics, exerciseId }: any) => {
@@ -264,6 +242,7 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
             dragX={dragX}
             onPress={() => onDelete(set.id)}
             iconName="trash-outline"
+            side="right"
         />
     );
 
@@ -275,6 +254,7 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                     dragX={dragX}
                     onPress={() => setShowInsights(true)}
                     iconName="bulb-outline"
+                    side="left"
                 />
             );
         }
@@ -285,6 +265,7 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                     dragX={dragX}
                     onPress={() => onShowStatistics(exerciseId)}
                     iconName="stats-chart-outline"
+                    side="left"
                 />
             );
         }
@@ -312,6 +293,7 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                 overshootLeft={false}
                 overshootRight={false}
                 friction={2}
+                enableTrackpadTwoFingerGesture
                 leftThreshold={40}
                 rightThreshold={40}
             >
@@ -752,6 +734,7 @@ export const EditWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleLoc
             dragX={dragX}
             onPress={() => onToggleLock(idToLock)}
             iconName={isLocked ? "lock-open-outline" : "lock-closed"}
+            side="left"
         />
     );
 
@@ -761,6 +744,7 @@ export const EditWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleLoc
             dragX={dragX}
             onPress={() => onRemove(idToLock)}
             iconName="trash-outline"
+            side="right"
         />
     );
 
@@ -776,6 +760,7 @@ export const EditWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleLoc
             overshootLeft={false}
             overshootRight={false}
             friction={2}
+            enableTrackpadTwoFingerGesture
             leftThreshold={40}
             rightThreshold={40}
         >
@@ -1154,14 +1139,6 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1.5,
         borderBottomColor: '#48484A',
         borderRadius: 6,
-    },
-    swipeAction: {
-        backgroundColor: '#FF3B30',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 60,
-        height: '100%',
-        borderRadius: 0,
     },
     addSetButton: {
         marginTop: 12,

@@ -4,6 +4,7 @@ import { healthService } from '@/api/Health';
 import { BackendType, getBackendPreference, setBackendPreference } from '@/api/Storage';
 import { debugLoginData } from '@/state/debug';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -76,6 +77,10 @@ export default function DebugView() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
+            <LinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={StyleSheet.absoluteFillObject}
+            />
             <View style={styles.header}>
                 <TouchableOpacity 
                     style={styles.backButton}
@@ -114,6 +119,33 @@ export default function DebugView() {
                 </View>
 
                 <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Backend</Text>
+                    <TouchableOpacity 
+                        style={[styles.backendButton, backend === 'ec2' && styles.backendButtonActive]}
+                        onPress={() => handleBackendChange('ec2')}
+                    >
+                        <Text style={[styles.backendButtonText, backend === 'ec2' && styles.backendButtonTextActive]}>
+                            EC2 (api.utrack.irfanemreutkan.com)
+                        </Text>
+                        {backend === 'ec2' && (
+                            <Ionicons name="checkmark-circle" size={20} color="#0A84FF" />
+                        )}
+                    </TouchableOpacity>   
+                    <TouchableOpacity 
+                        style={[styles.backendButton, backend === 'local' && styles.backendButtonActive]}
+                        onPress={() => handleBackendChange('local')}
+                    >
+                        <Text style={[styles.backendButtonText, backend === 'local' && styles.backendButtonTextActive]}>
+                            Local (192.168.1.2:8000)
+                        </Text>
+                        {backend === 'local' && (
+                            <Ionicons name="checkmark-circle" size={20} color="#0A84FF" />
+                        )}
+                    </TouchableOpacity>
+
+                
+                </View>
+                <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Health & Fitness</Text>
                     <Text style={styles.sectionDescription}>
                         Platform: {Platform.OS === 'ios' ? 'iOS (HealthKit)' : 'Android (Google Fit)'}
@@ -146,34 +178,7 @@ export default function DebugView() {
                     </TouchableOpacity>
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Change Backend</Text>
-                    <Text style={styles.sectionDescription}>Current: {backend.toUpperCase()}</Text>
-                    
-                    <TouchableOpacity 
-                        style={[styles.backendButton, backend === 'local' && styles.backendButtonActive]}
-                        onPress={() => handleBackendChange('local')}
-                    >
-                        <Text style={[styles.backendButtonText, backend === 'local' && styles.backendButtonTextActive]}>
-                            Local (192.168.1.2:8000)
-                        </Text>
-                        {backend === 'local' && (
-                            <Ionicons name="checkmark-circle" size={20} color="#0A84FF" />
-                        )}
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                        style={[styles.backendButton, backend === 'ec2' && styles.backendButtonActive]}
-                        onPress={() => handleBackendChange('ec2')}
-                    >
-                        <Text style={[styles.backendButtonText, backend === 'ec2' && styles.backendButtonTextActive]}>
-                            EC2 (api.utrack.irfanemreutkan.com)
-                        </Text>
-                        {backend === 'ec2' && (
-                            <Ionicons name="checkmark-circle" size={20} color="#0A84FF" />
-                        )}
-                    </TouchableOpacity>
-                </View>
+           
             </View>
         </View>
     );

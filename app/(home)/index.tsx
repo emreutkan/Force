@@ -30,7 +30,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // ============================================================================
 
 
-const LoadingSkeleton = ({ type = 'workout' }: { type?: 'workout' | 'recovery' }) => {
+const LoadingSkeleton = ({ type = 'workout' }: { type?: 'workout' | 'recovery' | 'templates' }) => {
     const opacity = useSharedValue(0.3);
     useEffect(() => {
         opacity.value = withRepeat(
@@ -41,9 +41,22 @@ const LoadingSkeleton = ({ type = 'workout' }: { type?: 'workout' | 'recovery' }
 
     const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
+    if (type === 'templates') {
         return (
-        <View style={[styles.skeletonContainer, type === 'recovery' && { height: 100 }]}>
-            <Animated.View style={[styles.skeletonCard, animatedStyle]} />
+            <View style={styles.skeletonTemplatesContainer}>
+                <View style={styles.skeletonHeader} />
+                <RNScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
+                    {[1, 2].map(i => (
+                        <Animated.View key={i} style={[styles.skeletonTemplateCard, animatedStyle]} />
+                    ))}
+                </RNScrollView>
+            </View>
+        );
+    }
+
+    return (
+        <View style={[styles.skeletonContainer, type === 'recovery' && { height: 200 }]}>
+            <Animated.View style={[styles.skeletonCard, animatedStyle, type === 'recovery' && { height: 180 }]} />
         </View>
     );
 };
@@ -337,12 +350,22 @@ export default function Home() {
 
 
     if (isLoading && !isInitialLoadComplete) {
-                        return (
+        return (
             <View style={[styles.container, { paddingTop: insets.top }]}>
-                <LoadingSkeleton />
-                <LoadingSkeleton type="recovery" />
-                                    </View>
-                                        );
+                <LinearGradient
+                    colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                    style={styles.gradientBg}
+                />
+                <RNScrollView contentContainerStyle={styles.scrollContent}>
+                    <View style={styles.forceHeader}>
+                        <Text style={typographyStyles.h1}>FORCE<Text style={{ color: theme.colors.status.active }}>.</Text></Text>
+                    </View>
+                    <LoadingSkeleton />
+                    <LoadingSkeleton type="recovery" />
+                    <LoadingSkeleton type="templates" />
+                </RNScrollView>
+            </View>
+        );
     }
 
     return (
@@ -351,7 +374,7 @@ export default function Home() {
                 colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
                 style={styles.gradientBg}
             />
-                <RNScrollView 
+            <RNScrollView 
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.status.active} />}
@@ -399,7 +422,7 @@ export default function Home() {
                     </View>
                 )}
 
-                <TemplatesSection templates={templates} />
+                <TemplatesSection templates={templates} onRefresh={onRefresh} />
                 
             </RNScrollView>
 
@@ -497,6 +520,9 @@ const styles = StyleSheet.create({
     divider: { height: StyleSheet.hairlineWidth, backgroundColor: theme.colors.text.tertiary },
 
     // Skeleton
-    skeletonContainer: { padding: theme.spacing.m, marginBottom: theme.spacing.m },
-    skeletonCard: { width: '100%', height: 120, backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.l },
+    skeletonContainer: { marginBottom: theme.spacing.m },
+    skeletonCard: { width: '100%', height: 160, backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.xxl, borderWidth: 1, borderColor: theme.colors.ui.border },
+    skeletonTemplatesContainer: { marginTop: theme.spacing.m },
+    skeletonHeader: { width: 150, height: 14, backgroundColor: theme.colors.ui.glass, borderRadius: 4, marginBottom: theme.spacing.m },
+    skeletonTemplateCard: { width: 280, height: 120, backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.xl, borderWidth: 1, borderColor: theme.colors.ui.border },
 });

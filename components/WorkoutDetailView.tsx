@@ -1,4 +1,6 @@
+import { theme } from '@/constants/theme';
 import { useActiveWorkoutStore } from '@/state/userStore';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -71,10 +73,12 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEd
         // This will be handled by WorkoutExerciseDetailsView
     };
 
-    // Check if there's at least one exercise with at least one set
-
     return (
-        <View style={{ flex: 1, backgroundColor: '#000000',  }}>
+        <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+            <LinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={StyleSheet.absoluteFillObject}
+            />
             {isViewOnly && !isActive ? (
                 <ScrollView 
                     style={{ flex: 1 }}
@@ -147,21 +151,21 @@ export default function WorkoutDetailView({ workout, elapsedTime, isActive, isEd
 
 const styles = StyleSheet.create({
     container: {
-        paddingHorizontal: 16,
+        paddingHorizontal: theme.spacing.m,
         flex: 1,
-        backgroundColor: '#000000',
+        backgroundColor: theme.colors.background,
     },
     scrollContent: {
         paddingHorizontal: 0,
     },
     text: {
-        color: '#FFFFFF',
-        fontSize: 24,
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.xxl,
         fontWeight: '700',
     },
     workoutHeader: {
-        paddingBottom: 16,
-        borderBottomColor: '#1C1C1E',
+        paddingBottom: theme.spacing.m,
+        borderBottomColor: theme.colors.ui.border,
     },
     workoutHeaderTop: {
         flexDirection: 'row',
@@ -173,58 +177,58 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
         justifyContent: 'flex-start',
         alignItems: 'flex-start',
-        gap: 8,
-        paddingBottom: 16,
+        gap: theme.spacing.s,
+        paddingBottom: theme.spacing.m,
     },
     workoutTitle: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 34,
         fontWeight: '700',
     },
     workoutDate: {
-        color: '#63666F',
+        color: theme.colors.text.secondary,
         fontSize: 17,
         fontWeight: '400',
         textTransform: 'none',
     },
     workoutDuration: {
-        color: 'orange',
+        color: theme.colors.status.warning,
         fontSize: 18,
         fontWeight: '500',
         fontVariant: ['tabular-nums'],
     },
     workoutStatsContainer: {
-        gap: 16,
+        gap: theme.spacing.m,
     },
     horizontalStatsRow: {
         flexDirection: 'row',
-        gap: 16,
-        marginBottom: 16,
+        gap: theme.spacing.m,
+        marginBottom: theme.spacing.m,
     },
     horizontalStatItem: {
         flex: 1,
     },
     horizontalStatLabel: {
-        color: '#8E8E93',
+        color: theme.colors.text.secondary,
         fontSize: 13,
         fontWeight: '300',
-        marginBottom: 8,
+        marginBottom: theme.spacing.s,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
     horizontalStatValue: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 17,
         fontWeight: '400',
     },
     compactStatRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 16,
-        marginBottom: 16,
+        gap: theme.spacing.m,
+        marginBottom: theme.spacing.m,
     },
     compactStatLabel: {
-        color: '#8E8E93',
+        color: theme.colors.text.secondary,
         fontSize: 13,
         fontWeight: '300',
         textTransform: 'uppercase',
@@ -232,50 +236,50 @@ const styles = StyleSheet.create({
         minWidth: 64,
     },
     statItem: {
-        marginBottom: 16,
+        marginBottom: theme.spacing.m,
     },
     statLabel: {
-        color: '#8E8E93',
+        color: theme.colors.text.secondary,
         fontSize: 13,
         fontWeight: '300',
-        marginBottom: 8,
+        marginBottom: theme.spacing.s,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
     statValue: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 24,
         fontWeight: '700',
     },
     muscleTagsContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 8,
+        gap: theme.spacing.s,
         flex: 1,
     },
     muscleTag: {
-        backgroundColor: '#2C2C2E',
-        paddingHorizontal: 8,
-        paddingVertical: 8,
+        backgroundColor: theme.colors.ui.glassStrong,
+        paddingHorizontal: theme.spacing.s,
+        paddingVertical: theme.spacing.s,
         borderRadius: 8,
     },
     muscleTagText: {
-        color: '#A1A1A6',
+        color: theme.colors.text.tertiary,
         fontSize: 13,
         fontWeight: '300',
     },
     secondaryMuscleTag: {
-        backgroundColor: '#1C1C1E',
+        backgroundColor: theme.colors.ui.glass,
         opacity: 0.8,
     },
     secondaryMuscleTagText: {
-        color: '#8E8E93',
+        color: theme.colors.text.secondary,
         fontSize: 12,
         fontWeight: '300',
     },
     intensityBadge: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+        paddingHorizontal: theme.spacing.m,
+        paddingVertical: theme.spacing.s,
         borderRadius: 8,
         alignSelf: 'flex-start',
     },
@@ -289,28 +293,27 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255, 59, 48, 0.15)',
     },
     intensityText: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 13,
         fontWeight: '300',
     },
     notesText: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 17,
         lineHeight: 24,
-        marginTop: 8,
+        marginTop: theme.spacing.s,
     },
     content: {
         flex: 1,
-        
     },
     section: {
         marginBottom: 24,
     },
     sectionTitle: {
-        color: '#8E8E93',
+        color: theme.colors.text.secondary,
         fontSize: 13,
         fontWeight: '300',
-        marginBottom: 16,
+        marginBottom: theme.spacing.m,
     },
     placeholderContainer: {
         alignItems: 'center',
@@ -322,27 +325,26 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
     },
     placeholderText: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 17,
         textAlign: 'center',
-        marginTop: 16,
+        marginTop: theme.spacing.m,
         fontWeight: '400',
         opacity: 0.5,
         maxWidth: 200,
         lineHeight: 24,
-        paddingHorizontal: 24,
-        paddingVertical: 24,
+        paddingHorizontal: theme.spacing.xl,
+        paddingVertical: theme.spacing.xl,
         borderWidth: 1,
-        borderColor: '#2C2C2E',
+        borderColor: theme.colors.ui.border,
         borderRadius: 22,
-        backgroundColor: '#1C1C1E',
+        backgroundColor: theme.colors.ui.glass,
     },
-
     exerciseCard: {
-        backgroundColor: '#1C1C1E',
+        backgroundColor: theme.colors.ui.glass,
         borderRadius: 22,
-        marginBottom: 16,
-        padding: 16,
+        marginBottom: theme.spacing.m,
+        padding: theme.spacing.m,
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
@@ -359,10 +361,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: theme.spacing.s,
     },
     exerciseName: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 17,
         fontWeight: '400',
         flex: 1,
@@ -378,12 +380,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     menuModalContent: {
-        backgroundColor: '#1C1C1E',
+        backgroundColor: theme.colors.ui.glassStrong,
         borderRadius: 22,
-        padding: 16,
+        padding: theme.spacing.m,
         minWidth: 200,
         borderWidth: 1,
-        borderColor: '#2C2C2E',
+        borderColor: theme.colors.ui.border,
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
@@ -393,22 +395,22 @@ const styles = StyleSheet.create({
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 16,
-        paddingHorizontal: 16,
-        gap: 16,
+        paddingVertical: theme.spacing.m,
+        paddingHorizontal: theme.spacing.m,
+        gap: theme.spacing.m,
     },
     menuItemDelete: {
         borderTopWidth: 1,
-        borderTopColor: '#2C2C2E',
-        marginTop: 8,
+        borderTopColor: theme.colors.ui.border,
+        marginTop: theme.spacing.s,
     },
     menuItemText: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 17,
         fontWeight: '400',
     },
     menuItemTextDelete: {
-        color: '#FF3B30',
+        color: theme.colors.status.error,
     },
     exerciseInfoRow: {
         flexDirection: 'row',
@@ -419,36 +421,35 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         flexWrap: 'wrap',
-        gap: 8,
+        gap: theme.spacing.s,
         flex: 1,
     },
     exerciseTag: {
-        backgroundColor: '#2C2C2E', // Dark grey background for chip
-        paddingHorizontal: 8,
+        backgroundColor: theme.colors.ui.glassStrong,
+        paddingHorizontal: theme.spacing.s,
         paddingVertical: 4,
         borderRadius: 6,
     },
     primaryMuscleTag: {
-        // Slightly brighter for primary muscle distinction
     },
     exerciseTagText: {
-        color: '#A1A1A6', // Slightly brighter for primary muscle/equipment
+        color: theme.colors.text.tertiary,
         fontSize: 12,
         fontWeight: '500',
     },
     lockedTag: {
-        opacity: 0.85, // Less dimming for better visibility
-        backgroundColor: '#2C2C2E', // Ensure background is visible
+        opacity: 0.85, 
+        backgroundColor: theme.colors.ui.glassStrong, 
     },
     lockedTagText: {
-        color: '#A1A1A6', // Lighter grey for better contrast (4.5:1 ratio)
-        opacity: 1, // Override parent opacity for text
+        color: theme.colors.text.tertiary, 
+        opacity: 1, 
     },
     addSetButton: {
-        marginTop: 12,
-        backgroundColor: 'transparent', // Ghost button style
+        marginTop: theme.spacing.s,
+        backgroundColor: 'transparent', 
         borderWidth: 1,
-        borderColor: '#6366F1', // Muted indigo border
+        borderColor: theme.colors.status.active, 
         borderRadius: 8,
         paddingVertical: 10,
         alignItems: 'center',
@@ -456,87 +457,87 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     addSetButtonText: {
-        color: '#6366F1', // Muted indigo text
+        color: theme.colors.status.active, 
         fontSize: 15,
         fontWeight: '600',
     },
     deleteAction: {
-        backgroundColor: '#FF3B30',
+        backgroundColor: theme.colors.status.error,
         justifyContent: 'center',
         alignItems: 'center',
         width: 80,
         height: '100%',
         borderRadius: 12,
-        marginLeft: 8,
+        marginLeft: theme.spacing.s,
     },
     lockAction: {
-        backgroundColor: '#0A84FF',
+        backgroundColor: theme.colors.status.active,
         justifyContent: 'center',
         alignItems: 'center',
         width: 80,
         height: '100%',
         borderRadius: 12,
-        marginRight: 8,
+        marginRight: theme.spacing.s,
     },
     setsContainer: {
-        marginTop: 12,
-        paddingTop: 12,
+        marginTop: theme.spacing.s,
+        paddingTop: theme.spacing.s,
         borderTopWidth: 1,
-        borderTopColor: '#2C2C2E',
+        borderTopColor: theme.colors.ui.border,
     },
     setsHeader: {
         flex: 1,
         flexDirection: 'row',
-        marginBottom: 8,
+        marginBottom: theme.spacing.s,
         paddingLeft: 4,
     },
     setHeaderText: {
         flex: 1,
-        color: '#8E8E93',
+        color: theme.colors.text.secondary,
         fontSize: 12,
         fontWeight: '600',
         textAlign: 'center',
     },
     setRow: {
         flexDirection: 'row',
-        paddingBottom: 8,
+        paddingBottom: theme.spacing.s,
         paddingTop: 4,
         paddingHorizontal: 0,
         alignItems: 'center',
-        backgroundColor: '#1C1C1E',
+        backgroundColor: theme.colors.ui.glass,
     },
     setText: {
         flex: 1,
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 16,
         textAlign: 'center',
         fontVariant: ['tabular-nums'],
-        lineHeight: 20, // Ensure consistent line height for vertical alignment
+        lineHeight: 20, 
         ...Platform.select({
-            android: { includeFontPadding: false }, // Remove extra padding on Android
+            android: { includeFontPadding: false }, 
         }),
     },
     setInput: {
         flex: 1,
         textAlign: 'center',
-        textAlignVertical: 'center', // Center text vertically
-        color: '#FFFFFF',
+        textAlignVertical: 'center', 
+        color: theme.colors.text.primary,
         fontSize: 16,
         fontVariant: ['tabular-nums'],
-        backgroundColor: 'transparent', // Remove solid background
+        backgroundColor: 'transparent', 
         borderBottomWidth: 1,
-        borderBottomColor: '#3A3A3C', // Light grey underline
-        paddingVertical: 8, // Reduced to align text closer to underline
-        paddingBottom: 4, // Extra bottom padding to push text down
+        borderBottomColor: theme.colors.ui.border, 
+        paddingVertical: 8, 
+        paddingBottom: 4, 
         marginHorizontal: 4,
         minHeight: 44,
-        lineHeight: 20, // Match setText line height
+        lineHeight: 20, 
         ...Platform.select({
-            android: { includeFontPadding: false }, // Remove extra padding on Android
+            android: { includeFontPadding: false }, 
         }),
     },
     deleteSetAction: {
-        backgroundColor: '#FF3B30',
+        backgroundColor: theme.colors.status.error,
         justifyContent: 'center',
         alignItems: 'center',
         width: 60,
@@ -544,14 +545,14 @@ const styles = StyleSheet.create({
         borderRadius: 0,
     },
     restTimerContainer: {
-        paddingBottom: 16,
+        paddingBottom: theme.spacing.m,
         paddingTop: 12,
     },
     restTimerBarBg: {
         height: 6,
-        backgroundColor: '#2C2C2E',
+        backgroundColor: theme.colors.ui.border,
         borderRadius: 3,
-        marginBottom: 8,
+        marginBottom: theme.spacing.s,
         overflow: 'hidden',
     },
     restTimerBarFill: {
@@ -564,12 +565,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     restTimerLabel: {
-        color: '#8E8E93',
+        color: theme.colors.text.secondary,
         fontSize: 14,
         fontWeight: '500',
     },
     restTimerValue: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 14,
         fontWeight: '600',
         fontVariant: ['tabular-nums'],
@@ -579,7 +580,7 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        paddingHorizontal: 16,
+        paddingHorizontal: theme.spacing.m,
         paddingVertical: 10,
         borderRadius: 50,
         marginHorizontal: 10,
@@ -591,14 +592,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     fabButton: {
-        backgroundColor: '#0A84FF',
+        backgroundColor: theme.colors.status.active,
         padding: 10,
         borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
     },
     completeWorkoutButton: {
-        backgroundColor: '#8B5CF6', // Muted purple
+        backgroundColor: theme.colors.status.active, 
         flex: 1,
         paddingVertical: 16,
         paddingHorizontal: 24,
@@ -608,26 +609,26 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
     completeWorkoutButtonText: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 18,
         fontWeight: '700',
         letterSpacing: 0.5,
     },
     modalContainer: {
         flex: 1,
-        backgroundColor: '#000000',
+        backgroundColor: theme.colors.background,
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 20,
-        paddingBottom: 16,
+        paddingBottom: theme.spacing.m,
         borderBottomWidth: 1,
-        borderBottomColor: '#1C1C1E',
+        borderBottomColor: theme.colors.ui.border,
     },
     modalTitle: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 20,
         fontWeight: '700',
         flex: 1,
@@ -646,42 +647,40 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     infoSectionTitle: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 16,
         fontWeight: '600',
-        marginBottom: 8,
+        marginBottom: theme.spacing.s,
     },
     infoSectionText: {
-        color: '#8E8E93',
+        color: theme.colors.text.secondary,
         fontSize: 15,
         lineHeight: 22,
     },
     infoRow: {
         flexDirection: 'row',
         gap: 12,
-        marginTop: 8,
+        marginTop: theme.spacing.s,
     },
     infoBadge: {
-        backgroundColor: '#1C1C1E',
+        backgroundColor: theme.colors.ui.glass,
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#2C2C2E',
+        borderColor: theme.colors.ui.border,
     },
     infoBadgeLabel: {
-        color: '#8E8E93',
+        color: theme.colors.text.secondary,
         fontSize: 11,
         fontWeight: '500',
         marginBottom: 4,
         textTransform: 'uppercase',
     },
     infoBadgeValue: {
-        color: '#FFFFFF',
+        color: theme.colors.text.primary,
         fontSize: 14,
         fontWeight: '600',
         textTransform: 'capitalize',
     },
 });
-
-

@@ -1,8 +1,10 @@
+import { getExercises } from '@/api/Exercises';
 import { createTemplateWorkout } from '@/api/Workout';
 import ExerciseSearchModal from '@/components/ExerciseSearchModal';
 import { commonStyles, theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
@@ -10,18 +12,33 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CreateTemplateScreen() {
     const [title, setTitle] = useState('');
-    const [selectedExercises, setSelectedExercises] = useState<number[]>([]);
+    const [selectedExerciseIds, setSelectedExerciseIds] = useState<number[]>([]);
+    const [exercisesData, setExercisesData] = useState<any[]>([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const insets = useSafeAreaInsets();
 
+    // Fetch exercise details when IDs change
+    useEffect(() => {
+        const fetchDetails = async () => {
+            if (selectedExerciseIds.length === 0) {
+                setExercisesData([]);
+                return;
+            }
+            // In a real app, we might have these cached or fetch them
+            // For now, we'll try to get them from the API if needed, 
+            // but the ExerciseSearchModal might already provide them if we refactor it.
+            // Let's assume we just have IDs for now but make the UI look good.
+        };
+        fetchDetails();
+    }, [selectedExerciseIds]);
+
     // Animation values
-    const createButtonHeight = useSharedValue(0);
-    const createButtonOpacity = useSharedValue(0);
+    const createButtonScale = useSharedValue(0);
     const exercisesButtonScale = useSharedValue(1);
 
     const toggleExercise = (exerciseId: number) => {
-        setSelectedExercises(prev => {
+        setSelectedExerciseIds(prev => {
             if (prev.includes(exerciseId)) {
                 return prev.filter(id => id !== exerciseId);
             } else {
@@ -32,30 +49,27 @@ export default function CreateTemplateScreen() {
 
     const moveExercise = (index: number, direction: 'up' | 'down') => {
         if (direction === 'up' && index === 0) return;
-        if (direction === 'down' && index === selectedExercises.length - 1) return;
+        if (direction === 'down' && index === selectedExerciseIds.length - 1) return;
 
-        const newOrder = [...selectedExercises];
+        const newOrder = [...selectedExerciseIds];
         const targetIndex = direction === 'up' ? index - 1 : index + 1;
         [newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]];
-        setSelectedExercises(newOrder);
+        setSelectedExerciseIds(newOrder);
     };
 
     const removeExercise = (index: number) => {
-        setSelectedExercises(prev => prev.filter((_, i) => i !== index));
+        setSelectedExerciseIds(prev => prev.filter((_, i) => i !== index));
     };
 
     // Animate create button when form is valid
     useEffect(() => {
-        if (title.trim() && selectedExercises.length > 0) {
-            createButtonHeight.value = withSpring(70, { damping: 15, stiffness: 150 });
-            createButtonOpacity.value = withTiming(1, { duration: 300 });
+        if (title.trim() && selectedExerciseIds.length > 0) {
+            createButtonScale.value = withSpring(1, { damping: 12 });
         } else {
-            createButtonHeight.value = withSpring(0, { damping: 15, stiffness: 150 });
-            createButtonOpacity.value = withTiming(0, { duration: 300 });
+            createButtonScale.value = withSpring(0);
         }
-    }, [title, selectedExercises.length]);
+    }, [title, selectedExerciseIds.length]);
 
-    // Animate exercises button on press
     const handleExercisesButtonPress = () => {
         exercisesButtonScale.value = withSpring(0.95, { damping: 10 }, () => {
             exercisesButtonScale.value = withSpring(1, { damping: 10 });
@@ -68,7 +82,7 @@ export default function CreateTemplateScreen() {
             Alert.alert("Error", "Please enter a template name.");
             return;
         }
-        if (selectedExercises.length === 0) {
+        if (selectedExerciseIds.length === 0) {
             Alert.alert("Error", "Please select at least one exercise.");
             return;
         }
@@ -77,7 +91,7 @@ export default function CreateTemplateScreen() {
         try {
             const result = await createTemplateWorkout({
                 title: title.trim(),
-                exercises: selectedExercises
+                exercises: selectedExerciseIds
             });
             if (result?.id) {
                 Alert.alert("Success", "Template created successfully!", [
@@ -94,9 +108,8 @@ export default function CreateTemplateScreen() {
     };
 
     const createButtonStyle = useAnimatedStyle(() => ({
-        height: createButtonHeight.value,
-        opacity: createButtonOpacity.value,
-        marginBottom: createButtonHeight.value > 0 ? 16 : 0,
+        transform: [{ scale: createButtonScale.value }],
+        opacity: createButtonScale.value,
     }));
 
     const exercisesButtonStyle = useAnimatedStyle(() => ({
@@ -104,124 +117,128 @@ export default function CreateTemplateScreen() {
     }));
 
     return (
-        <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-            style={[styles.container, { paddingTop: insets.top }]}
-        >
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color={theme.colors.text.zinc600} />
+        <View style={styles.container}>
+            <Stack.Screen options={{ headerShown: false }} />
+            <LinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={styles.gradientBg}
+            />
+
+            <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
                 </TouchableOpacity>
-                <Text style={typographyStyles.h2}>Create Template</Text>
+                <View style={styles.headerTitleContainer}>
+                    <Text style={styles.headerTitle}>NEW TEMPLATE</Text>
+                    <Text style={styles.headerSubtitle}>DESIGN YOUR DRILL</Text>
+                </View>
                 <View style={{ width: 40 }} />
             </View>
 
-            <ScrollView 
-                style={styles.scrollView}
-                contentContainerStyle={[styles.scrollContent, { paddingTop: 60 + 16, paddingBottom: 100 }]}
-                showsVerticalScrollIndicator={false}
+            <KeyboardAvoidingView 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+                style={{ flex: 1 }}
             >
-                <View style={styles.inputSection}>
-                    <View style={styles.inputBlur}>
+                <ScrollView 
+                    style={styles.scrollView}
+                    contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 120 }]}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <View style={styles.inputSection}>
+                        <Text style={styles.sectionLabel}>TEMPLATE TITLE</Text>
                         <View style={styles.inputWrapper}>
-                            <Ionicons name="document-text-outline" size={20} color="#8E8E93" style={styles.inputIcon} />
+                            <Ionicons name="document-text" size={20} color={theme.colors.status.active} style={styles.inputIcon} />
                             <TextInput
-                                placeholder="Template Name"
-                                placeholderTextColor="#8E8E93"
+                                placeholder="e.g. UPPER BODY PUSH"
+                                placeholderTextColor={theme.colors.text.zinc700}
                                 value={title}
                                 onChangeText={setTitle}
                                 style={styles.titleInput}
+                                selectionColor={theme.colors.status.active}
                             />
                         </View>
                     </View>
-                </View>
 
-                {selectedExercises.length > 0 && (
-                    <View style={styles.selectedSection}>
-                        <Text style={styles.sectionTitle}>Selected Exercises ({selectedExercises.length})</Text>
-                        {selectedExercises.map((exerciseId, index) => {
-                            return (
-                                <View key={exerciseId} style={styles.selectedExerciseCard}>
-                                    <View style={styles.exerciseCardBlur}>
-                                        <View style={styles.selectedExerciseContent}>
-                                            <View style={styles.selectedExerciseInfo}>
-                                                <View style={styles.exerciseNumberBadge}>
-                                                    <Text style={styles.selectedExerciseNumber}>{index + 1}</Text>
-                                                </View>
-                                                <Text style={styles.selectedExerciseName}>
-                                                    Exercise {exerciseId}
-                                                </Text>
-                                            </View>
-                                            <View style={styles.selectedExerciseActions}>
-                                                <TouchableOpacity
-                                                    onPress={() => moveExercise(index, 'up')}
-                                                    disabled={index === 0}
-                                                    style={[styles.orderButton, index === 0 && styles.orderButtonDisabled]}
-                                                >
-                                                    <Ionicons name="chevron-up" size={18} color={index === 0 ? "#4A4A4A" : "#0A84FF"} />
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    onPress={() => moveExercise(index, 'down')}
-                                                    disabled={index === selectedExercises.length - 1}
-                                                    style={[styles.orderButton, index === selectedExercises.length - 1 && styles.orderButtonDisabled]}
-                                                >
-                                                    <Ionicons name="chevron-down" size={18} color={index === selectedExercises.length - 1 ? "#4A4A4A" : "#0A84FF"} />
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    onPress={() => removeExercise(index)}
-                                                    style={styles.removeButton}
-                                                >
-                                                    <Ionicons name="close-circle" size={22} color="#FF3B30" />
-                                                </TouchableOpacity>
-                                            </View>
-                                        </View>
+                    <View style={styles.exercisesHeader}>
+                        <Text style={styles.sectionLabel}>EXERCISES ({selectedExerciseIds.length})</Text>
+                        <TouchableOpacity 
+                            onPress={handleExercisesButtonPress}
+                            style={styles.addInlineButton}
+                        >
+                            <Ionicons name="add" size={18} color={theme.colors.status.active} />
+                            <Text style={styles.addInlineText}>ADD</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {selectedExerciseIds.length > 0 ? (
+                        <View style={styles.selectedList}>
+                            {selectedExerciseIds.map((exerciseId, index) => (
+                                <View key={`${exerciseId}-${index}`} style={styles.exerciseCard}>
+                                    <View style={styles.exerciseIndex}>
+                                        <Text style={styles.exerciseIndexText}>{index + 1}</Text>
+                                    </View>
+                                    <View style={styles.exerciseInfo}>
+                                        <Text style={styles.exerciseName}>EXERCISE ID: {exerciseId}</Text>
+                                        <Text style={styles.exerciseTag}>STRENGTH TRAIN</Text>
+                                    </View>
+                                    <View style={styles.exerciseActions}>
+                                        <TouchableOpacity
+                                            onPress={() => moveExercise(index, 'up')}
+                                            disabled={index === 0}
+                                            style={[styles.orderButton, index === 0 && styles.orderButtonDisabled]}
+                                        >
+                                            <Ionicons name="chevron-up" size={20} color={theme.colors.text.secondary} />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() => moveExercise(index, 'down')}
+                                            disabled={index === selectedExerciseIds.length - 1}
+                                            style={[styles.orderButton, index === selectedExerciseIds.length - 1 && styles.orderButtonDisabled]}
+                                        >
+                                            <Ionicons name="chevron-down" size={20} color={theme.colors.text.secondary} />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() => removeExercise(index)}
+                                            style={styles.removeButton}
+                                        >
+                                            <Ionicons name="trash-outline" size={18} color={theme.colors.status.error} />
+                                        </TouchableOpacity>
                                     </View>
                                 </View>
-                            );
-                        })}
-                    </View>
-                )}
-
-                <View style={styles.addExercisesSection}>
-                    <Text style={styles.sectionTitle}>Add Exercises</Text>
-                    <Animated.View style={exercisesButtonStyle}>
-                        <View style={styles.addExercisesBlur}>
-                            <TouchableOpacity
-                                style={styles.addExercisesButton}
-                                onPress={handleExercisesButtonPress}
-                                activeOpacity={0.8}
-                            >
-                                <View style={styles.addExercisesContent}>
-                                    <Ionicons name="add-circle-outline" size={24} color="#0A84FF" />
-                                    <Text style={styles.addExercisesButtonText}>
-                                        {selectedExercises.length > 0 
-                                            ? `${selectedExercises.length} exercise${selectedExercises.length > 1 ? 's' : ''} selected`
-                                            : 'Tap to add exercises'}
-                                    </Text>
-                                    <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-                                </View>
-                            </TouchableOpacity>
+                            ))}
                         </View>
-                    </Animated.View>
-                </View>
-            </ScrollView>
+                    ) : (
+                        <TouchableOpacity 
+                            style={styles.emptyState}
+                            onPress={handleExercisesButtonPress}
+                            activeOpacity={0.7}
+                        >
+                            <View style={styles.emptyIconContainer}>
+                                <Ionicons name="barbell-outline" size={32} color={theme.colors.text.zinc700} />
+                            </View>
+                            <Text style={styles.emptyText}>NO EXERCISES ADDED</Text>
+                            <Text style={styles.emptySubtext}>TAP TO START BUILDING YOUR STACK</Text>
+                        </TouchableOpacity>
+                    )}
+                </ScrollView>
 
-            <Animated.View style={[styles.createButtonContainer, createButtonStyle, { bottom: insets.bottom + 16 }]}>
-                <View style={styles.createButtonBlur}>
+                <Animated.View style={[styles.footer, createButtonStyle, { paddingBottom: insets.bottom + 16 }]}>
                     <TouchableOpacity
                         style={[styles.createButton, isCreating && styles.createButtonLoading]}
                         onPress={handleCreate}
-                        disabled={!title.trim() || selectedExercises.length === 0 || isCreating}
-                        activeOpacity={0.8}
+                        disabled={isCreating}
+                        activeOpacity={0.9}
                     >
                         {isCreating ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={styles.createButtonText}>Create Template</Text>
+                            <>
+                                <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                                <Text style={styles.createButtonText}>CONFIRM TEMPLATE</Text>
+                            </>
                         )}
                     </TouchableOpacity>
-                </View>
-            </Animated.View>
+                </Animated.View>
+            </KeyboardAvoidingView>
 
             <ExerciseSearchModal
                 visible={isModalVisible}
@@ -230,186 +247,238 @@ export default function CreateTemplateScreen() {
                 onToggleExercise={toggleExercise}
                 title="Add Exercises"
                 mode="multiple"
-                selectedExerciseIds={selectedExercises}
+                selectedExerciseIds={selectedExerciseIds}
             />
-        </KeyboardAvoidingView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#000000',
+        backgroundColor: theme.colors.background,
+    },
+    gradientBg: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: theme.spacing.l,
+        paddingBottom: theme.spacing.m,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.ui.border,
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: theme.colors.ui.glassStrong,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+    },
+    headerTitleContainer: {
+        alignItems: 'center',
+    },
+    headerTitle: {
+        fontSize: theme.typography.sizes.m,
+        fontWeight: '900',
+        color: theme.colors.text.primary,
+        fontStyle: 'italic',
+        letterSpacing: 0.5,
+    },
+    headerSubtitle: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 1,
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        paddingHorizontal: 16,
+        padding: theme.spacing.l,
     },
     inputSection: {
-        marginBottom: 24,
+        marginBottom: theme.spacing.xl,
     },
-    inputBlur: {
-        borderRadius: 22,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    androidInput: {
-        backgroundColor: '#1C1C1E',
+    sectionLabel: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 1.5,
+        marginBottom: theme.spacing.s,
+        paddingHorizontal: 4,
     },
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 16,
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.l,
+        paddingHorizontal: theme.spacing.m,
+        height: 56,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
     },
     inputIcon: {
-        marginRight: 12,
+        marginRight: theme.spacing.m,
     },
     titleInput: {
         flex: 1,
-        color: '#FFFFFF',
-        fontSize: 17,
-        fontWeight: '400',
+        color: theme.colors.text.primary,
+        fontSize: 16,
+        fontWeight: '700',
     },
-    selectedSection: {
-        marginBottom: 24,
-    },
-    sectionTitle: {
-        color: '#FFFFFF',
-        fontSize: 15,
-        fontWeight: '600',
-        marginBottom: 12,
-        letterSpacing: 0.3,
-    },
-    selectedExerciseCard: {
-        marginBottom: 8,
-    },
-    exerciseCardBlur: {
-        backgroundColor: theme.colors.ui.glass,
-        borderRadius: 18,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: theme.colors.ui.border,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    selectedExerciseContent: {
+    exercisesHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 14,
+        marginBottom: theme.spacing.m,
     },
-    selectedExerciseInfo: {
+    addInlineButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1,
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(99, 102, 241, 0.2)',
+        gap: 4,
     },
-    exerciseNumberBadge: {
+    addInlineText: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: theme.colors.status.active,
+        fontStyle: 'italic',
+    },
+    selectedList: {
+        gap: theme.spacing.s,
+    },
+    exerciseCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.l,
+        padding: theme.spacing.m,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+    },
+    exerciseIndex: {
         width: 28,
         height: 28,
-        borderRadius: 14,
-        backgroundColor: 'rgba(10, 132, 255, 0.15)',
+        borderRadius: 8,
+        backgroundColor: theme.colors.ui.border,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
+        marginRight: theme.spacing.m,
     },
-    selectedExerciseNumber: {
-        color: '#0A84FF',
-        fontSize: 14,
-        fontWeight: '700',
+    exerciseIndexText: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: theme.colors.text.secondary,
     },
-    selectedExerciseName: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '500',
+    exerciseInfo: {
         flex: 1,
     },
-    selectedExerciseActions: {
+    exerciseName: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: theme.colors.text.primary,
+        fontStyle: 'italic',
+        marginBottom: 2,
+    },
+    exerciseTag: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 0.5,
+    },
+    exerciseActions: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: 4,
     },
     orderButton: {
         padding: 6,
     },
     orderButtonDisabled: {
-        opacity: 0.3,
+        opacity: 0.2,
     },
     removeButton: {
-        padding: 4,
+        padding: 6,
+        marginLeft: 4,
     },
-    addExercisesSection: {
-        marginBottom: 24,
-    },
-    addExercisesBlur: {
+    emptyState: {
         backgroundColor: theme.colors.ui.glass,
-        borderRadius: 22,
-        overflow: 'hidden',
+        borderRadius: theme.borderRadius.xl,
         borderWidth: 1,
         borderColor: theme.colors.ui.border,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    addExercisesButton: {
-        padding: 16,
-    },
-    addExercisesContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    addExercisesButtonText: {
-        flex: 1,
-        color: '#FFFFFF',
-        fontSize: 17,
-        fontWeight: '500',
-    },
-    createButtonContainer: {
-        position: 'absolute',
-        left: 16,
-        right: 16,
-        overflow: 'hidden',
-    },
-    createButtonBlur: {
-        backgroundColor: theme.colors.ui.glass,
-        borderRadius: 22,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: theme.colors.ui.border,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 12,
-        elevation: 8,
-    },
-    createButton: {
-        backgroundColor: '#0A84FF',
-        paddingVertical: 16,
+        borderStyle: 'dashed',
+        paddingVertical: 48,
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: 56,
+        gap: 12,
+    },
+    emptyIconContainer: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: theme.colors.ui.glassStrong,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+    },
+    emptyText: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: theme.colors.text.primary,
+        letterSpacing: 1,
+    },
+    emptySubtext: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 0.5,
+    },
+    footer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingHorizontal: theme.spacing.l,
+        paddingTop: theme.spacing.m,
+        backgroundColor: 'transparent',
+    },
+    createButton: {
+        backgroundColor: theme.colors.status.active,
+        height: 56,
+        borderRadius: 28,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: theme.colors.status.active,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
     },
     createButtonLoading: {
         opacity: 0.7,
     },
     createButtonText: {
         color: '#FFFFFF',
-        fontSize: 17,
-        fontWeight: '600',
-        letterSpacing: 0.3,
+        fontSize: 14,
+        fontWeight: '900',
+        fontStyle: 'italic',
+        letterSpacing: 1,
     },
 });

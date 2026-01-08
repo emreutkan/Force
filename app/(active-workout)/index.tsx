@@ -5,6 +5,7 @@ import WorkoutDetailView from '@/components/WorkoutDetailView';
 import { theme } from '@/constants/theme';
 import { useActiveWorkoutStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -244,7 +245,11 @@ export default function ActiveWorkoutScreen() {
 
     const insets = useSafeAreaInsets();
     return (
-        <>
+        <View style={styles.container}>
+            <LinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={styles.gradientBg}
+            />
             <WorkoutDetailView 
                 workout={activeWorkout} 
                 elapsedTime={elapsedTime} 
@@ -284,11 +289,22 @@ export default function ActiveWorkoutScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
-        </>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+    },
+    gradientBg: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
     WorkoutFooter: {
         position: 'absolute',
         bottom: 0,
@@ -340,119 +356,4 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4,
     },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingVertical: 16,
-        paddingHorizontal: 16,
-        backgroundColor: '#1C1C1E',
-        borderBottomWidth: 1,
-        borderBottomColor: '#2C2C2E',
-        position: 'relative',
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#FFFFFF',
-    },
-    closeButtonContainer: {
-        position: 'absolute',
-        right: 16,
-        top: 14,
-    },
-    searchSection: {
-        padding: 16,
-        backgroundColor: '#000000',
-    },
-    searchBar: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#1C1C1E',
-        paddingHorizontal: 12,
-        height: 44,
-        borderRadius: 12,
-    },
-    searchIcon: {
-        marginRight: 8,
-    },
-    searchInput: {
-        flex: 1,
-        color: '#FFFFFF',
-        fontSize: 16,
-        height: '100%',
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    footerLoader: {
-        paddingVertical: 20,
-        alignItems: 'center',
-    },
-    listContent: {
-        paddingHorizontal: 16,
-        paddingBottom: 40,
-    },
-    exerciseCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: 16,
-        backgroundColor: '#1C1C1E',
-        borderRadius: 12,
-    },
-    exerciseInfoContainer: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    exerciseIconPlaceholder: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#2C2C2E',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 12,
-    },
-    exerciseInitial: {
-        color: '#8E8E93',
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    exerciseTextContent: {
-        flex: 1,
-    },
-    exerciseName: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
-        marginBottom: 2,
-    },
-    exerciseDetail: {
-        color: '#8E8E93',
-        fontSize: 13,
-    },
-    addButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: 'rgba(10, 132, 255, 0.15)',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    emptyContainer: {
-        padding: 48,
-        alignItems: 'center',
-        justifyContent: 'center',
-        opacity: 0.5,
-    },
-    emptyText: {
-        color: '#8E8E93',
-        fontSize: 16,
-        marginTop: 12,
-    }
 });

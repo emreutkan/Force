@@ -1,96 +1,261 @@
 import { TemplateWorkout } from '@/api/types';
-import { startTemplateWorkout } from '@/api/Workout';
-import { theme } from '@/constants/theme';
+import { deleteTemplateWorkout, startTemplateWorkout } from '@/api/Workout';
+import { theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface TemplatesSectionProps {
     templates: TemplateWorkout[];
+    onRefresh?: () => void;
 }
 
-export default function TemplatesSection({ templates }: TemplatesSectionProps) {
-    const handleTemplatePress = (templateId: number) => {
-        startTemplateWorkout({ template_workout_id: templateId }).then(res => {
-            if(res?.id) router.push('/(active-workout)');
-        });
+export default function TemplatesSection({ templates, onRefresh }: TemplatesSectionProps) {
+    const handleTemplatePress = (template: TemplateWorkout) => {
+        Alert.alert(
+            template.title.toUpperCase(),
+            "What would you like to do?",
+            [
+                {
+                    text: "Start Workout",
+                    onPress: () => {
+                        startTemplateWorkout({ template_workout_id: template.id }).then(res => {
+                            if(res?.id) router.push('/(active-workout)');
+                        });
+                    }
+                },
+                {
+                    text: "Delete Template",
+                    style: "destructive",
+                    onPress: () => {
+                        Alert.alert(
+                            "Delete Template",
+                            "Are you sure you want to delete this template?",
+                            [
+                                { text: "Cancel", style: "cancel" },
+                                { 
+                                    text: "Delete", 
+                                    style: "destructive", 
+                                    onPress: async () => {
+                                        await deleteTemplateWorkout(template.id);
+                                        onRefresh?.();
+                                    } 
+                                }
+                            ]
+                        );
+                    }
+                },
+                { text: "Cancel", style: "cancel" }
+            ]
+        );
     };
 
     return (
-        <>
+        <View style={styles.container}>
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Templates</Text>
-                <TouchableOpacity onPress={() => router.push('/(templates)/create')}>
-                    <Ionicons name="add-circle" size={24} color={theme.colors.status.active} />
+                <View style={styles.headerLeft}>
+                    <View style={styles.headerIndicator} />
+                    <Text style={styles.sectionTitle}>WORKOUT TEMPLATES</Text>
+                </View>
+                <TouchableOpacity 
+                    style={styles.createButton}
+                    onPress={() => router.push('/(templates)/create')}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="add" size={20} color="#FFFFFF" />
+                    <Text style={styles.createButtonText}>NEW</Text>
                 </TouchableOpacity>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.templateList}>
+            
+            <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                contentContainerStyle={styles.templateList}
+                snapToInterval={280 + theme.spacing.m}
+                decelerationRate="fast"
+            >
                 {templates.map(tpl => (
                     <TouchableOpacity 
                         key={tpl.id} 
                         style={styles.templateCard} 
-                        onPress={() => handleTemplatePress(tpl.id)}
+                        onPress={() => handleTemplatePress(tpl)}
+                        activeOpacity={0.9}
                     >
-                        <View style={styles.templateIcon}>
-                            <Text style={styles.templateIconText}>{tpl.title.charAt(0)}</Text>
+                        <View style={styles.cardHeader}>
+                            <View style={styles.templateIcon}>
+                                <Ionicons name="fitness" size={20} color={theme.colors.status.active} />
+                            </View>
+                            <View style={styles.headerInfo}>
+                                <Text style={styles.templateName} numberOfLines={1}>{tpl.title.toUpperCase()}</Text>
+                                <Text style={styles.templateSubtitle}>PRE-SET DRILL</Text>
+                            </View>
                         </View>
-                        <Text style={styles.templateName} numberOfLines={2}>{tpl.title}</Text>
-                        <Text style={styles.templateCount}>{tpl.exercises.length} Exercises</Text>
+
+                        <View style={styles.cardFooter}>
+                            <View style={styles.metricItem}>
+                                <Ionicons name="list" size={14} color={theme.colors.text.tertiary} />
+                                <Text style={styles.metricText}>{tpl.exercises.length} EXERCISES</Text>
+                            </View>
+                            <View style={styles.startButton}>
+                                <Ionicons name="play" size={12} color="#FFFFFF" />
+                                <Text style={styles.startButtonText}>START</Text>
+                            </View>
+                        </View>
                     </TouchableOpacity>
                 ))}
+                
+                {templates.length === 0 && (
+                    <View style={styles.emptyCard}>
+                        <Ionicons name="duplicate-outline" size={32} color={theme.colors.text.zinc700} />
+                        <Text style={styles.emptyText}>NO TEMPLATES YET</Text>
+                    </View>
+                )}
             </ScrollView>
-        </>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    container: {
+        marginVertical: theme.spacing.m,
+    },
     sectionHeader: { 
         flexDirection: 'row', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: theme.spacing.s, 
+        marginBottom: theme.spacing.m, 
         paddingHorizontal: theme.spacing.xs 
     },
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    headerIndicator: {
+        width: 3,
+        height: 16,
+        backgroundColor: theme.colors.status.active,
+        borderRadius: 2,
+    },
     sectionTitle: { 
-        fontSize: theme.typography.sizes.l, 
-        fontWeight: '700', 
-        color: theme.colors.text.primary 
+        ...typographyStyles.labelMuted,
+        color: theme.colors.text.primary,
+    },
+    createButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.colors.ui.glassStrong,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+        gap: 4,
+    },
+    createButtonText: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#FFFFFF',
+        fontStyle: 'italic',
     },
     templateList: { 
-        paddingRight: theme.spacing.m, 
-        gap: theme.spacing.s 
+        paddingHorizontal: theme.spacing.xs,
+        gap: theme.spacing.m,
+        paddingBottom: 8,
     },
     templateCard: { 
-        width: 140, 
-        height: 140, 
+        width: 280, 
         backgroundColor: theme.colors.ui.glass, 
-        borderRadius: theme.borderRadius.l, 
-        padding: theme.spacing.s, 
-        justifyContent: 'space-between', 
-        borderWidth: 0.5, 
-        borderColor: theme.colors.ui.border 
+        borderRadius: theme.borderRadius.xl, 
+        padding: theme.spacing.l, 
+        borderWidth: 1, 
+        borderColor: theme.colors.ui.border,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 4,
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: theme.spacing.l,
     },
     templateIcon: { 
-        width: 32, 
-        height: 32, 
-        borderRadius: theme.borderRadius.m, 
-        backgroundColor: theme.colors.ui.surfaceHighlight, 
+        width: 44, 
+        height: 44, 
+        borderRadius: 14, 
+        backgroundColor: 'rgba(99, 102, 241, 0.1)', 
         alignItems: 'center', 
-        justifyContent: 'center' 
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(99, 102, 241, 0.2)',
     },
-    templateIconText: { 
-        fontSize: theme.typography.sizes.m, 
-        fontWeight: '700', 
-        color: theme.colors.text.primary 
+    headerInfo: {
+        flex: 1,
     },
     templateName: { 
-        fontSize: theme.typography.sizes.s, 
-        fontWeight: '600', 
-        color: theme.colors.text.primary 
+        fontSize: 16, 
+        fontWeight: '900', 
+        color: '#FFFFFF',
+        fontStyle: 'italic',
+        letterSpacing: 0.5,
     },
-    templateCount: { 
-        fontSize: theme.typography.sizes.s, 
-        color: theme.colors.text.secondary 
+    templateSubtitle: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 1,
+    },
+    cardFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    metricItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    metricText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: theme.colors.text.secondary,
+        letterSpacing: 0.5,
+    },
+    startButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.colors.status.active,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        gap: 4,
+    },
+    startButtonText: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#FFFFFF',
+        fontStyle: 'italic',
+    },
+    emptyCard: {
+        width: 280,
+        height: 110,
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.xl,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+        borderStyle: 'dashed',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    emptyText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: theme.colors.text.zinc700,
+        letterSpacing: 1,
     },
 });
 

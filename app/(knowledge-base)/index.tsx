@@ -2,6 +2,7 @@ import { getResearch } from '@/api/KnowledgeBase';
 import { ResearchFilters, TrainingResearch } from '@/api/types';
 import { commonStyles, theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -164,6 +165,10 @@ export default function KnowledgeBaseScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
+            <LinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={styles.gradientBg}
+            />
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
                     <Ionicons name="chevron-back" size={24} color={theme.colors.text.zinc600} />
@@ -234,6 +239,13 @@ export default function KnowledgeBaseScreen() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000000' },
+    gradientBg: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     
     // Controls

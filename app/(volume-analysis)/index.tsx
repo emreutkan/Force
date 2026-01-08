@@ -4,6 +4,7 @@ import UpgradeModal from '@/components/UpgradeModal';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { commonStyles, theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -214,6 +215,10 @@ export default function VolumeAnalysisScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
+            <LinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={StyleSheet.absoluteFillObject}
+            />
             <UnifiedHeader 
                 title="Volume Analysis" 
                 rightButton={{ icon: "filter", onPress: () => setIsFilterVisible(true) }} 

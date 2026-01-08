@@ -1,5 +1,7 @@
 import { getExercises } from '@/api/Exercises';
+import { theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -103,257 +105,188 @@ export default function ExerciseSearchModal({
     const filteredExercises = exercises.filter(e => !excludeExerciseIds.includes(e.id));
     const isSelected = (exerciseId: number) => selectedExerciseIds.includes(exerciseId);
 
+    const renderHeader = () => (
+        <View style={styles.modalHeader}>
+            <View>
+                <Text style={styles.modalTitle}>{title.toUpperCase()}</Text>
+                <Text style={styles.modalSubtitle}>{mode === 'multiple' ? 'SELECT EXERCISES' : 'CHOOSE ONE'}</Text>
+            </View>
+            <TouchableOpacity onPress={onClose} style={styles.closeButtonContainer}>
+                <Ionicons name="close" size={24} color={theme.colors.text.primary} />
+            </TouchableOpacity>
+        </View>
+    );
+
+    const renderSearchBar = () => (
+        <View style={styles.searchSection}>
+            <View style={styles.searchBar}>
+                <Ionicons name="search" size={20} color={theme.colors.text.tertiary} style={styles.searchIcon} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search exercises..."
+                    placeholderTextColor={theme.colors.text.tertiary}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                />
+                {searchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchQuery('')}>
+                        <Ionicons name="close-circle" size={18} color={theme.colors.text.tertiary} />
+                    </TouchableOpacity>
+                )}
+            </View>
+        </View>
+    );
+
+    const renderContent = () => {
+        if (isLoadingExercises) {
+            return (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={theme.colors.status.active} />
+                </View>
+            );
+        }
+
+        return (
+            <FlatList
+                data={filteredExercises}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => {
+                    const selected = isSelected(item.id);
+                    return (
+                        <TouchableOpacity 
+                            style={[styles.exerciseCard, selected && styles.exerciseCardSelected]}
+                            onPress={() => handleExercisePress(item.id)}
+                            activeOpacity={0.7}
+                        >
+                            <View style={styles.exerciseInfoContainer}>
+                                <View style={[styles.exerciseIconPlaceholder, selected && styles.exerciseIconPlaceholderSelected]}>
+                                    <Text style={[styles.exerciseInitial, selected && styles.exerciseInitialSelected]}>
+                                        {item.name.charAt(0).toUpperCase()}
+                                    </Text>
+                                </View>
+                                <View style={styles.exerciseTextContent}>
+                                    <Text style={styles.exerciseName}>{item.name.toUpperCase()}</Text>
+                                    <Text style={styles.exerciseDetail}>
+                                        {item.primary_muscle.toUpperCase()} {item.equipment_type ? `• ${item.equipment_type.toUpperCase()}` : ''}
+                                    </Text>
+                                </View>
+                            </View>
+                            <View style={[styles.addButton, selected && styles.addButtonSelected]}>
+                                {mode === 'multiple' ? (
+                                    <Ionicons 
+                                        name={selected ? "checkmark" : "add"} 
+                                        size={20} 
+                                        color={selected ? "#FFFFFF" : theme.colors.status.active} 
+                                    />
+                                ) : (
+                                    <Ionicons name="add" size={20} color={theme.colors.status.active} />
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                    );
+                }}
+                ItemSeparatorComponent={() => <View style={{height: 12}} />}
+                contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 40 }]}
+                onEndReached={loadMoreExercises}
+                onEndReachedThreshold={0.5}
+                ListHeaderComponent={renderSearchBar}
+                ListFooterComponent={
+                    isLoadingMoreExercises ? (
+                        <View style={styles.footerLoader}>
+                            <ActivityIndicator size="small" color={theme.colors.status.active} />
+                        </View>
+                    ) : null
+                }
+                ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                        <Ionicons name="barbell-outline" size={48} color={theme.colors.text.zinc700} />
+                        <Text style={styles.emptyText}>No exercises found</Text>
+                    </View>
+                }
+            />
+        );
+    };
+
     return (
         <Modal
             visible={visible}
             animationType="slide"
-            presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : undefined}
-            transparent={Platform.OS === 'android'}
+            presentationStyle="pageSheet"
             onRequestClose={onClose}
         >
-            {Platform.OS === 'android' ? (
-                <View style={styles.androidModalContainer}>
-                    <View style={[styles.modalContent, { paddingBottom: insets.bottom }]}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>{title}</Text>
-                            <TouchableOpacity onPress={onClose} style={styles.closeButtonContainer}>
-                                <Ionicons name="close-circle" size={28} color="#2C2C2E" />
-                            </TouchableOpacity>
-                        </View>
-                        
-                        <View style={styles.searchSection}>
-                            <View style={styles.searchBar}>
-                                <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
-                                <TextInput
-                                    style={styles.searchInput}
-                                    placeholder="Search exercises..."
-                                    placeholderTextColor="#8E8E93"
-                                    value={searchQuery}
-                                    onChangeText={setSearchQuery}
-                                    autoCorrect={false}
-                                    autoCapitalize="none"
-                                />
-                                {searchQuery.length > 0 && (
-                                    <TouchableOpacity onPress={() => setSearchQuery('')}>
-                                        <Ionicons name="close-circle" size={18} color="#8E8E93" />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        </View>
-
-                        {isLoadingExercises ? (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator size="large" color="#0A84FF" />
-                            </View>
-                        ) : (
-                            <FlatList
-                                data={filteredExercises}
-                                keyExtractor={(item) => item.id.toString()}
-                                renderItem={({ item }) => {
-                                    const selected = isSelected(item.id);
-                                    return (
-                                        <TouchableOpacity 
-                                            style={styles.exerciseCard}
-                                            onPress={() => handleExercisePress(item.id)}
-                                        >
-                                            <View style={styles.exerciseInfoContainer}>
-                                                <View style={styles.exerciseIconPlaceholder}>
-                                                    <Text style={styles.exerciseInitial}>
-                                                        {item.name.charAt(0).toUpperCase()}
-                                                    </Text>
-                                                </View>
-                                                <View style={styles.exerciseTextContent}>
-                                                    <Text style={styles.exerciseName}>{item.name}</Text>
-                                                    <Text style={styles.exerciseDetail}>
-                                                        {item.primary_muscle} {item.equipment_type ? `• ${item.equipment_type}` : ''}
-                                                    </Text>
-                                                </View>
-                                            </View>
-                                            <View style={styles.addButton}>
-                                                {mode === 'multiple' ? (
-                                                    <Ionicons 
-                                                        name={selected ? "checkmark-circle" : "add-circle-outline"} 
-                                                        size={24} 
-                                                        color={selected ? "#32D74B" : "#0A84FF"} 
-                                                    />
-                                                ) : (
-                                                    <Ionicons name="add" size={24} color="#0A84FF" />
-                                                )}
-                                            </View>
-                                        </TouchableOpacity>
-                                    );
-                                }}
-                                ItemSeparatorComponent={() => <View style={{height: 12}} />}
-                                contentContainerStyle={styles.listContent}
-                                onEndReached={loadMoreExercises}
-                                onEndReachedThreshold={0.5}
-                                ListFooterComponent={
-                                    isLoadingMoreExercises ? (
-                                        <View style={styles.footerLoader}>
-                                            <ActivityIndicator size="small" color="#0A84FF" />
-                                        </View>
-                                    ) : null
-                                }
-                                ListEmptyComponent={
-                                    <View style={styles.emptyContainer}>
-                                        <Ionicons name="barbell-outline" size={48} color="#FFFFFF" />
-                                        <Text style={styles.emptyText}>No exercises found</Text>
-                                    </View>
-                                }
-                            />
-                        )}
-                    </View>
-                </View>
-            ) : (
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>{title}</Text>
-                        <TouchableOpacity onPress={onClose} style={styles.closeButtonContainer}>
-                            <Ionicons name="close-circle" size={28} color="#2C2C2E" />
-                        </TouchableOpacity>
-                    </View>
-                    
-                    <View style={styles.searchSection}>
-                        <View style={styles.searchBar}>
-                            <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
-                            <TextInput
-                                style={styles.searchInput}
-                                placeholder="Search exercises..."
-                                placeholderTextColor="#8E8E93"
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                                autoCorrect={false}
-                                autoCapitalize="none"
-                            />
-                            {searchQuery.length > 0 && (
-                                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                                    <Ionicons name="close-circle" size={18} color="#8E8E93" />
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-
-                    {isLoadingExercises ? (
-                        <View style={styles.loadingContainer}>
-                            <ActivityIndicator size="large" color="#0A84FF" />
-                        </View>
-                    ) : (
-                        <FlatList
-                            data={filteredExercises}
-                            keyExtractor={(item) => item.id.toString()}
-                            renderItem={({ item }) => {
-                                const selected = isSelected(item.id);
-                                return (
-                                    <TouchableOpacity 
-                                        style={styles.exerciseCard}
-                                        onPress={() => handleExercisePress(item.id)}
-                                    >
-                                        <View style={styles.exerciseInfoContainer}>
-                                            <View style={styles.exerciseIconPlaceholder}>
-                                                <Text style={styles.exerciseInitial}>
-                                                    {item.name.charAt(0).toUpperCase()}
-                                                </Text>
-                                            </View>
-                                            <View style={styles.exerciseTextContent}>
-                                                <Text style={styles.exerciseName}>{item.name}</Text>
-                                                <Text style={styles.exerciseDetail}>
-                                                    {item.primary_muscle} {item.equipment_type ? `• ${item.equipment_type}` : ''}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                        <View style={styles.addButton}>
-                                            {mode === 'multiple' ? (
-                                                <Ionicons 
-                                                    name={selected ? "checkmark-circle" : "add-circle-outline"} 
-                                                    size={24} 
-                                                    color={selected ? "#32D74B" : "#0A84FF"} 
-                                                />
-                                            ) : (
-                                                <Ionicons name="add" size={24} color="#0A84FF" />
-                                            )}
-                                        </View>
-                                    </TouchableOpacity>
-                                );
-                            }}
-                            ItemSeparatorComponent={() => <View style={{height: 12}} />}
-                            contentContainerStyle={styles.listContent}
-                            onEndReached={loadMoreExercises}
-                            onEndReachedThreshold={0.5}
-                            ListFooterComponent={
-                                isLoadingMoreExercises ? (
-                                    <View style={styles.footerLoader}>
-                                        <ActivityIndicator size="small" color="#0A84FF" />
-                                    </View>
-                                ) : null
-                            }
-                            ListEmptyComponent={
-                                <View style={styles.emptyContainer}>
-                                    <Ionicons name="barbell-outline" size={48} color="#FFFFFF" />
-                                    <Text style={styles.emptyText}>No exercises found</Text>
-                                </View>
-                            }
-                        />
-                    )}
-                </View>
-            )}
+            <View style={styles.modalContainer}>
+                <LinearGradient
+                    colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                    style={StyleSheet.absoluteFillObject}
+                />
+                {renderHeader()}
+                {renderContent()}
+            </View>
         </Modal>
     );
 }
 
 const styles = StyleSheet.create({
-    androidModalContainer: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        justifyContent: 'flex-end',
-    },
     modalContainer: {
         flex: 1,
-        backgroundColor: '#000000',
-    },
-    modalContent: {
-        backgroundColor: '#1C1C1E',
-        borderTopLeftRadius: 22,
-        borderTopRightRadius: 22,
-        height: '85%',
-        paddingTop: 16,
+        backgroundColor: theme.colors.background,
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 16,
-        backgroundColor: '#1C1C1E',
+        paddingHorizontal: theme.spacing.l,
+        paddingVertical: theme.spacing.l,
         borderBottomWidth: 1,
-        borderBottomColor: '#2C2C2E',
+        borderBottomColor: theme.colors.ui.border,
     },
     modalTitle: {
-        fontSize: 18,
+        fontSize: theme.typography.sizes.m,
+        fontWeight: '900',
+        color: theme.colors.text.primary,
+        fontStyle: 'italic',
+        letterSpacing: 0.5,
+    },
+    modalSubtitle: {
+        fontSize: theme.typography.sizes.xs,
         fontWeight: '700',
-        color: '#FFFFFF',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 1,
+        marginTop: 2,
     },
     closeButtonContainer: {
-        padding: 4,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: theme.colors.ui.glassStrong,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     searchSection: {
-        padding: 16,
-        backgroundColor: '#000000',
+        padding: theme.spacing.m,
     },
     searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#1C1C1E',
-        paddingHorizontal: 12,
-        height: 44,
-        borderRadius: 12,
+        backgroundColor: theme.colors.ui.glassStrong,
+        paddingHorizontal: theme.spacing.m,
+        height: 48,
+        borderRadius: theme.borderRadius.m,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
     },
     searchIcon: {
-        marginRight: 8,
+        marginRight: theme.spacing.s,
     },
     searchInput: {
         flex: 1,
-        color: '#FFFFFF',
-        fontSize: 16,
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.m,
+        fontWeight: '500',
         height: '100%',
     },
     loadingContainer: {
@@ -362,79 +295,97 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     listContent: {
-        paddingHorizontal: 16,
-        paddingBottom: 40,
+        paddingHorizontal: theme.spacing.m,
     },
     exerciseCard: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: 16,
-        backgroundColor: '#1C1C1E',
-        borderRadius: 12,
+        padding: theme.spacing.m,
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.l,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+    },
+    exerciseCardSelected: {
+        borderColor: theme.colors.status.active,
+        backgroundColor: 'rgba(99, 102, 241, 0.05)',
     },
     exerciseInfoContainer: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        marginRight: 12,
+        marginRight: theme.spacing.m,
     },
     exerciseIconPlaceholder: {
         width: 40,
         height: 40,
-        borderRadius: 20,
-        backgroundColor: '#2C2C2E',
+        borderRadius: 12,
+        backgroundColor: theme.colors.ui.glassStrong,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
+        marginRight: theme.spacing.m,
+    },
+    exerciseIconPlaceholderSelected: {
+        borderColor: theme.colors.status.active,
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
     },
     exerciseInitial: {
-        color: '#8E8E93',
-        fontSize: 18,
-        fontWeight: '600',
+        color: theme.colors.text.tertiary,
+        fontSize: theme.typography.sizes.l,
+        fontWeight: '800',
+        fontStyle: 'italic',
+    },
+    exerciseInitialSelected: {
+        color: theme.colors.status.active,
     },
     exerciseTextContent: {
         flex: 1,
     },
     exerciseName: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.s,
+        fontWeight: '800',
+        fontStyle: 'italic',
         marginBottom: 2,
     },
     exerciseDetail: {
-        color: '#8E8E93',
-        fontSize: 13,
+        color: theme.colors.text.tertiary,
+        fontSize: 10,
+        fontWeight: '600',
+        letterSpacing: 0.5,
     },
     addButton: {
         width: 32,
         height: 32,
-        borderRadius: 16,
-        backgroundColor: 'rgba(10, 132, 255, 0.15)',
+        borderRadius: 10,
+        backgroundColor: theme.colors.ui.glassStrong,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
         alignItems: 'center',
         justifyContent: 'center',
     },
+    addButtonSelected: {
+        backgroundColor: theme.colors.status.active,
+        borderColor: theme.colors.status.active,
+    },
     footerLoader: {
-        paddingVertical: 20,
+        paddingVertical: theme.spacing.xl,
         alignItems: 'center',
     },
     emptyContainer: {
-        padding: 48,
+        padding: theme.spacing.xxxl,
         alignItems: 'center',
         justifyContent: 'center',
-        opacity: 0.5,
     },
     emptyText: {
-        color: '#8E8E93',
-        fontSize: 16,
-        marginTop: 12,
+        color: theme.colors.text.tertiary,
+        fontSize: theme.typography.sizes.m,
+        fontWeight: '600',
+        marginTop: theme.spacing.m,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
     },
 });
-
-
-
-
-
-
-
-

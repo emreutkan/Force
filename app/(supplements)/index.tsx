@@ -1,4 +1,5 @@
 import { addUserSupplement, deleteSupplementLog, getSupplementLogs, getSupplements, getTodayLogs, getUserSupplements, logUserSupplement, Supplement, SupplementLog, UserSupplement } from '@/api/Supplements';
+import { SwipeAction } from '@/components/SwipeAction';
 import { theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,30 +20,10 @@ import {
     View
 } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ============================================================================
-// 1. COMPONENTS
-// ============================================================================
-
-const SwipeDeleteAction = ({ progress, onPress }: any) => {
-    const animatedStyle = useAnimatedStyle(() => {
-        const scale = interpolate(progress.value, [0, 1], [0.5, 1], Extrapolation.CLAMP);
-        return { transform: [{ scale }] };
-    });
-
-    return (
-        <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.deleteAction}>
-            <Animated.View style={animatedStyle}>
-                <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
-            </Animated.View>
-        </TouchableOpacity>
-    );
-};
-
-// ============================================================================
-// 2. MAIN SCREEN
+// 1. MAIN SCREEN
 // ============================================================================
 
 export default function SupplementsScreen() {
@@ -390,8 +371,18 @@ export default function SupplementsScreen() {
                             keyExtractor={item => item.id.toString()}
                             renderItem={({ item, index }) => (
                                 <ReanimatedSwipeable
-                                    renderRightActions={(p) => <SwipeDeleteAction progress={p} onPress={() => handleDeleteLog(item.id)} />}
+                                    renderRightActions={(p, d) => (
+                                        <SwipeAction 
+                                            progress={p} 
+                                            dragX={d} 
+                                            onPress={() => handleDeleteLog(item.id)} 
+                                            iconName="trash-outline"
+                                            side="right"
+                                        />
+                                    )}
                                     friction={2}
+                                    enableTrackpadTwoFingerGesture
+                                    rightThreshold={40}
                                 >
                                     <View style={[styles.logRow, index === viewingLogs.length - 1 && styles.logRowLast]}>
                                         <Text style={styles.logDate}>
@@ -639,6 +630,4 @@ const styles = StyleSheet.create({
     logDosage: { color: theme.colors.text.primary, fontSize: theme.typography.sizes.m, fontWeight: '500' },
     
     loadingContainer: { padding: 40, alignItems: 'center' },
-    deleteAction: { backgroundColor: theme.colors.status.error, width: 80, alignItems: 'center', justifyContent: 'center' },
-    
 });

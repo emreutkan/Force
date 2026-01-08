@@ -68,7 +68,6 @@ export default function AuthScreen() {
             setEmailValidation(null);
         }
         setEmail(text);
-        console.log(email);
     };
     // Email step: show continue/register button when email is entered
     useEffect(() => {
@@ -417,11 +416,11 @@ export default function AuthScreen() {
                         // Email Step
                         <>
                             <View style={[styles.inputWrapper, emailValidation && !emailValidation.is_valid && styles.inputWrapperError]}>
-                                <Ionicons name="mail-outline" size={20} color="#FFFFFF" style={styles.inputIcon} />
+                                <Ionicons name="mail-outline" size={20} color={theme.colors.text.primary} style={styles.inputIcon} />
                             <TextInput 
                                     style={styles.inputTop} 
                                 placeholder="Email" 
-                                placeholderTextColor="#8E8E93"
+                                placeholderTextColor={theme.colors.text.secondary}
                                 value={email} 
                                 onChangeText={setEmailValue}
                                 autoCapitalize="none"
@@ -451,7 +450,7 @@ export default function AuthScreen() {
                                         disabled={email.length === 0 || validating}
                                     >
                                         {validating && currentStep === 'email' ? (
-                                            <ActivityIndicator size="small" color="#FFFFFF" />
+                                            <ActivityIndicator size="small" color={theme.colors.text.primary} />
                                         ) : (
                                             <Text style={styles.splitButtonText}>REGISTER</Text>
                                         )}
@@ -485,13 +484,13 @@ export default function AuthScreen() {
                                         }}
                                         activeOpacity={0.7}
                                     >
-                                        <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+                                        <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
                                     </TouchableOpacity>
                                 </Animated.View>
                                 <TextInput 
                                     style={styles.inputTop} 
                                     placeholder="Name" 
-                                    placeholderTextColor="#8E8E93"
+                                    placeholderTextColor={theme.colors.text.secondary}
                                     value={name} 
                                     onChangeText={setName}
                                     autoCapitalize="words"
@@ -505,7 +504,7 @@ export default function AuthScreen() {
                             </View>
                             {validating && currentStep === 'name' && (
                                 <View style={styles.validatingContainer}>
-                                    <ActivityIndicator size="small" color="#8E8E93" />
+                                    <ActivityIndicator size="small" color={theme.colors.text.secondary} />
                                     <Text style={styles.validatingText}>Validating...</Text>
                                 </View>
                             )}
@@ -521,7 +520,7 @@ export default function AuthScreen() {
                                     disabled={name.length === 0 || validating}
                                 >
                                     {validating && currentStep === 'name' ? (
-                                        <ActivityIndicator size="small" color="#FFFFFF" />
+                                        <ActivityIndicator size="small" color={theme.colors.text.primary} />
                                     ) : (
                                         <Text style={[styles.splitButtonText, styles.splitButtonTextPrimary]}>CONTINUE</Text>
                                     )}
@@ -545,15 +544,15 @@ export default function AuthScreen() {
                                         }}
                                         activeOpacity={0.7}
                                     >
-                                        <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+                                        <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
                                     </TouchableOpacity>
                                 </Animated.View>
                                 <View style={styles.inputWrapper}>
-                                    <Ionicons name="lock-closed-outline" size={20} color="#FFFFFF" style={styles.inputIcon} />
+                                    <Ionicons name="lock-closed-outline" size={20} color={theme.colors.text.primary} style={styles.inputIcon} />
                                 <TextInput 
                                     style={styles.inputTop} 
                                     placeholder="Password" 
-                                    placeholderTextColor="#8E8E93"
+                                    placeholderTextColor={theme.colors.text.secondary}
                                     value={password} 
                                     onChangeText={setPassword} 
                                     secureTextEntry
@@ -572,7 +571,7 @@ export default function AuthScreen() {
                             </View>
                             {validating && currentStep === 'password' && (
                                 <View style={styles.validatingContainer}>
-                                    <ActivityIndicator size="small" color="#8E8E93" />
+                                    <ActivityIndicator size="small" color={theme.colors.text.secondary} />
                                     <Text style={styles.validatingText}>Validating...</Text>
                                 </View>
                             )}
@@ -589,7 +588,7 @@ export default function AuthScreen() {
                                         disabled={loading || password.length === 0 || validating}
                                     >
                                         {loading || validating ? (
-                                            <ActivityIndicator size="small" color="#FFFFFF" />
+                                            <ActivityIndicator size="small" color={theme.colors.text.primary} />
                                         ) : (
                                             <Text style={[styles.splitButtonText, styles.splitButtonTextPrimary]}>REGISTER</Text>
                                         )}
@@ -605,7 +604,7 @@ export default function AuthScreen() {
                                             disabled={loading || password.length === 0}
                                         >
                                             {loading ? (
-                                                <ActivityIndicator size="small" color="#FFFFFF" />
+                                                <ActivityIndicator size="small" color={theme.colors.text.primary} />
                                             ) : (
                                             <Text style={[styles.splitButtonText, styles.splitButtonTextPrimary]}>LOGIN</Text>
                                             )}
@@ -625,10 +624,10 @@ export default function AuthScreen() {
                             disabled={!request}
                         >
                             {loading && response?.type !== 'success' && request ? ( 
-                                 <ActivityIndicator size="small" color="#FFFFFF" />
+                                 <ActivityIndicator size="small" color={theme.colors.text.primary} />
                             ) : (
                                  <>
-                                    <Ionicons name="logo-google" size={24} color="#FFFFFF" />
+                                    <Ionicons name="logo-google" size={24} color={theme.colors.text.primary} />
                                     <Text style={styles.socialButtonText}>GOOGLE</Text>
                                  </>
                             )}
@@ -640,7 +639,7 @@ export default function AuthScreen() {
                                 onPress={() => handleSocialLogin('Apple')}
                                 activeOpacity={0.8}
                             >
-                                <Ionicons name="logo-apple" size={24} color="#FFFFFF" />
+                                <Ionicons name="logo-apple" size={24} color={theme.colors.text.primary} />
                                 <Text style={styles.socialButtonText}>APPLE</Text>
                             </TouchableOpacity>
                         )}
@@ -726,35 +725,23 @@ const styles = StyleSheet.create({
     },
   
     inputGroup: {
-        backgroundColor: '#1C1C1E',
+        backgroundColor: theme.colors.ui.glass,
         borderRadius: 22,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: '#2C2C2E',
+        borderColor: theme.colors.ui.border,
         marginBottom: 12,
     },
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
-        backgroundColor: '#1C1C1E',
+        backgroundColor: 'transparent',
         minHeight: 56,
     },
     inputWrapperError: {
-        borderColor: '#FF3B30',
+        borderColor: theme.colors.status.error,
         borderWidth: 1,
-        borderTopLeftRadius: 0,
-        borderTopRightRadius: 22,
-        borderBottomLeftRadius: 0,
-        borderBottomRightRadius: 0,
-        borderLeftWidth: 0,
-        borderRightWidth: 1,
-        borderTopWidth: 1,
-        borderBottomWidth: 1,
-        marginLeft: -16,
-        paddingLeft: 16,
-        marginRight: -16,
-        paddingRight: 16,
     },
     inputIcon: {
         marginRight: 12,
@@ -778,18 +765,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
 
-    inputMiddle: {
-        height: 56,
-        paddingHorizontal: 16,
-        fontSize: 17,
-        color: '#FFFFFF',
-        backgroundColor: '#1C1C1E',
-    },
     inputBottom: {
         height: 56,
         paddingHorizontal: 16,
         fontSize: 17,
-        backgroundColor: '#1C1C1E',
+        backgroundColor: theme.colors.ui.glass,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -799,31 +779,27 @@ const styles = StyleSheet.create({
     splitButtonContainer: {
         flexDirection: 'row',
         height: 56,
-        backgroundColor: '#1C1C1E',
+        backgroundColor: 'transparent',
         width: '100%',
     },
     splitButton: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#1C1C1E',
+        backgroundColor: theme.colors.ui.glass,
     },
     splitButtonLeft: {
         borderBottomLeftRadius: 22,
-        borderTopLeftRadius: 0,
-        borderTopRightRadius: 0,
     },
     splitButtonRight: {
         borderBottomRightRadius: 22,
-        borderTopLeftRadius: 0,
-        borderTopRightRadius: 0,
     },
     splitButtonPrimary: {
         backgroundColor: theme.colors.status.rest,
     },
     splitButtonDivider: {
         width: 1,
-        backgroundColor: '#3C3C43',
+        backgroundColor: theme.colors.ui.border,
     },
     splitButtonText: {
         color: theme.colors.text.primary,
@@ -834,22 +810,10 @@ const styles = StyleSheet.create({
     splitButtonTextPrimary: {
         color: theme.colors.text.primary,
     },
-    separator: {
-        height: StyleSheet.hairlineWidth,
-        backgroundColor: '#3C3C43',
-        marginLeft: 16,
-        marginRight: 16,
-    },
     seperatorWide: {
         height: 1,
-        backgroundColor: '#3C3C43',
+        backgroundColor: theme.colors.ui.border,
     },
-    loginButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '800',
-    },
-
     socialContainer: {
         flexDirection: 'row',
         gap: 12,
@@ -859,11 +823,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#1C1C1E',
+        backgroundColor: theme.colors.ui.glass,
         height: 56,
         borderRadius: 22,
         borderWidth: 1,
-        borderColor: '#2C2C2E',
+        borderColor: theme.colors.ui.border,
         gap: 8,
     },
     socialButtonText: {
@@ -871,61 +835,6 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: '600',
         textTransform: 'uppercase',
-    },
-    footer: {
-        alignItems: 'center',
-        paddingBottom: 40,
-        paddingHorizontal: 20,
-    },
-    footerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        marginBottom: 8,
-    },
-    footerDivider: {
-        flex: 1,
-        height: 1,
-        backgroundColor: theme.colors.text.tertiary,
-    },
-    footerSubtext: {
-        fontSize: 10,
-        fontWeight: '400',
-        color: theme.colors.text.secondary,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    linkText: {
-        color: '#8E8E93',
-        fontSize: 17,
-    },
-    linkBold: {
-        color: '#0A84FF',
-        fontWeight: '400',
-    },
-    forgotPasswordText: {
-        color: '#0A84FF',
-        fontSize: 17,
-    },
-    errorContainer: {
-        paddingHorizontal: 16,
-        paddingTop: 8,
-        paddingBottom: 4,
-    },
-    errorText: {
-        color: '#FF3B30',
-        fontSize: 13,
-        fontWeight: '400',
-    },
-    warningContainer: {
-        paddingHorizontal: 16,
-        paddingTop: 4,
-        paddingBottom: 4,
-    },
-    warningText: {
-        color: '#FF9500',
-        fontSize: 13,
-        fontWeight: '400',
     },
     validatingContainer: {
         flexDirection: 'row',
@@ -936,26 +845,8 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     validatingText: {
-        color: '#8E8E93',
+        color: theme.colors.text.secondary,
         fontSize: 13,
         fontWeight: '400',
-    },
-    strengthContainer: {
-        paddingHorizontal: 16,
-        paddingTop: 4,
-        paddingBottom: 4,
-    },
-    strengthText: {
-        fontSize: 13,
-        fontWeight: '400',
-    },
-    strengthTextWeak: {
-        color: '#FF3B30',
-    },
-    strengthTextMedium: {
-        color: '#FF9500',
-    },
-    strengthTextStrong: {
-        color: '#34C759',
     },
 });

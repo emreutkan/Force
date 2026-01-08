@@ -5,29 +5,9 @@ import { theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { RefObject } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, { Extrapolation, interpolate, SharedValue, useAnimatedStyle } from 'react-native-reanimated';
-
-interface SwipeActionProps {
-    progress: SharedValue<number>;
-    onPress: () => void;
-}
-
-const SwipeAction = ({ progress, onPress }: SwipeActionProps) => {
-    const animatedStyle = useAnimatedStyle(() => {
-        const scale = interpolate(progress.value, [0, 1], [0.5, 1], Extrapolation.CLAMP);
-        return { transform: [{ scale }] };
-    });
-
-    return (
-        <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.deleteAction}>
-            <Animated.View style={animatedStyle}>
-                <Ionicons name="trash-outline" size={24} color={theme.colors.text.primary} />
-            </Animated.View>
-        </TouchableOpacity>
-    );
-};
+import { SwipeAction } from './SwipeAction';
 
 interface ActiveSectionProps {
     activeWorkout: Workout | null;
@@ -53,7 +33,20 @@ export default function ActiveSection({
         const setsCount = activeWorkout.exercises?.reduce((total, ex) => total + (ex.sets?.length || 0), 0) || 0;
 
         return (
-            <ReanimatedSwipeable renderRightActions={(p, d) => <SwipeAction progress={p} onPress={() => onDeleteWorkout(activeWorkout.id, true)} />}>
+            <ReanimatedSwipeable 
+                renderRightActions={(p, d) => (
+                    <SwipeAction 
+                        progress={p} 
+                        dragX={d}
+                        onPress={() => onDeleteWorkout(activeWorkout.id, true)} 
+                        iconName="trash-outline"
+                        side="right"
+                    />
+                )}
+                friction={2}
+                enableTrackpadTwoFingerGesture
+                rightThreshold={40}
+            >
                 <TouchableOpacity style={styles.card} onPress={() => router.push('/(active-workout)')} activeOpacity={0.9}>
                     <View style={styles.upperSection}>
                         <View style={styles.upperLeft}>
@@ -286,15 +279,6 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: theme.colors.text.primary,
     },
-    deleteAction: { 
-        backgroundColor: theme.colors.status.error, 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        width: 80, 
-        height: '92%', 
-        borderRadius: theme.borderRadius.xxl, 
-        marginLeft: theme.spacing.s 
-    },
     startCard: { 
         backgroundColor: theme.colors.ui.glass, 
         borderRadius: theme.borderRadius.xxl, 
@@ -309,4 +293,3 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
 });
-
