@@ -1,9 +1,10 @@
-import { changePassword, updateGender, updateHeight } from '@/api/account';
+import { changePassword, updateGender, updateHeight, updateWeight } from '@/api/account';
 import { clearTokens } from '@/api/Storage';
 import { getWorkouts } from '@/api/Workout';
 import { theme } from '@/constants/theme';
 import { useUserStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -102,6 +103,7 @@ export default function AccountScreen() {
     // Controls visibility of the 3 modals
     const [modals, setModals] = useState({
         height: false,
+        weight: false,
         gender: false,
         password: false,
     });
@@ -112,6 +114,7 @@ export default function AccountScreen() {
     // Form data buffer (avoids changing user store directly before save)
     const [formData, setFormData] = useState({
         height: '',
+        weight: '',
         gender: 'male' as 'male' | 'female',
         oldPassword: '',
         newPassword: '',
@@ -157,6 +160,7 @@ export default function AccountScreen() {
             setFormData(prev => ({
                 ...prev,
                 height: user.height?.toString() || '',
+                weight: user.weight?.toString() || '',
                 gender: (user.gender as 'male' | 'female') || 'male',
             }));
         }
@@ -201,7 +205,7 @@ export default function AccountScreen() {
     };
 
     // Centralized save handler for all modals
-    const handleSave = async (type: 'height' | 'gender' | 'password') => {
+    const handleSave = async (type: 'height' | 'weight' | 'gender' | 'password') => {
         setIsSaving(true);
         try {
             let result;
@@ -210,6 +214,9 @@ export default function AccountScreen() {
             if (type === 'height') {
                 if (!formData.height) throw new Error("Please enter your height");
                 result = await updateHeight(parseFloat(formData.height));
+            } else if (type === 'weight') {
+                if (!formData.weight) throw new Error("Please enter your weight");
+                result = await updateWeight(parseFloat(formData.weight));
             } else if (type === 'gender') {
                 result = await updateGender(formData.gender);
             } else if (type === 'password') {
@@ -237,8 +244,23 @@ export default function AccountScreen() {
     
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
+            <LinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={styles.gradientBg}
+            />
             <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]} showsVerticalScrollIndicator={false}>
                 
+                {/* Profile Header */}
+                <View style={styles.profileHeader}>
+                    <View style={styles.avatarContainer}>
+                        <Text style={styles.avatarText}>{user?.email?.charAt(0).toUpperCase() || 'U'}</Text>
+                    </View>
+                    <View style={styles.profileInfo}>
+                        <Text style={styles.userEmail}>{user?.email}</Text>
+                        <Text style={styles.memberSince}>MEMBER SINCE {user?.created_at ? new Date(user.created_at).getFullYear() : 2024}</Text>
+                    </View>
+                </View>
+
                 {/* Stats Cards */}
                 <View style={styles.statsContainer}>
                     <View style={styles.statCard}>
@@ -254,22 +276,75 @@ export default function AccountScreen() {
                     </View>
                 </View>
 
-                {/* Settings Cards */}
+                {/* Biometrics Section */}
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionHeaderText}>BIOMETRICS</Text>
+                </View>
                 <View style={styles.settingsContainer}>
                     <TouchableOpacity 
                         style={styles.settingCard}
-                        onPress={() => {
-                            // TODO: Navigate to edit profile
-                            Alert.alert("Edit Profile", "Profile editing coming soon!");
-                        }}
+                        onPress={() => toggleModal('weight', true)}
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="person-outline" size={24} color="#FFFFFF" />
-                        <View style={styles.settingContent}>
-                            <Text style={styles.settingTitle}>EDIT PROFILE</Text>
-                            <Text style={styles.settingSubtitle}>BIO, WEIGHT, GOALS</Text>
+                        <View style={styles.iconBox}>
+                            <Ionicons name="scale-outline" size={20} color="#FFFFFF" />
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.secondary} />
+                        <View style={styles.settingContent}>
+                            <Text style={styles.settingTitle}>WEIGHT</Text>
+                            <Text style={styles.settingSubtitle}>{user?.weight ? `${user.weight} KG` : 'NOT SET'}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={styles.settingCard}
+                        onPress={() => toggleModal('height', true)}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.iconBox}>
+                            <Ionicons name="resize-outline" size={20} color="#FFFFFF" />
+                        </View>
+                        <View style={styles.settingContent}>
+                            <Text style={styles.settingTitle}>HEIGHT</Text>
+                            <Text style={styles.settingSubtitle}>{user?.height ? `${user.height} CM` : 'NOT SET'}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={styles.settingCard}
+                        onPress={() => toggleModal('gender', true)}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.iconBox}>
+                            <Ionicons name="body-outline" size={20} color="#FFFFFF" />
+                        </View>
+                        <View style={styles.settingContent}>
+                            <Text style={styles.settingTitle}>GENDER</Text>
+                            <Text style={styles.settingSubtitle}>{user?.gender?.toUpperCase() || 'NOT SET'}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Account Section */}
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionHeaderText}>ACCOUNT</Text>
+                </View>
+                <View style={styles.settingsContainer}>
+                    <TouchableOpacity 
+                        style={styles.settingCard}
+                        onPress={() => toggleModal('password', true)}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.iconBox}>
+                            <Ionicons name="shield-checkmark-outline" size={20} color="#FFFFFF" />
+                        </View>
+                        <View style={styles.settingContent}>
+                            <Text style={styles.settingTitle}>CHANGE PASSWORD</Text>
+                            <Text style={styles.settingSubtitle}>SECURE YOUR ACCOUNT</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                     </TouchableOpacity>
 
                     <TouchableOpacity 
@@ -277,78 +352,28 @@ export default function AccountScreen() {
                         onPress={() => router.push('/(permissions)')}
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="pulse-outline" size={24} color="#FFFFFF" />
+                        <View style={styles.iconBox}>
+                            <Ionicons name="pulse-outline" size={20} color="#FFFFFF" />
+                        </View>
                         <View style={styles.settingContent}>
                             <Text style={styles.settingTitle}>HEALTH CONNECT</Text>
                             <Text style={styles.settingSubtitle}>SYNC BIOMETRICS</Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.secondary} />
+                        <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                     </TouchableOpacity>
 
                     <TouchableOpacity 
                         style={styles.settingCard}
-                        onPress={() => {
-                            Alert.alert("Notifications", "Notification settings coming soon!");
-                        }}
+                        onPress={() => handleLogout()}
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
-                        <View style={styles.settingContent}>
-                            <Text style={styles.settingTitle}>NOTIFICATIONS</Text>
-                            <Text style={styles.settingSubtitle}>SMART REMINDERS</Text>
+                        <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 69, 58, 0.1)' }]}>
+                            <Ionicons name="log-out-outline" size={20} color="#FF453A" />
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.secondary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                        style={styles.settingCard}
-                        onPress={() => {
-                            Alert.alert("Data Management", "Data export coming soon!");
-                        }}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="server-outline" size={24} color="#FFFFFF" />
                         <View style={styles.settingContent}>
-                            <Text style={styles.settingTitle}>DATA MANAGEMENT</Text>
-                            <Text style={styles.settingSubtitle}>EXPORT JSON/CSV</Text>
+                            <Text style={[styles.settingTitle, { color: '#FF453A' }]}>LOG OUT</Text>
+                            <Text style={styles.settingSubtitle}>EXIT SESSION</Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.secondary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                        style={styles.settingCard}
-                        onPress={() => {
-                            Alert.alert("Privacy & Security", "Privacy settings coming soon!");
-                        }}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="shield-checkmark-outline" size={24} color="#FFFFFF" />
-                        <View style={styles.settingContent}>
-                            <Text style={styles.settingTitle}>PRIVACY & SECURITY</Text>
-                            <Text style={styles.settingSubtitle}>AUTH CONTROLS</Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.secondary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                        style={styles.settingCard}
-                        onPress={() => {
-                            if (user?.is_pro) {
-                                Alert.alert("Manage Subscription", "Subscription management coming soon!");
-                            } else {
-                                router.push('/(account)/upgrade');
-                            }
-                        }}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="card-outline" size={24} color="#FFFFFF" />
-                        <View style={styles.settingContent}>
-                            <Text style={styles.settingTitle}>SUBSCRIPTION</Text>
-                            <Text style={[styles.settingSubtitle, styles.subscriptionSubtitle]}>
-                                {user?.is_pro ? 'MANAGE FORCE PRO BILLING' : 'UPGRADE TO PRO'}
-                            </Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.secondary} />
                     </TouchableOpacity>
                 </View>
 
@@ -383,6 +408,40 @@ export default function AccountScreen() {
                                 <Text style={styles.btnCancelText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.btnSave} onPress={() => handleSave('height')} disabled={isSaving}>
+                                {isSaving ? <ActivityIndicator color={theme.colors.text.primary} /> : <Text style={styles.btnSaveText}>Save</Text>}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
+
+            <Modal visible={modals.weight} transparent animationType="fade" onRequestClose={() => toggleModal('weight', false)}>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Update Weight</Text>
+                            <Text style={styles.modalSubtitle}>Tracking your weight helps monitor progress.</Text>
+                        </View>
+                        
+                        <View style={styles.bigInputContainer}>
+                            <TextInput
+                                style={styles.bigInput}
+                                value={formData.weight}
+                                onChangeText={(t) => setFormData({ ...formData, weight: t })}
+                                keyboardType="numeric"
+                                placeholder="0"
+                                placeholderTextColor={theme.colors.text.zinc700}
+                                autoFocus
+                                selectionColor={theme.colors.status.active}
+                            />
+                            <Text style={styles.bigInputSuffix}>kg</Text>
+                        </View>
+
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity style={styles.btnCancel} onPress={() => toggleModal('weight', false)}>
+                                <Text style={styles.btnCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.btnSave} onPress={() => handleSave('weight')} disabled={isSaving}>
                                 {isSaving ? <ActivityIndicator color={theme.colors.text.primary} /> : <Text style={styles.btnSaveText}>Save</Text>}
                             </TouchableOpacity>
                         </View>
@@ -484,11 +543,56 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
+    gradientBg: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
     scrollContent: {
         padding: theme.spacing.m,
-        paddingTop: theme.spacing.l,
+        paddingTop: theme.spacing.xl,
     },
     
+    // --- Profile Header ---
+    profileHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.xs,
+    },
+    avatarContainer: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: theme.colors.ui.border,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+    },
+    avatarText: {
+        fontSize: theme.typography.sizes.xl,
+        fontWeight: '900',
+        color: theme.colors.status.active,
+    },
+    profileInfo: {
+        marginLeft: theme.spacing.m,
+    },
+    userEmail: {
+        fontSize: theme.typography.sizes.m,
+        fontWeight: '700',
+        color: theme.colors.text.primary,
+        marginBottom: 4,
+    },
+    memberSince: {
+        fontSize: theme.typography.sizes.xxs,
+        fontWeight: '700',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 1,
+    },
+
     // --- Stats Cards ---
     statsContainer: {
         flexDirection: 'row',
@@ -504,11 +608,11 @@ const styles = StyleSheet.create({
         borderColor: theme.colors.ui.border,
     },
     statLabel: {
-        fontSize: theme.typography.sizes.label,
-        fontWeight: '600',
-        color: theme.colors.text.secondary,
+        fontSize: 10,
+        fontWeight: '800',
+        color: theme.colors.text.tertiary,
         textTransform: 'uppercase',
-        letterSpacing: theme.typography.tracking.labelTight,
+        letterSpacing: 1,
         marginBottom: theme.spacing.s,
     },
     statValueContainer: {
@@ -517,17 +621,32 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     statValue: {
-        fontSize: theme.typography.sizes.xxl,
-        fontWeight: '800',
-        color: theme.colors.status.rest,
+        fontSize: 24,
+        fontWeight: '900',
+        color: theme.colors.text.primary,
     },
     statIcon: {
-        marginTop: 4,
+        marginTop: 2,
+    },
+
+    // --- Sections ---
+    sectionHeader: {
+        marginBottom: theme.spacing.s,
+        marginTop: theme.spacing.m,
+        paddingHorizontal: theme.spacing.xs,
+    },
+    sectionHeaderText: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: theme.colors.text.tertiary,
+        textTransform: 'uppercase',
+        letterSpacing: 1.5,
     },
     
     // --- Settings Cards ---
     settingsContainer: {
         gap: theme.spacing.s,
+        marginBottom: theme.spacing.m,
     },
     settingCard: {
         flexDirection: 'row',
@@ -539,164 +658,35 @@ const styles = StyleSheet.create({
         borderColor: theme.colors.ui.border,
         gap: theme.spacing.m,
     },
+    iconBox: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        backgroundColor: theme.colors.ui.border,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+    },
     settingContent: {
         flex: 1,
     },
     settingTitle: {
-        fontSize: theme.typography.sizes.m,
-        fontWeight: '700',
+        fontSize: theme.typography.sizes.s,
+        fontWeight: '800',
         color: theme.colors.text.primary,
-        marginBottom: 4,
+        letterSpacing: 0.5,
+        marginBottom: 2,
     },
     settingSubtitle: {
-        fontSize: theme.typography.sizes.xs,
-        color: theme.colors.text.secondary,
+        fontSize: 10,
+        fontWeight: '700',
+        color: theme.colors.text.tertiary,
         textTransform: 'uppercase',
-        letterSpacing: theme.typography.tracking.labelTight,
+        letterSpacing: 0.5,
     },
     subscriptionSubtitle: {
         color: theme.colors.status.rest,
-    },
-
-    // --- Sections ---
-    sectionContainer: {
-        marginTop: theme.spacing.xl,
-        marginHorizontal: theme.spacing.m,
-    },
-    sectionTitle: {
-        fontSize: theme.typography.sizes.xs,
-        fontWeight: '600',
-        color: theme.colors.text.zinc600,
-        textTransform: 'uppercase',
-        marginLeft: theme.spacing.m,
-        marginBottom: theme.spacing.s,
-    },
-    sectionContent: {
-        backgroundColor: theme.colors.ui.glass,
-        borderRadius: theme.borderRadius.l, 
-        overflow: 'hidden',
-    },
-
-    // --- Rows ---
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: theme.spacing.m,
-        backgroundColor: theme.colors.ui.glass,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: theme.colors.ui.border,
-    },
-    rowLast: {
-        borderBottomWidth: 0,
-    },
-    rowLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    iconContainer: {
-        width: 28,
-        height: 28,
-        borderRadius: 7,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: theme.spacing.s,
-    },
-    rowLabel: {
-        fontSize: theme.typography.sizes.m,
-        color: theme.colors.text.primary,
-        fontWeight: '400',
-    },
-    rowLabelDestructive: {
-        color: theme.colors.status.error,
-    },
-    rowRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    rowValue: {
-        fontSize: theme.typography.sizes.m,
-        color: theme.colors.text.secondary,
-        marginRight: 4,
-    },
-
-    versionText: {
-        textAlign: 'center',
-        color: theme.colors.text.zinc700,
-        fontSize: theme.typography.sizes.xs,
-        marginTop: theme.spacing.xxl,
-        marginBottom: theme.spacing.l,
-    },
-
-    // --- PRO Subscription Styles ---
-    proCard: {
-        backgroundColor: `${theme.colors.status.rest}15`,
-        borderRadius: theme.borderRadius.l,
-        padding: theme.spacing.l,
-        borderWidth: 1,
-        borderColor: `${theme.colors.status.rest}30`,
-        marginBottom: theme.spacing.s,
-    },
-    proHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    proIconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: `${theme.colors.status.rest}25`,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: theme.spacing.m,
-    },
-    proTextContainer: {
-        flex: 1,
-    },
-    proTitle: {
-        fontSize: theme.typography.sizes.l,
-        fontWeight: '700',
-        color: theme.colors.status.rest,
-        marginBottom: 4,
-    },
-    proSubtitle: {
-        fontSize: theme.typography.sizes.s,
-        color: theme.colors.text.secondary,
-    },
-    upgradeCard: {
-        backgroundColor: theme.colors.ui.glass,
-        borderRadius: theme.borderRadius.l,
-        padding: theme.spacing.l,
-        borderWidth: 2,
-        borderColor: theme.colors.status.rest,
-        borderStyle: 'dashed',
-    },
-    upgradeContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    upgradeIconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: `${theme.colors.status.rest}20`,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: theme.spacing.m,
-    },
-    upgradeTextContainer: {
-        flex: 1,
-    },
-    upgradeTitle: {
-        fontSize: theme.typography.sizes.l,
-        fontWeight: '700',
-        color: theme.colors.text.primary,
-        marginBottom: 4,
-    },
-    upgradeSubtitle: {
-        fontSize: theme.typography.sizes.s,
-        color: theme.colors.text.secondary,
     },
 
     // --- Modern Modals ---

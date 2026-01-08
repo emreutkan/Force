@@ -263,19 +263,22 @@ export default function ActiveWorkoutScreen() {
                 onSelectExercise={handleAddExercise}
                 title="Add Exercise"
             />
-            <View style={[styles.WorkoutFooter, {marginBottom: insets.bottom}]}>
+            <View style={[styles.WorkoutFooter, { paddingBottom: insets.bottom + 16 }]}>
                 <View style={styles.footerContent}>
                     <TouchableOpacity 
                         style={styles.completeWorkoutButton}
                         onPress={handleFinishWorkout}
+                        activeOpacity={0.8}
                     >
-                        <Text style={styles.completeWorkoutButtonText}>Finish Workout</Text>
+                        <Ionicons name="checkmark-done" size={20} color="white" style={{ marginRight: 8 }} />
+                        <Text style={styles.completeWorkoutButtonText}>FINISH WORKOUT</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => {
                             setIsModalVisible(true);
                         }}
                         style={styles.fabButton}
+                        activeOpacity={0.8}
                     >
                         <Ionicons name="add" size={28} color="white" />
                     </TouchableOpacity>
@@ -291,54 +294,51 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        paddingHorizontal: 16,
-        paddingVertical: 16,
-        borderRadius: 50,
-        marginHorizontal: 16,
-        overflow: 'hidden',
-        backgroundColor: theme.colors.ui.glass,
+        paddingHorizontal: theme.spacing.m,
+        paddingTop: theme.spacing.m,
+        backgroundColor: 'transparent',
     },
     footerContent: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        gap: theme.spacing.s,
     },
     completeWorkoutButton: {
-        backgroundColor: '#8B5CF6', // Muted purple
+        backgroundColor: theme.colors.status.active,
         flex: 1,
-        paddingVertical: 16,
-        paddingHorizontal: 24,
-        borderRadius: 22,
+        height: 56,
+        borderRadius: 28,
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 16,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 16,
-        elevation: 2,
+        shadowColor: theme.colors.status.active,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
     },
     completeWorkoutButtonText: {
         color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: '500',
-        letterSpacing: 0.5,
-    },
-    modalContainer: {
-        flex: 1,
-        backgroundColor: '#000000',
+        fontSize: 14,
+        fontWeight: '900',
+        fontStyle: 'italic',
+        letterSpacing: 1,
     },
     fabButton: {
-        backgroundColor: '#0A84FF',
-        padding: 16,
-        borderRadius: 24,
+        backgroundColor: theme.colors.ui.glass,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 16,
-        elevation: 2,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
     },
     modalHeader: {
         flexDirection: 'row',

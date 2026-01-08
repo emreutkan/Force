@@ -4,6 +4,7 @@ import { BodyMeasurement, WeightHistoryEntry } from '@/api/types';
 import { theme, typographyStyles } from '@/constants/theme';
 import { useUserStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -417,6 +418,10 @@ export default function MeasurementsScreen() {
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <Stack.Screen options={{ headerShown: false }} />
+            <ExpoLinearGradient
+                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+                style={styles.gradientBg}
+            />
             <ScrollView 
                 contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
                 showsVerticalScrollIndicator={false}
@@ -738,6 +743,13 @@ export default function MeasurementsScreen() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
+    gradientBg: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
     scrollContent: { padding: theme.spacing.m },
 
     // Headers

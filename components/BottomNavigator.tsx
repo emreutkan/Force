@@ -79,18 +79,15 @@ const TabButton = ({ tab, isActive, onPress }: TabButtonProps) => {
         // We ensure textWidth is at least 40 to prevent collapse before measurement.
         const expandedWidth = 48 + (textWidth.value || 40) + theme.spacing.m;
         
-        // Animate background color opacity from transparent to white
-        const bgOpacity = activeProgress.value;
-        
         return {
             width: interpolate(activeProgress.value, [0, 1], [48, expandedWidth]),
-            backgroundColor: `rgba(255, 255, 255, ${bgOpacity})`,
+            backgroundColor: `rgba(255, 255, 255, ${activeProgress.value})`,
         };
     });
 
     const animatedTextStyle = useAnimatedStyle(() => {
         return {
-            opacity: interpolate(activeProgress.value, [0, 0.5, 1], [0, 0, 1]),
+            opacity: interpolate(activeProgress.value, [0, 0.8, 1], [0, 0, 1]),
             transform: [
                 { translateX: interpolate(activeProgress.value, [0, 1], [10, 0]) }
             ]
@@ -116,17 +113,16 @@ const TabButton = ({ tab, isActive, onPress }: TabButtonProps) => {
             <Animated.View style={[styles.tabButton, animatedContainerStyle]}>
                 <View style={styles.tabContent}>
                     <Animated.View style={animatedIconStyle}>
-                        
                         {tab.icon({ 
                             size: isActive ? 24 : 20, 
-                            color: isActive ? theme.colors.text.tertiary : theme.colors.text.secondary 
+                            color: isActive ? theme.colors.status.active : theme.colors.text.secondary 
                         })}
                     </Animated.View>
                     
                     <Animated.View style={[styles.textContainer, animatedTextStyle]}>
                         <Text 
                             numberOfLines={1} 
-                            style={[styles.tabLabel, isActive && styles.tabLabelActive]}
+                            style={[styles.tabLabel, isActive && { color: theme.colors.status.active }]}
                             onLayout={handleTextLayout}
                         >
                             {tab.label}
@@ -206,48 +202,45 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: theme.colors.ui.border,
-        shadowColor: theme.colors.background,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
         elevation: 10,
     },
     tabsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: theme.spacing.xs,
+        padding: theme.spacing.s,
     },
     tabWrapper: {
-        // No fixed width, let them flex naturally or stay compact
         alignItems: 'center',
         justifyContent: 'center',
     },
     tabButton: {
-        height: 44, // Slightly cleaner height
+        height: 48,
         borderRadius: theme.borderRadius.full,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-start', // Important for expansion animation
-        paddingHorizontal: theme.spacing.xs, // Padding for the icon side
+        justifyContent: 'flex-start',
+        paddingHorizontal: theme.spacing.xs,
         overflow: 'hidden',
     },
     tabContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingLeft: theme.spacing.s, // Space around icon
+        paddingLeft: theme.spacing.s,
     },
     textContainer: {
-        marginLeft: theme.spacing.s, // Gap between icon and text
-        // Don't set overflow hidden here, let the text measure itself
+        marginLeft: theme.spacing.s,
     },
     tabLabel: {
         fontSize: theme.typography.sizes.s,
-        fontWeight: '600',
+        fontWeight: '900',
+        fontStyle: 'italic',
+        textTransform: 'uppercase',
         color: theme.colors.text.secondary,
-        marginRight: theme.spacing.m, // Right padding inside the pill
-    },
-    tabLabelActive: {
-        color: theme.colors.text.secondary,
+        marginRight: theme.spacing.m,
     },
 });

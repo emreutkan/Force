@@ -518,6 +518,14 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
     const [tutStartTime, setTutStartTime] = useState<number | null>(null);
     const [currentTUT, setCurrentTUT] = useState(0);
     const [hasStopped, setHasStopped] = useState(false);
+    const [capturedRestTime, setCapturedRestTime] = useState<number | null>(null);
+
+    const { lastSetTimestamp, lastExerciseCategory } = useActiveWorkoutStore();
+    const { timerText, elapsedSeconds } = useRestTimer(lastSetTimestamp, lastExerciseCategory);
+
+    const isInitial = !isTrackingTUT && !hasStopped;
+    const isTracking = isTrackingTUT;
+    const isStopped = hasStopped && !isTrackingTUT;
 
     const formatWeightForInput = (weight: number) => {
         if (!weight && weight !== 0) return '';
@@ -561,6 +569,10 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
 
     const handleStartSet = async () => {
         try {
+            // Capture current rest time from global timer if not manually entered
+            const finalRest = inputs.restTime ? parseRestTime(inputs.restTime) : elapsedSeconds;
+            setCapturedRestTime(finalRest);
+            
             await stopRestTimer();
             setIsTrackingTUT(true);
             setTutStartTime(Date.now());
@@ -581,22 +593,12 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
     };
 
     const handleAdd = async () => {
-        let restTimeSeconds = 0;
-        if (nextSetNumber === 1 && index === 0) {
-            restTimeSeconds = 0;
-        } else if (inputs.restTime) {
-            restTimeSeconds = parseRestTime(inputs.restTime);
-        } else {
-            const restTime: any = await getRestTimerState();
-            restTimeSeconds = restTime.elapsed_seconds || 0;
-        }
-        
         const setData = {
-            weight: parseFloat(inputs.weight) || 0,
+            weight: parseFloat(inputs.weight) || (lastSet?.weight ? Number(lastSet.weight) : 0),
             reps: inputs.reps ? parseInt(inputs.reps) : 0,
             reps_in_reserve: inputs.rir ? parseInt(inputs.rir) : 0,
             is_warmup: inputs.isWarmup,
-            rest_time_before_set: restTimeSeconds,
+            rest_time_before_set: capturedRestTime ?? 0,
             total_tut: currentTUT > 0 ? currentTUT : undefined
         };
 
@@ -611,21 +613,26 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
         setInputs({ weight: inputs.weight, reps: '', rir: '', restTime: '', isWarmup: false });
         setCurrentTUT(0);
         setHasStopped(false);
+        setCapturedRestTime(null);
     };
 
     if (isLocked) return null;
 
-    const isInitial = !isTrackingTUT && !hasStopped;
-    const isTracking = isTrackingTUT;
-    const isStopped = hasStopped && !isTrackingTUT;
-
     return (
         <>
-            <View style={[styles.setRow, styles.addSetRowContainer]}>
+            {/* Status Indicator */}
+            <View style={styles.statusIndicatorContainer}>
+                <View style={[styles.statusDot, isTracking && { backgroundColor: theme.colors.status.error }, isStopped && { backgroundColor: theme.colors.status.active }]} />
+                <Text style={[styles.statusIndicatorText, isTracking && { color: theme.colors.status.error }, isStopped && { color: theme.colors.status.active }]}>
+                    {isInitial ? 'PREPARING SET' : isTracking ? 'PERFORMING SET...' : 'SET FINISHED - LOG RESULTS'}
+                </Text>
+            </View>
+
+            <View style={[styles.setRow, styles.addSetRowContainer, isTracking && styles.addSetRowTracking, isStopped && styles.addSetRowStopped]}>
                 <TouchableOpacity
                     onPress={() => !isTracking && setInputs(p => ({ ...p, isWarmup: !p.isWarmup }))}
                     disabled={isTracking}
-                    style={{ width: 30, alignItems: 'center', paddingVertical: 10, opacity: isTracking ? 0.6 : 1 }}
+                    style={{ width: 30, alignItems: 'center', paddingVertical: 10, opacity: isTracking ? 0.4 : 1 }}
                 >
                     <Text style={[styles.setText, { color: inputs.isWarmup ? '#FF9F0A' : '#8E8E93', fontWeight: inputs.isWarmup ? 'bold' : 'normal' }]}>
                         {inputs.isWarmup ? 'W' : String(nextSetNumber)}
@@ -633,10 +640,10 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
                 </TouchableOpacity>
 
                 <TextInput
-                    style={[styles.setInput, styles.addSetInput, isTracking && { opacity: 0.6 }]}
-                    value={inputs.restTime}
+                    style={[styles.setInput, styles.addSetInput, (isTracking || isStopped) && styles.disabledInput]}
+                    value={isInitial ? (inputs.restTime || timerText) : formatRestTimeForDisplay(capturedRestTime ?? 0)}
                     onChangeText={(value) => {
-                        if (isTracking) return;
+                        if (isTracking || isStopped) return;
                         const numericRegex = /^[0-9]*\.?[0-9]*$/;
                         if (value === '' || numericRegex.test(value)) {
                             setInputs(p => ({ ...p, restTime: value }));
@@ -646,11 +653,11 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
                     placeholder="Rest"
                     placeholderTextColor="#8E8E93"
                     onFocus={onFocus}
-                    editable={!isTracking}
+                    editable={isInitial}
                 />
 
                 <TextInput
-                    style={[styles.setInput, styles.addSetInput, isTracking && { opacity: 0.6 }]}
+                    style={[styles.setInput, styles.addSetInput, isTracking && styles.disabledInput]}
                     value={inputs.weight}
                     onChangeText={(t: string) => {
                         if (isTracking) return;
@@ -670,54 +677,50 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
                     editable={!isTracking}
                 />
 
-                {(isTracking || isStopped) && (
-                    <TextInput
-                        style={[styles.setInput, styles.addSetInput, isTracking && { opacity: 0.6 }]}
-                        value={inputs.reps}
-                        onChangeText={(value) => {
-                            if (isTracking) return;
-                            const numericRegex = /^[0-9]*$/;
-                            if (value === '' || numericRegex.test(value)) {
-                                const num = value === '' ? 0 : parseInt(value);
-                                if (num <= 100) {
-                                    setInputs(p => ({ ...p, reps: value }));
-                                }
+                <TextInput
+                    style={[styles.setInput, styles.addSetInput, (isInitial || isTracking) && styles.disabledInput]}
+                    value={inputs.reps}
+                    onChangeText={(value) => {
+                        if (isInitial || isTracking) return;
+                        const numericRegex = /^[0-9]*$/;
+                        if (value === '' || numericRegex.test(value)) {
+                            const num = value === '' ? 0 : parseInt(value);
+                            if (num <= 100) {
+                                setInputs(p => ({ ...p, reps: value }));
                             }
-                        }}
-                        keyboardType="numeric"
-                        placeholder="reps"
-                        placeholderTextColor="#8E8E93"
-                        onFocus={onFocus}
-                        editable={isStopped}
-                    />
-                )}
+                        }
+                    }}
+                    keyboardType="numeric"
+                    placeholder="reps"
+                    placeholderTextColor="#8E8E93"
+                    onFocus={onFocus}
+                    editable={isStopped}
+                />
 
-                {(isTracking || isStopped) && (
-                    <TextInput
-                        style={[styles.setInput, styles.addSetInput, isTracking && { opacity: 0.6 }]}
-                        value={inputs.rir}
-                        onChangeText={(value) => {
-                            if (isTracking) return;
-                            const numericRegex = /^[0-9]*$/;
-                            if (value === '' || numericRegex.test(value)) {
-                                const num = value === '' ? 0 : parseInt(value);
-                                if (num <= 100) {
-                                    setInputs(p => ({ ...p, rir: value }));
-                                }
+                <TextInput
+                    style={[styles.setInput, styles.addSetInput, (isInitial || isTracking) && styles.disabledInput]}
+                    value={inputs.rir}
+                    onChangeText={(value) => {
+                        if (isInitial || isTracking) return;
+                        const numericRegex = /^[0-9]*$/;
+                        if (value === '' || numericRegex.test(value)) {
+                            const num = value === '' ? 0 : parseInt(value);
+                            if (num <= 100) {
+                                setInputs(p => ({ ...p, rir: value }));
                             }
-                        }}
-                        keyboardType="numeric"
-                        placeholder="RIR"
-                        placeholderTextColor="#8E8E93"
-                        onFocus={onFocus}
-                        editable={isStopped}
-                    />
-                )}
+                        }
+                    }}
+                    keyboardType="numeric"
+                    placeholder="RIR"
+                    placeholderTextColor="#8E8E93"
+                    onFocus={onFocus}
+                    editable={isStopped}
+                />
             </View>
 
             {(isTracking || isStopped) && (
-                <View style={styles.tutTimerContainer}>
-                    <Text style={styles.tutTimerLabel}>Time Under Tension:</Text>
+                <View style={[styles.tutTimerContainer, isStopped && styles.tutTimerContainerStopped]}>
+                    <Text style={styles.tutTimerLabel}>TIME UNDER TENSION</Text>
                     <View style={styles.tutInputContainer}>
                         {isTracking ? (
                             <Text style={styles.tutDisplayText}>{formatTUT(currentTUT)}</Text>
@@ -743,43 +746,44 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
                 </View>
             )}
 
-            {inputs.weight && (
-                <TouchableOpacity
-                    style={[
-                        styles.addSetButton,
-                        !inputs.weight && { opacity: 0.5 },
-                        isInitial && styles.startSetButton,
-                        isTracking && styles.stopSetButton,
-                        isStopped && styles.addSetButton
-                    ]}
-                    onPress={() => {
-                        if (isTracking) {
-                            handleStopSet();
-                        } else if (isInitial) {
-                            handleStartSet();
-                        } else if (isStopped) {
-                            handleAdd();
-                        } else {
-                            handleAdd();
-                        }
-                    }}
-                    disabled={!inputs.weight || (isStopped && !inputs.reps)}
-                    activeOpacity={0.8}
-                >
-                    <Text style={[
-                        styles.addSetButtonText,
-                        isTracking && styles.stopSetButtonText,
-                        isInitial && styles.startSetButtonText
-                    ]}>
-                        {(() => {
-                            if (isTracking) return 'Stop Performing Set';
-                            if (isInitial) return 'Start Set';
-                            if (isStopped) return 'Add Set';
-                            return 'Add Set';
-                        })()}
-                    </Text>
-                </TouchableOpacity>
-            )}
+            <TouchableOpacity
+                style={[
+                    styles.addSetButton,
+                    isInitial && styles.startSetButton,
+                    isTracking && styles.stopSetButton,
+                    isStopped && styles.addSetButtonPrimary
+                ]}
+                onPress={() => {
+                    if (isTracking) {
+                        handleStopSet();
+                    } else if (isInitial) {
+                        handleStartSet();
+                    } else if (isStopped) {
+                        handleAdd();
+                    }
+                }}
+                disabled={(isStopped && !inputs.reps)}
+                activeOpacity={0.8}
+            >
+                {isInitial && <Ionicons name="play" size={18} color="white" style={{ marginRight: 8 }} />}
+                {isTracking && <Ionicons name="stop" size={18} color="white" style={{ marginRight: 8 }} />}
+                {isStopped && <Ionicons name="add" size={18} color="white" style={{ marginRight: 8 }} />}
+                <Text style={[
+                    styles.addSetButtonText,
+                    isTracking && styles.stopSetButtonText,
+                    isInitial && styles.startSetButtonText
+                ]}>
+                    {(() => {
+                        if (isTracking) return 'STOP PERFORMING SET';
+                        if (isInitial) return 'START SET';
+                        if (isStopped) return 'ADD SET';
+                        return 'ADD SET';
+                    })()}
+                </Text>
+            </TouchableOpacity>
+        </>
+    );
+};
         </>
     );
 };
@@ -1247,54 +1251,82 @@ const styles = StyleSheet.create({
     },
     addSetButton: {
         marginTop: 12,
-        backgroundColor: 'transparent',
-        borderWidth: 1.5,
-        borderColor: '#48484A',
-        borderRadius: 10,
-        paddingVertical: 10,
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+        borderRadius: 12,
+        paddingVertical: 12,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
-        overflow: 'hidden',
-        position: 'relative',
+    },
+    addSetButtonPrimary: {
+        backgroundColor: theme.colors.status.active,
+        borderColor: theme.colors.status.active,
     },
     startSetButton: {
-        borderColor: '#48484A',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 2,
-        borderWidth: 0,
+        backgroundColor: theme.colors.status.active,
+        borderColor: theme.colors.status.active,
+        shadowColor: theme.colors.status.active,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
     },
     stopSetButton: {
-        borderColor: '#48484A',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 2,
-        borderWidth: 0,
+        backgroundColor: theme.colors.status.error,
+        borderColor: theme.colors.status.error,
+        shadowColor: theme.colors.status.error,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
     },
     addSetButtonText: {
         color: '#FFFFFF',
-        fontSize: 17,
-        fontWeight: '600',
-        letterSpacing: 0.2,
+        fontSize: 12,
+        fontWeight: '900',
+        fontStyle: 'italic',
+        letterSpacing: 1,
     },
     stopSetButtonText: {
         color: '#FFFFFF',
-        fontWeight: '700',
-        textShadowColor: 'rgba(0, 0, 0, 0.3)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 2,
     },
     startSetButtonText: {
         color: '#FFFFFF',
-        fontWeight: '700',
-        textShadowColor: 'rgba(0, 0, 0, 0.3)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 2,
+    },
+    statusIndicatorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 8,
+        paddingHorizontal: 4,
+    },
+    statusDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: theme.colors.text.tertiary,
+    },
+    statusIndicatorText: {
+        fontSize: 9,
+        fontWeight: '900',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+    },
+    disabledInput: {
+        opacity: 0.4,
+    },
+    addSetRowTracking: {
+        borderStyle: 'solid',
+        borderColor: theme.colors.status.error,
+        backgroundColor: 'rgba(255, 59, 48, 0.05)',
+    },
+    addSetRowStopped: {
+        borderStyle: 'solid',
+        borderColor: theme.colors.status.active,
+        backgroundColor: 'rgba(99, 102, 241, 0.05)',
     },
     tutTimerContainer: {
         backgroundColor: '#1E1E20',
@@ -1306,12 +1338,15 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#2A2A2E',
     },
+    tutTimerContainerStopped: {
+        borderColor: theme.colors.status.active,
+        backgroundColor: 'rgba(99, 102, 241, 0.05)',
+    },
     tutTimerLabel: {
-        color: '#8E8E93',
-        fontSize: 12,
-        fontWeight: '600',
-        letterSpacing: 0.3,
-        textTransform: 'uppercase',
+        color: theme.colors.text.tertiary,
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1,
         marginBottom: 6,
     },
     tutInputContainer: {
@@ -1320,28 +1355,30 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     tutInput: {
-        color: '#0A84FF',
+        color: theme.colors.status.active,
         fontSize: 22,
-        fontWeight: '700',
+        fontWeight: '900',
+        fontStyle: 'italic',
         fontVariant: ['tabular-nums'],
         textAlign: 'center',
         minWidth: 60,
         paddingVertical: 4,
         paddingHorizontal: 8,
         borderBottomWidth: 1,
-        borderBottomColor: '#2C2C2E',
+        borderBottomColor: theme.colors.status.active,
     },
     tutDisplayText: {
-        color: '#0A84FF',
+        color: theme.colors.status.active,
         fontSize: 24,
-        fontWeight: '700',
+        fontWeight: '900',
+        fontStyle: 'italic',
         fontVariant: ['tabular-nums'],
         textAlign: 'center',
     },
     tutInputSuffix: {
-        color: '#8E8E93',
-        fontSize: 18,
-        fontWeight: '400',
+        color: theme.colors.text.tertiary,
+        fontSize: 14,
+        fontWeight: '800',
         marginLeft: 4,
     },
     menuModalOverlay: {

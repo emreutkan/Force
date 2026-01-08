@@ -37,15 +37,17 @@ class HealthService {
                     const permissions = {
                         permissions: {
                             read: [AppleHealthKit.Constants.Permissions.StepCount],
+                            write: [] // Add empty write if only reading
                         },
                     };
 
                     AppleHealthKit.initHealthKit(permissions, (error: any) => {
                         if (error) {
-                            console.log('Error initializing HealthKit:', error);
+                            console.warn('HealthKit initialization failed. If you are in Expo Go, this is expected. You must use a Development Client:', error);
                             this.isInitialized = false;
                             resolve(false);
                         } else {
+                            console.log('HealthKit initialized successfully');
                             this.isInitialized = true;
                             resolve(true);
                         }
@@ -54,7 +56,7 @@ class HealthService {
             } else if (Platform.OS === 'android' && GoogleFit) {
                 // Check if GoogleFit.Scopes exists
                 if (!GoogleFit.Scopes || !GoogleFit.Scopes.FITNESS_ACTIVITY_READ) {
-                    console.log('GoogleFit.Scopes not available');
+                    console.warn('GoogleFit.Scopes not available. Check if react-native-google-fit is correctly installed.');
                     this.isInitialized = false;
                     return false;
                 }
@@ -62,23 +64,30 @@ class HealthService {
                 const options = {
                     scopes: [
                         GoogleFit.Scopes.FITNESS_ACTIVITY_READ,
+                        GoogleFit.Scopes.FITNESS_LOCATION_READ, // Sometimes needed for steps
                     ],
                 };
 
                 const authResult = await GoogleFit.authorize(options);
                 if (authResult.success) {
+                    console.log('Google Fit authorized successfully');
                     this.isInitialized = true;
+                    // Start checking for steps
+                    GoogleFit.startRecording((res: any) => {
+                        console.log('Google Fit recording started:', res);
+                    });
                     return true;
                 } else {
-                    console.log('Error initializing Google Fit:', authResult.message);
+                    console.warn('Google Fit authorization failed:', authResult.message);
                     this.isInitialized = false;
                     return false;
                 }
             }
+            console.warn('Health services not available for this platform or libraries missing.');
             this.isInitialized = false;
             return false;
         } catch (error) {
-            console.log('Health service initialization error:', error);
+            console.error('Health service initialization error:', error);
             this.isInitialized = false;
             return false;
         }

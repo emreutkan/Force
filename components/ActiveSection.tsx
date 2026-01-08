@@ -49,16 +49,56 @@ export default function ActiveSection({
     onStartWorkoutPress,
 }: ActiveSectionProps) {
     if (activeWorkout) {
+        const exercisesCount = activeWorkout.exercises?.length || 0;
+        const setsCount = activeWorkout.exercises?.reduce((total, ex) => total + (ex.sets?.length || 0), 0) || 0;
+
         return (
             <ReanimatedSwipeable renderRightActions={(p, d) => <SwipeAction progress={p} onPress={() => onDeleteWorkout(activeWorkout.id, true)} />}>
-                <TouchableOpacity style={styles.activeCard} onPress={() => router.push('/(active-workout)')} activeOpacity={0.9}>
-                    <View style={styles.cardHeader}>
-                        <View style={styles.liveBadge}>
-                            <Text style={styles.liveText}>ACTIVE</Text>
+                <TouchableOpacity style={styles.card} onPress={() => router.push('/(active-workout)')} activeOpacity={0.9}>
+                    <View style={styles.upperSection}>
+                        <View style={styles.upperLeft}>
+                            <View style={styles.intensityHeader}>
+                                <View style={styles.intensityBars}>
+                                    {[1, 1, 1].map((opacity, index) => (
+                                        <View 
+                                            key={index} 
+                                            style={[styles.bar, { opacity, backgroundColor: theme.colors.status.success }]} 
+                                        />
+                                    ))}
+                                </View>
+                                <Text style={[styles.intensityLabel, { color: theme.colors.status.success }]}>ACTIVE WORKOUT</Text>
+                            </View>
+                            <View style={styles.intensityTextContainer}>
+                                <Text style={styles.intensityValue}>{elapsedTime}</Text>
+                                <Text style={styles.intensitySubtitle} numberOfLines={1}>{activeWorkout.title.toUpperCase()}</Text>
+                            </View>
                         </View>
-                        <Text style={styles.timerText}>{elapsedTime}</Text>
+                        <View style={[styles.intensityIcon, { borderColor: 'rgba(52, 211, 153, 0.3)', backgroundColor: 'rgba(52, 211, 153, 0.1)' }]}>
+                            <Ionicons name="play" size={24} color={theme.colors.status.success} />
+                        </View>
                     </View>
-                    <Text style={styles.activeTitle} numberOfLines={1}>{activeWorkout.title}</Text>
+
+                    <View style={styles.lowerSection}>
+                        <View style={styles.metricItem}>
+                            <View style={[styles.metricIcon, { backgroundColor: 'rgba(99, 102, 241, 0.1)' }]}>
+                                <Ionicons name="fitness" size={20} color={theme.colors.status.active} />
+                            </View>
+                            <View style={styles.metricContent}>
+                                <Text style={styles.metricLabel}>EXERCISES</Text>
+                                <Text style={styles.metricValue}>{exercisesCount}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.metricItem}>
+                            <View style={[styles.metricIcon, { backgroundColor: 'rgba(168, 85, 247, 0.1)' }]}>
+                                <Ionicons name="list" size={20} color={theme.colors.status.rest} />
+                            </View>
+                            <View style={styles.metricContent}>
+                                <Text style={styles.metricLabel}>TOTAL SETS</Text>
+                                <Text style={styles.metricValue}>{setsCount}</Text>
+                            </View>
+                        </View>
+                    </View>
                 </TouchableOpacity>
             </ReanimatedSwipeable>
         );
@@ -139,60 +179,12 @@ export default function ActiveSection({
 }
 
 const styles = StyleSheet.create({
-    activeCard: { 
-        backgroundColor: theme.colors.ui.glass, 
-        borderRadius: theme.borderRadius.l, 
-        padding: theme.spacing.s, 
-        marginBottom: theme.spacing.s, 
-        borderWidth: 0.5, 
-        borderColor: theme.colors.ui.border 
-    },
-    cardHeader: { 
-        flexDirection: 'row', 
-        justifyContent: 'space-between', 
-        marginBottom: theme.spacing.s 
-    },
-    liveBadge: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        backgroundColor: 'rgba(52, 211, 153, 0.1)', 
-        paddingHorizontal: 6, 
-        paddingVertical: 4, 
-        borderRadius: 6, 
-        gap: 6 
-    },
-    liveText: { 
-        color: theme.colors.status.success, 
-        fontSize: theme.typography.sizes.s, 
-        fontWeight: '700' 
-    },
-    timerText: { 
-        color: theme.colors.status.active, 
-        fontSize: theme.typography.sizes.m, 
-        fontVariant: ['tabular-nums'], 
-        fontWeight: '600' 
-    },
-    activeTitle: { 
-        fontSize: theme.typography.sizes.xl, 
-        fontWeight: '700', 
-        color: theme.colors.text.primary, 
-        marginBottom: theme.spacing.s 
-    },
-    deleteAction: { 
-        backgroundColor: theme.colors.status.error, 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        width: 80, 
-        height: '100%', 
-        borderRadius: theme.borderRadius.l, 
-        marginLeft: theme.spacing.s 
-    },
-    startCard: { 
-        backgroundColor: theme.colors.ui.glass, 
-        borderRadius: theme.borderRadius.xxl, 
-        padding: theme.spacing.xxl, 
-        marginBottom: theme.spacing.m, 
-        borderWidth: 1, 
+    card: {
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: theme.borderRadius.xxl,
+        padding: theme.spacing.xxl,
+        marginBottom: theme.spacing.m,
+        borderWidth: 1,
         borderColor: theme.colors.ui.border,
         shadowColor: theme.colors.ui.brandGlow,
         shadowOffset: { width: 0, height: 4 },
@@ -204,6 +196,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
+        marginBottom: theme.spacing.l,
     },
     upperLeft: {
         flexDirection: 'column',
@@ -235,11 +228,20 @@ const styles = StyleSheet.create({
         color: theme.colors.text.secondary,
         textTransform: 'uppercase',
         letterSpacing: 1,
+        marginBottom: theme.spacing.xs,
+    },
+    intensityValue: {
+        fontSize: theme.typography.sizes.xxxl,
+        fontWeight: '900',
+        color: theme.colors.text.primary,
+        marginBottom: theme.spacing.xs,
     },
     intensitySubtitle: {
         fontSize: theme.typography.sizes.s,
         color: theme.colors.text.tertiary,
         fontWeight: '500',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     intensityIcon: {
         width: 48,
@@ -250,6 +252,61 @@ const styles = StyleSheet.create({
         borderColor: theme.colors.ui.primaryBorder,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    lowerSection: {
+        flexDirection: 'row',
+        gap: theme.spacing.m,
+    },
+    metricItem: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.s,
+    },
+    metricIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    metricContent: {
+        flex: 1,
+    },
+    metricLabel: {
+        fontSize: theme.typography.sizes.label,
+        fontWeight: '700',
+        color: theme.colors.text.secondary,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: theme.spacing.xs,
+    },
+    metricValue: {
+        fontSize: theme.typography.sizes.l,
+        fontWeight: '900',
+        color: theme.colors.text.primary,
+    },
+    deleteAction: { 
+        backgroundColor: theme.colors.status.error, 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        width: 80, 
+        height: '92%', 
+        borderRadius: theme.borderRadius.xxl, 
+        marginLeft: theme.spacing.s 
+    },
+    startCard: { 
+        backgroundColor: theme.colors.ui.glass, 
+        borderRadius: theme.borderRadius.xxl, 
+        padding: theme.spacing.xxl, 
+        marginBottom: theme.spacing.m, 
+        borderWidth: 1, 
+        borderColor: theme.colors.ui.border,
+        shadowColor: theme.colors.ui.brandGlow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
     },
 });
 
