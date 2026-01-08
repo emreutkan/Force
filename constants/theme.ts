@@ -117,7 +117,8 @@ export const theme = {
       hero: 108, // text-hero (4.5rem) -> increased
       h1: 42,    // text-h1 (2.25rem) -> increased
       h2: 36,    // text-h2 (1.875rem) -> increased
-      h3: 24,    // text-h3 (1.25rem) -> increased
+      h3: 30,    // text-h3 (1.5rem) -> increased
+      h4: 24,    // text-h4 (1rem) -> increased
       label: 11, // text-label (9px) -> increased
       labelTight: 12, // text-label-tight (10px) -> increased
       mono: 14,  // text-mono (0.75rem) -> increased
@@ -134,6 +135,7 @@ export const theme = {
       h1: -1.8,       // -0.05em for h1 (2.25rem * -0.05)
       h2: -1.5,       // -0.05em for h2 (1.875rem * -0.05)
       h3: -0.4,       // -0.02em for h3 (1.25rem * -0.02)
+      h4: -0.2,       // -0.02em for h4 (1rem * -0.02)
       label: 3.6,     // 0.4em for label (9px * 0.4)
       labelTight: 1,  // 0.1em for label-tight (10px * 0.1)
       data: -0.36,    // -0.02em for data (18px * -0.02)
@@ -172,6 +174,15 @@ export const typographyStyles = {
     fontWeight: '900',
     fontStyle: 'italic',
     letterSpacing: theme.typography.tracking.h3,
+    textTransform: 'uppercase',
+    color: theme.colors.text.primary,
+  } as TextStyle,
+
+  h4: {
+    fontSize: theme.typography.sizes.h4,
+    fontWeight: '900',
+    fontStyle: 'italic',
+    letterSpacing: theme.typography.tracking.h4,
     textTransform: 'uppercase',
     color: theme.colors.text.primary,
   } as TextStyle,

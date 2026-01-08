@@ -116,9 +116,10 @@ const TabButton = ({ tab, isActive, onPress }: TabButtonProps) => {
             <Animated.View style={[styles.tabButton, animatedContainerStyle]}>
                 <View style={styles.tabContent}>
                     <Animated.View style={animatedIconStyle}>
+                        
                         {tab.icon({ 
-                            size: 24, 
-                            color: isActive ? theme.colors.text.secondary : theme.colors.text.primary 
+                            size: isActive ? 24 : 20, 
+                            color: isActive ? theme.colors.text.tertiary : theme.colors.text.secondary 
                         })}
                     </Animated.View>
                     
@@ -247,6 +248,6 @@ const styles = StyleSheet.create({
         marginRight: theme.spacing.m, // Right padding inside the pill
     },
     tabLabelActive: {
-        color: theme.colors.text.primary,
+        color: theme.colors.text.secondary,
     },
 });

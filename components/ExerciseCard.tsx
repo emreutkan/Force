@@ -9,6 +9,8 @@ import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeabl
 import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useRestTimer } from './RestTimerBar';
 import { ViewOnlyExerciseCard } from './ViewOnlyExerciseCard';
+import { ActiveWorkoutExerciseCard } from './ActiveWorkoutExerciseCard';
+import { EditWorkoutExerciseCard } from './EditWorkoutExerciseCard';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IS_WEB_SMALL = Platform.OS === 'web' && SCREEN_WIDTH <= 750;
 
@@ -1131,6 +1133,44 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
     // Simple view-only mode - use separate component
     if (isViewOnly && !isActive) {
         return <ViewOnlyExerciseCard exercise={exercise} sets={workoutExercise.sets || []} />;
+    }
+
+    // Active workout - use ActiveWorkoutExerciseCard
+    if (isActive) {
+        return (
+            <ActiveWorkoutExerciseCard
+                workoutExercise={workoutExercise}
+                isLocked={isLocked}
+                onToggleLock={onToggleLock}
+                onRemove={onRemove}
+                onAddSet={onAddSet}
+                onDeleteSet={onDeleteSet}
+                swipeControl={swipeControl}
+                onInputFocus={onInputFocus}
+                onShowInfo={onShowInfo}
+                onShowStatistics={onShowStatistics}
+                drag={drag}
+            />
+        );
+    }
+
+    // Edit mode - use EditWorkoutExerciseCard
+    if (isEditMode) {
+        return (
+            <EditWorkoutExerciseCard
+                workoutExercise={workoutExercise}
+                isLocked={isLocked}
+                onToggleLock={onToggleLock}
+                onRemove={onRemove}
+                onAddSet={onAddSet}
+                onDeleteSet={onDeleteSet}
+                swipeControl={swipeControl}
+                onInputFocus={onInputFocus}
+                onShowInfo={onShowInfo}
+                onShowStatistics={onShowStatistics}
+                drag={drag}
+            />
+        );
     }
 
     const idToLock = workoutExercise.id;

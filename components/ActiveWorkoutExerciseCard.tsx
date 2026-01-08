@@ -18,8 +18,8 @@ const validateSetData = (data: any): { isValid: boolean, errors: string[] } => {
 
     if (data.reps !== undefined && data.reps !== null) {
         const reps = typeof data.reps === 'string' ? parseInt(data.reps) : data.reps;
-        if (isNaN(reps) || reps < 0 || reps > 100) {
-            errors.push('Reps must be between 0 and 100');
+        if (isNaN(reps) || reps < 1 || reps > 100) {
+            errors.push('Reps must be between 1 and 100');
         }
     }
 
@@ -47,6 +47,70 @@ const validateSetData = (data: any): { isValid: boolean, errors: string[] } => {
     return { isValid: errors.length === 0, errors };
 };
 
+const formatValidationErrors = (validationErrors: any): string => {
+    if (!validationErrors || typeof validationErrors !== 'object') {
+        return 'Validation failed';
+    }
+
+    const messages: string[] = [];
+    Object.keys(validationErrors).forEach(field => {
+        const fieldErrors = validationErrors[field];
+        if (Array.isArray(fieldErrors)) {
+            fieldErrors.forEach((error: string) => {
+                let friendlyMessage = error;
+                if (error.includes('less than or equal to 100')) {
+                    friendlyMessage = field === 'reps' ? 'Reps must be between 1 and 100' : 'RIR must be between 0 and 100';
+                } else if (error.includes('less than or equal to 10800')) {
+                    friendlyMessage = 'Rest time cannot exceed 3 hours';
+                } else if (error.includes('less than or equal to 600')) {
+                    friendlyMessage = 'Time under tension cannot exceed 10 minutes';
+                } else if (error.includes('greater than or equal to 0')) {
+                    friendlyMessage = `${field} cannot be negative`;
+                }
+                messages.push(friendlyMessage);
+            });
+        } else {
+            messages.push(fieldErrors);
+        }
+    });
+
+    return messages.join('\n');
+};
+
+// Parse rest time: if contains ".", treat as minutes (X.YY), else as seconds
+const parseRestTime = (input: string): number => {
+    if (!input || input.trim() === '') return 0;
+    
+    if (input.includes('.')) {
+        // Treat as minutes: X.YY -> convert to seconds
+        const minutes = parseFloat(input);
+        if (isNaN(minutes)) return 0;
+        return Math.round(minutes * 60);
+    } else {
+        // Treat as seconds
+        const seconds = parseInt(input);
+        return isNaN(seconds) ? 0 : seconds;
+    }
+};
+
+// Format rest time for display
+const formatRestTimeForDisplay = (seconds: number): string => {
+    if (!seconds) return '';
+    if (seconds < 60) return `${seconds}`;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return s > 0 ? `${m}.${s.toString().padStart(2, '0')}` : `${m}`;
+};
+
+// Format rest time for input (shows as X.YY for minutes or just number for seconds)
+const formatRestTimeForInput = (seconds: number): string => {
+    if (!seconds) return '';
+    if (seconds < 60) return `${seconds}`;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return s > 0 ? `${m}.${s.toString().padStart(2, '0')}` : `${m}`;
+};
+
 interface SwipeActionProps {
     progress: any;
     dragX: any;
@@ -65,7 +129,7 @@ const SwipeAction = ({ progress, dragX, onPress, iconName, color = "#FFFFFF" }: 
         <TouchableOpacity 
             onPress={onPress} 
             activeOpacity={0.7} 
-            style={styles.deleteSetAction}
+            style={styles.swipeAction}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
             <Animated.View style={[animatedStyle, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
@@ -76,16 +140,9 @@ const SwipeAction = ({ progress, dragX, onPress, iconName, color = "#FFFFFF" }: 
 };
 
 // SetRow Component
-const SetRow = ({ set, index, onDelete, onUpdate, onInputFocus, onShowStatistics, exerciseId }: any) => {
+const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onUpdate, onInputFocus, onShowStatistics, exerciseId }: any) => {
     const [showInsights, setShowInsights] = useState(false);
     const hasBadInsights = set.insights?.bad && Object.keys(set.insights.bad).length > 0;
-    
-    const formatRestTimeForInput = (seconds: number): string => {
-        if (!seconds) return '';
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
 
     const getInitialValues = () => ({
         weight: set.weight?.toString() || '',
@@ -98,6 +155,10 @@ const SetRow = ({ set, index, onDelete, onUpdate, onInputFocus, onShowStatistics
     const originalValuesRef = React.useRef(getInitialValues());
     const currentValuesRef = React.useRef(getInitialValues());
     const isUpdatingRef = React.useRef(false);
+
+    const isEditable = !isLocked;
+
+    const previousSetIdRef = React.useRef(set.id);
 
     React.useEffect(() => {
         if (isUpdatingRef.current) return;
@@ -136,48 +197,6 @@ const SetRow = ({ set, index, onDelete, onUpdate, onInputFocus, onShowStatistics
         }
     }, [set.id, set.weight, set.reps, set.reps_in_reserve, set.rest_time_before_set]);
 
-    const previousSetIdRef = React.useRef(set.id);
-
-    const parseRestTime = (input: string): number => {
-        if (!input) return 0;
-        if (input.includes(':')) {
-            const [min, sec] = input.split(':').map(Number);
-            return (min || 0) * 60 + (sec || 0);
-        }
-        // If just a number, treat as seconds
-        return parseInt(input) || 0;
-    };
-
-    const handleRestTimeChange = (value: string) => {
-        // Allow typing numbers and colon
-        const sanitized = value.replace(/[^0-9:]/g, '');
-        
-        // If user types just numbers (no colon), keep as is for now
-        // We'll convert on blur
-        setLocalValues(prev => ({ ...prev, restTime: sanitized }));
-        currentValuesRef.current.restTime = sanitized;
-    };
-
-    const handleRestTimeBlur = () => {
-        const currentValue = currentValuesRef.current.restTime;
-        if (!currentValue) {
-            handleBlur('restTime');
-            return;
-        }
-
-        // If it's just a number (no colon), convert to minutes:seconds format
-        if (!currentValue.includes(':')) {
-            const seconds = parseInt(currentValue) || 0;
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            const formatted = `${mins}:${secs.toString().padStart(2, '0')}`;
-            setLocalValues(prev => ({ ...prev, restTime: formatted }));
-            currentValuesRef.current.restTime = formatted;
-        }
-        
-        handleBlur('restTime');
-    };
-
     const handleBlur = (field: string) => {
         const currentValue = currentValuesRef.current[field as keyof typeof currentValuesRef.current];
         const original = originalValuesRef.current[field as keyof typeof originalValuesRef.current];
@@ -189,19 +208,19 @@ const SetRow = ({ set, index, onDelete, onUpdate, onInputFocus, onShowStatistics
         if (field === 'weight') {
             const numValue = currentValue ? parseFloat(currentValue) : null;
             const originalNum = original ? parseFloat(original) : null;
-            if (numValue !== originalNum && numValue !== null && !isNaN(numValue)) {
+            if (numValue !== originalNum && numValue !== null && !isNaN(numValue) && numValue >= 0 && numValue <= 500) {
                 updateData.weight = numValue;
             }
         } else if (field === 'reps') {
             const numValue = currentValue ? parseInt(currentValue) : null;
             const originalNum = original ? parseInt(original) : null;
-            if (numValue !== originalNum && numValue !== null && !isNaN(numValue)) {
+            if (numValue !== originalNum && numValue !== null && !isNaN(numValue) && numValue >= 1 && numValue <= 100) {
                 updateData.reps = numValue;
             }
         } else if (field === 'rir') {
             const numValue = currentValue ? parseInt(currentValue) : null;
             const originalNum = original ? parseInt(original) : null;
-            if (numValue !== originalNum && numValue !== null && !isNaN(numValue)) {
+            if (numValue !== originalNum && numValue !== null && !isNaN(numValue) && numValue >= 0 && numValue <= 100) {
                 updateData.reps_in_reserve = numValue;
             }
         } else if (field === 'restTime') {
@@ -233,14 +252,6 @@ const SetRow = ({ set, index, onDelete, onUpdate, onInputFocus, onShowStatistics
         }
     };
 
-    const formatRestTime = (seconds: number) => {
-        if (!seconds) return '-';
-        if (seconds < 60) return `${seconds}s`;
-        const m = Math.floor(seconds / 60);
-        const s = seconds % 60;
-        return `${m}m ${s > 0 ? s + 's' : ''}`;
-    };
-
     const renderRightActions = (progress: any, dragX: any) => (
         <SwipeAction
             progress={progress}
@@ -253,57 +264,79 @@ const SetRow = ({ set, index, onDelete, onUpdate, onInputFocus, onShowStatistics
     const renderLeftActions = (progress: any, dragX: any) => {
         if (set.insights && (set.insights.good || set.insights.bad)) {
             return (
-                <TouchableOpacity 
-                    onPress={() => setShowInsights(true)} 
-                    style={styles.insightsSetAction}
-                >
-                    <Ionicons name="bulb-outline" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
+                <SwipeAction
+                    progress={progress}
+                    dragX={dragX}
+                    onPress={() => setShowInsights(true)}
+                    iconName="bulb-outline"
+                />
             );
         }
         if (onShowStatistics && exerciseId) {
             return (
-                <TouchableOpacity 
-                    onPress={() => onShowStatistics(exerciseId)} 
-                    style={styles.analysisSetAction}
-                >
-                    <Ionicons name="stats-chart-outline" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
+                <SwipeAction
+                    progress={progress}
+                    dragX={dragX}
+                    onPress={() => onShowStatistics(exerciseId)}
+                    iconName="stats-chart-outline"
+                />
             );
         }
         return null;
     };
 
+    const formatWeight = (weight: number) => {
+        if (!weight && weight !== 0) return '-';
+        const w = Number(weight);
+        if (isNaN(w)) return '-';
+        if (Math.abs(w % 1) < 0.0000001) return Math.round(w).toString();
+        return parseFloat(w.toFixed(2)).toString();
+    };
+
     return (
-        <ReanimatedSwipeable
-            renderLeftActions={renderLeftActions}
-            renderRightActions={renderRightActions}
-            containerStyle={{ marginBottom: 0 }}
-            overshootLeft={false}
-            overshootRight={false}
-            friction={2}
-            leftThreshold={40}
-            rightThreshold={40}
-        >
-            <View style={[styles.setRow, hasBadInsights && styles.setRowWithBadInsights]}>
-                <View style={styles.setNumberContainer}>
-                    <Text style={styles.setNumberText}>{index + 1}</Text>
-                </View>
-                <View style={styles.setData}>
-                    <View style={styles.setInputContainer}>
+        <>
+            <ReanimatedSwipeable
+                ref={swipeRef}
+                onSwipeableWillOpen={onOpen}
+                onSwipeableWillClose={onClose}
+                renderLeftActions={isLocked ? undefined : renderLeftActions}
+                renderRightActions={isLocked ? undefined : renderRightActions}
+                containerStyle={{ marginBottom: 0 }}
+                enabled={!isLocked}
+                overshootLeft={false}
+                overshootRight={false}
+                friction={2}
+                leftThreshold={40}
+                rightThreshold={40}
+            >
+                <View style={[styles.setRow, hasBadInsights && styles.setRowWithBadInsights]}>
+                    <Text style={[styles.setText, {maxWidth: 30}, set.is_warmup && { color: '#FF9F0A', fontWeight: 'bold' }]}>
+                        {set.is_warmup ? 'W' : String(index + 1)}
+                    </Text>
+                    {isEditable ? (
                         <TextInput
                             style={styles.setInput}
                             value={localValues.restTime}
-                            onChangeText={handleRestTimeChange}
-                            onFocus={onInputFocus}
-                            onBlur={handleRestTimeBlur}
+                            onChangeText={(value) => {
+                                // Allow numbers and one decimal point
+                                const numericRegex = /^[0-9]*\.?[0-9]*$/;
+                                if (value === '' || numericRegex.test(value)) {
+                                    setLocalValues(prev => ({ ...prev, restTime: value }));
+                                    currentValuesRef.current.restTime = value;
+                                }
+                            }}
+                            onFocus={() => {
+                                if (onInputFocus) onInputFocus();
+                            }}
+                            onBlur={() => handleBlur('restTime')}
                             keyboardType="numbers-and-punctuation"
-                            placeholder="0:00"
+                            placeholder="Rest"
                             placeholderTextColor="#8E8E93"
                         />
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.setInputContainer}>
+                    ) : (
+                        <Text style={styles.setText}>{formatRestTimeForDisplay(set.rest_time_before_set) || '-'}</Text>
+                    )}
+                    {isEditable ? (
                         <TextInput
                             style={styles.setInput}
                             value={localValues.weight}
@@ -311,73 +344,76 @@ const SetRow = ({ set, index, onDelete, onUpdate, onInputFocus, onShowStatistics
                                 let sanitized = value.replace(/[:,]/g, '.');
                                 const numericRegex = /^[0-9]*\.?[0-9]*$/;
                                 if (sanitized === '' || numericRegex.test(sanitized)) {
-                                    setLocalValues(prev => ({ ...prev, weight: sanitized }));
-                                    currentValuesRef.current.weight = sanitized;
+                                    const num = sanitized === '' ? 0 : parseFloat(sanitized);
+                                    if (num <= 500) {
+                                        setLocalValues(prev => ({ ...prev, weight: sanitized }));
+                                        currentValuesRef.current.weight = sanitized;
+                                    }
                                 }
                             }}
-                            onFocus={onInputFocus}
+                            onFocus={() => {
+                                if (onInputFocus) onInputFocus();
+                            }}
                             onBlur={() => handleBlur('weight')}
                             keyboardType="numeric"
-                            placeholder="0"
+                            placeholder="kg"
                             placeholderTextColor="#8E8E93"
                         />
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.setInputContainer}>
+                    ) : (
+                        <Text style={styles.setText}>{formatWeight(set.weight)}</Text>
+                    )}
+                    {isEditable ? (
                         <TextInput
                             style={styles.setInput}
                             value={localValues.reps}
                             onChangeText={(value) => {
-                                // Only allow digits
-                                const sanitized = value.replace(/[^0-9]/g, '');
-                                // Limit to 1-100 - prevent typing numbers outside range
-                                if (sanitized === '') {
-                                    setLocalValues(prev => ({ ...prev, reps: '' }));
-                                    currentValuesRef.current.reps = '';
-                                } else {
-                                    const num = parseInt(sanitized);
-                                    if (num >= 1 && num <= 100) {
-                                        setLocalValues(prev => ({ ...prev, reps: sanitized }));
-                                        currentValuesRef.current.reps = sanitized;
+                                const numericRegex = /^[0-9]*$/;
+                                if (value === '' || numericRegex.test(value)) {
+                                    const num = value === '' ? 0 : parseInt(value);
+                                    if (num <= 100) {
+                                        setLocalValues(prev => ({ ...prev, reps: value }));
+                                        currentValuesRef.current.reps = value;
                                     }
                                 }
                             }}
-                            onFocus={onInputFocus}
+                            onFocus={() => {
+                                if (onInputFocus) onInputFocus();
+                            }}
                             onBlur={() => handleBlur('reps')}
                             keyboardType="numeric"
-                            placeholder="0"
+                            placeholder="reps"
                             placeholderTextColor="#8E8E93"
                         />
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.setInputContainer}>
+                    ) : (
+                        <Text style={styles.setText}>{String(set.reps)}</Text>
+                    )}
+                    {isEditable ? (
                         <TextInput
                             style={styles.setInput}
                             value={localValues.rir}
                             onChangeText={(value) => {
-                                // Only allow digits
-                                const sanitized = value.replace(/[^0-9]/g, '');
-                                // Limit to 25 - prevent typing numbers greater than 25
-                                if (sanitized === '') {
-                                    setLocalValues(prev => ({ ...prev, rir: '' }));
-                                    currentValuesRef.current.rir = '';
-                                } else {
-                                    const num = parseInt(sanitized);
-                                    if (num >= 0 && num <= 25) {
-                                        setLocalValues(prev => ({ ...prev, rir: sanitized }));
-                                        currentValuesRef.current.rir = sanitized;
+                                const numericRegex = /^[0-9]*$/;
+                                if (value === '' || numericRegex.test(value)) {
+                                    const num = value === '' ? 0 : parseInt(value);
+                                    if (num <= 100) {
+                                        setLocalValues(prev => ({ ...prev, rir: value }));
+                                        currentValuesRef.current.rir = value;
                                     }
                                 }
                             }}
-                            onFocus={onInputFocus}
+                            onFocus={() => {
+                                if (onInputFocus) onInputFocus();
+                            }}
                             onBlur={() => handleBlur('rir')}
                             keyboardType="numeric"
-                            placeholder="0"
+                            placeholder="RIR"
                             placeholderTextColor="#8E8E93"
                         />
-                    </View>
+                    ) : (
+                        <Text style={styles.setText}>{set.reps_in_reserve != null ? set.reps_in_reserve.toString() : '-'}</Text>
+                    )}
                 </View>
-            </View>
+            </ReanimatedSwipeable>
             
             <Modal
                 visible={showInsights}
@@ -430,8 +466,39 @@ const SetRow = ({ set, index, onDelete, onUpdate, onInputFocus, onShowStatistics
                                                             Optimal: {insight.optimal_range}
                                                         </Text>
                                                     )}
+                                                    {insight.current_tut && (
+                                                        <Text style={styles.insightDetail}>
+                                                            Current TUT: {insight.current_tut}s
+                                                        </Text>
+                                                    )}
+                                                    {insight.seconds_per_rep && (
+                                                        <Text style={styles.insightDetail}>
+                                                            {insight.seconds_per_rep}s per rep
+                                                        </Text>
+                                                    )}
+                                                    {insight.set_position && (
+                                                        <Text style={styles.insightDetail}>
+                                                            Set Position: {insight.set_position}
+                                                        </Text>
+                                                    )}
+                                                    {insight.total_sets && (
+                                                        <Text style={styles.insightDetail}>
+                                                            Total Sets: {insight.total_sets}
+                                                        </Text>
+                                                    )}
+                                                    {insight.optimal_sets && (
+                                                        <Text style={styles.insightDetail}>
+                                                            Optimal: {insight.optimal_sets}
+                                                        </Text>
+                                                    )}
                                                 </View>
                                             ))}
+                                        </View>
+                                    )}
+                                    
+                                    {(!set.insights || (Object.keys(set.insights.good || {}).length === 0 && Object.keys(set.insights.bad || {}).length === 0)) && (
+                                        <View style={styles.insightsSection}>
+                                            <Text style={styles.noInsightsText}>No insights available for this set.</Text>
                                         </View>
                                     )}
                                 </ScrollView>
@@ -440,26 +507,13 @@ const SetRow = ({ set, index, onDelete, onUpdate, onInputFocus, onShowStatistics
                     </View>
                 </TouchableWithoutFeedback>
             </Modal>
-        </ReanimatedSwipeable>
+        </>
     );
 };
 
-
-
-
-// AddSetRow Component for Active Workout
-const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, onFocus, workoutExerciseId }: any) => {
-    const [inputs, setInputs] = useState({ 
-        weight: '', 
-        reps: null as number | null, 
-        rir: null as number | null, 
-        restTime: '', 
-        isWarmup: false 
-    });
-    
-    // Get rest timer state
-    const { lastSetTimestamp, lastExerciseCategory } = useActiveWorkoutStore();
-    const { timerText } = useRestTimer(lastSetTimestamp, lastExerciseCategory);
+// AddSetRow Component with TUT tracking
+const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExerciseId, hasSets, onFocus }: any) => {
+    const [inputs, setInputs] = useState({ weight: '', reps: '', rir: '', restTime: '', isWarmup: false });
     const [isTrackingTUT, setIsTrackingTUT] = useState(false);
     const [tutStartTime, setTutStartTime] = useState<number | null>(null);
     const [currentTUT, setCurrentTUT] = useState(0);
@@ -473,35 +527,16 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, onFocus, workoutExerc
         return parseFloat(w.toFixed(2)).toString();
     };
 
-    const formatRestTimeForInput = (seconds: number): string => {
-        if (!seconds) return '';
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    const parseRestTime = (input: string): number => {
-        if (!input) return 0;
-        if (input.includes(':')) {
-            const [min, sec] = input.split(':').map(Number);
-            return (min || 0) * 60 + (sec || 0);
-        }
-        // If just a number, treat as seconds
-        return parseInt(input) || 0;
-    };
-
     useEffect(() => {
         if (lastSet) {
             setInputs(prev => ({
                 ...prev,
                 weight: prev.weight || (lastSet.weight != null ? formatWeightForInput(lastSet.weight) : ''),
-                reps: prev.reps !== null ? prev.reps : (lastSet.reps != null ? lastSet.reps : null),
-                // restTime is always from global timer, not from last set
+                reps: prev.reps || (lastSet.reps != null ? lastSet.reps.toString() : '')
             }));
         }
     }, [lastSet]);
 
-    // TUT Timer effect
     useEffect(() => {
         let interval: ReturnType<typeof setInterval> | null = null;
         if (isTrackingTUT && tutStartTime !== null) {
@@ -524,10 +559,8 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, onFocus, workoutExerc
         return `${secs}s`;
     };
 
-
     const handleStartSet = async () => {
         try {
-            // Pause the global rest timer when starting a set
             await stopRestTimer();
             setIsTrackingTUT(true);
             setTutStartTime(Date.now());
@@ -560,8 +593,8 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, onFocus, workoutExerc
         
         const setData = {
             weight: parseFloat(inputs.weight) || 0,
-            reps: inputs.reps !== null ? inputs.reps : 0,
-            reps_in_reserve: inputs.rir !== null ? inputs.rir : 0,
+            reps: inputs.reps ? parseInt(inputs.reps) : 0,
+            reps_in_reserve: inputs.rir ? parseInt(inputs.rir) : 0,
             is_warmup: inputs.isWarmup,
             rest_time_before_set: restTimeSeconds,
             total_tut: currentTUT > 0 ? currentTUT : undefined
@@ -575,10 +608,12 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, onFocus, workoutExerc
         
         onAdd(setData);
 
-        setInputs({ weight: inputs.weight, reps: null, rir: null, restTime: '', isWarmup: false });
+        setInputs({ weight: inputs.weight, reps: '', rir: '', restTime: '', isWarmup: false });
         setCurrentTUT(0);
         setHasStopped(false);
     };
+
+    if (isLocked) return null;
 
     const isInitial = !isTrackingTUT && !hasStopped;
     const isTracking = isTrackingTUT;
@@ -586,125 +621,98 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, onFocus, workoutExerc
 
     return (
         <>
-            <View style={styles.addSetRow}>
+            <View style={[styles.setRow, styles.addSetRowContainer]}>
                 <TouchableOpacity
                     onPress={() => !isTracking && setInputs(p => ({ ...p, isWarmup: !p.isWarmup }))}
                     disabled={isTracking}
-                    style={styles.setNumberContainer}
+                    style={{ width: 30, alignItems: 'center', paddingVertical: 10, opacity: isTracking ? 0.6 : 1 }}
                 >
-                    <Text style={[styles.setNumberText, { color: inputs.isWarmup ? '#FF9F0A' : theme.colors.text.secondary }]}>
+                    <Text style={[styles.setText, { color: inputs.isWarmup ? '#FF9F0A' : '#8E8E93', fontWeight: inputs.isWarmup ? 'bold' : 'normal' }]}>
                         {inputs.isWarmup ? 'W' : String(nextSetNumber)}
                     </Text>
                 </TouchableOpacity>
 
-                <View style={styles.setData}>
-                    <View style={styles.setInputContainer}>
-                        <TextInput
-                            style={[styles.setInput, isTracking && { opacity: 0.6 }]}
-                            value={inputs.restTime || timerText || ''}
-                            onChangeText={(value) => {
-                                if (isTracking) return;
-                                // Allow typing numbers and colon
-                                const sanitized = value.replace(/[^0-9:]/g, '');
-                                setInputs(p => ({ ...p, restTime: sanitized }));
-                            }}
-                            onBlur={() => {
-                                // If empty after blur, clear it so global timer shows
-                                if (!inputs.restTime) {
-                                    setInputs(p => ({ ...p, restTime: '' }));
+                <TextInput
+                    style={[styles.setInput, styles.addSetInput, isTracking && { opacity: 0.6 }]}
+                    value={inputs.restTime}
+                    onChangeText={(value) => {
+                        if (isTracking) return;
+                        const numericRegex = /^[0-9]*\.?[0-9]*$/;
+                        if (value === '' || numericRegex.test(value)) {
+                            setInputs(p => ({ ...p, restTime: value }));
+                        }
+                    }}
+                    keyboardType="numbers-and-punctuation"
+                    placeholder="Rest"
+                    placeholderTextColor="#8E8E93"
+                    onFocus={onFocus}
+                    editable={!isTracking}
+                />
+
+                <TextInput
+                    style={[styles.setInput, styles.addSetInput, isTracking && { opacity: 0.6 }]}
+                    value={inputs.weight}
+                    onChangeText={(t: string) => {
+                        if (isTracking) return;
+                        let sanitized = t.replace(/[:,]/g, '.');
+                        const numericRegex = /^[0-9]*\.?[0-9]*$/;
+                        if (sanitized === '' || numericRegex.test(sanitized)) {
+                            const num = sanitized === '' ? 0 : parseFloat(sanitized);
+                            if (num <= 500) {
+                                setInputs(p => ({ ...p, weight: sanitized }));
+                            }
+                        }
+                    }}
+                    keyboardType="numeric"
+                    placeholder={lastSet?.weight?.toString() || "kg"}
+                    placeholderTextColor="#8E8E93"
+                    onFocus={onFocus}
+                    editable={!isTracking}
+                />
+
+                {(isTracking || isStopped) && (
+                    <TextInput
+                        style={[styles.setInput, styles.addSetInput, isTracking && { opacity: 0.6 }]}
+                        value={inputs.reps}
+                        onChangeText={(value) => {
+                            if (isTracking) return;
+                            const numericRegex = /^[0-9]*$/;
+                            if (value === '' || numericRegex.test(value)) {
+                                const num = value === '' ? 0 : parseInt(value);
+                                if (num <= 100) {
+                                    setInputs(p => ({ ...p, reps: value }));
                                 }
-                                // Convert plain numbers to minutes:seconds format
-                                else if (inputs.restTime && !inputs.restTime.includes(':')) {
-                                    const seconds = parseInt(inputs.restTime) || 0;
-                                    const mins = Math.floor(seconds / 60);
-                                    const secs = seconds % 60;
-                                    const formatted = `${mins}:${secs.toString().padStart(2, '0')}`;
-                                    setInputs(p => ({ ...p, restTime: formatted }));
+                            }
+                        }}
+                        keyboardType="numeric"
+                        placeholder="reps"
+                        placeholderTextColor="#8E8E93"
+                        onFocus={onFocus}
+                        editable={isStopped}
+                    />
+                )}
+
+                {(isTracking || isStopped) && (
+                    <TextInput
+                        style={[styles.setInput, styles.addSetInput, isTracking && { opacity: 0.6 }]}
+                        value={inputs.rir}
+                        onChangeText={(value) => {
+                            if (isTracking) return;
+                            const numericRegex = /^[0-9]*$/;
+                            if (value === '' || numericRegex.test(value)) {
+                                const num = value === '' ? 0 : parseInt(value);
+                                if (num <= 100) {
+                                    setInputs(p => ({ ...p, rir: value }));
                                 }
-                            }}
-                            onFocus={onFocus}
-                            keyboardType="numbers-and-punctuation"
-                            placeholder={timerText || "0:00"}
-                            placeholderTextColor="#8E8E93"
-                            editable={!isTracking}
-                        />
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.setInputContainer}>
-                        <TextInput
-                            style={[styles.setInput, isTracking && { opacity: 0.6 }]}
-                            value={inputs.weight}
-                            onChangeText={(t: string) => {
-                                if (isTracking) return;
-                                let sanitized = t.replace(/[:,]/g, '.');
-                                const numericRegex = /^[0-9]*\.?[0-9]*$/;
-                                
-                                if (sanitized === '' || numericRegex.test(sanitized)) {
-                                    setInputs(p => ({ ...p, weight: sanitized }));
-                                } else {
-                                    setInputs(p => ({ ...p, weight: '' }));
-                                }
-                            }}
-                            keyboardType="numeric"
-                            placeholder={lastSet?.weight?.toString() || "kg"}
-                            placeholderTextColor="#8E8E93"
-                            onFocus={onFocus}
-                            editable={!isTracking}
-                        />
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.setInputContainer}>
-                        <TextInput
-                            style={[styles.setInput, (isTracking || !isStopped) && { opacity: 0.6 }]}
-                            value={inputs.reps !== null ? inputs.reps.toString() : ''}
-                            onChangeText={(value) => {
-                                if (isTracking || !isStopped) return;
-                                // Only allow digits
-                                const sanitized = value.replace(/[^0-9]/g, '');
-                                // Limit to 1-100 - prevent typing numbers outside range
-                                if (sanitized === '') {
-                                    setInputs(p => ({ ...p, reps: null }));
-                                } else {
-                                    const num = parseInt(sanitized);
-                                    if (num >= 1 && num <= 100) {
-                                        setInputs(p => ({ ...p, reps: num }));
-                                    }
-                                }
-                            }}
-                            onFocus={onFocus}
-                            keyboardType="numeric"
-                            placeholder="0"
-                            placeholderTextColor="#8E8E93"
-                            editable={isStopped}
-                        />
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.setInputContainer}>
-                        <TextInput
-                            style={[styles.setInput, (isTracking || !isStopped) && { opacity: 0.6 }]}
-                            value={inputs.rir !== null ? inputs.rir.toString() : ''}
-                            onChangeText={(value) => {
-                                if (isTracking || !isStopped) return;
-                                // Only allow digits
-                                const sanitized = value.replace(/[^0-9]/g, '');
-                                // Limit to 25 - prevent typing numbers greater than 25
-                                if (sanitized === '') {
-                                    setInputs(p => ({ ...p, rir: null }));
-                                } else {
-                                    const num = parseInt(sanitized);
-                                    if (num >= 0 && num <= 25) {
-                                        setInputs(p => ({ ...p, rir: num }));
-                                    }
-                                }
-                            }}
-                            onFocus={onFocus}
-                            keyboardType="numeric"
-                            placeholder="0"
-                            placeholderTextColor="#8E8E93"
-                            editable={isStopped}
-                        />
-                    </View>
-                </View>
+                            }
+                        }}
+                        keyboardType="numeric"
+                        placeholder="RIR"
+                        placeholderTextColor="#8E8E93"
+                        onFocus={onFocus}
+                        editable={isStopped}
+                    />
+                )}
             </View>
 
             {(isTracking || isStopped) && (
@@ -739,6 +747,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, onFocus, workoutExerc
                 <TouchableOpacity
                     style={[
                         styles.addSetButton,
+                        !inputs.weight && { opacity: 0.5 },
                         isInitial && styles.startSetButton,
                         isTracking && styles.stopSetButton,
                         isStopped && styles.addSetButton
@@ -750,9 +759,11 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, onFocus, workoutExerc
                             handleStartSet();
                         } else if (isStopped) {
                             handleAdd();
+                        } else {
+                            handleAdd();
                         }
                     }}
-                    disabled={!inputs.weight || (isStopped && inputs.reps === null)}
+                    disabled={!inputs.weight || (isStopped && !inputs.reps)}
                     activeOpacity={0.8}
                 >
                     <Text style={[
@@ -774,7 +785,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, onFocus, workoutExerc
 };
 
 // Main Component
-export const ActiveWorkoutExerciseCard = ({ workoutExercise, onRemove, onAddSet, onDeleteSet, swipeControl, onInputFocus, onShowInfo, onShowStatistics, onUpdateSet }: any) => {
+export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleLock, onRemove, onAddSet, onDeleteSet, swipeControl, onInputFocus, onShowInfo, onShowStatistics, drag }: any) => {
     const exercise = workoutExercise.exercise || (workoutExercise.name ? workoutExercise : null);
     if (!exercise) return null;
 
@@ -794,21 +805,38 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, onRemove, onAddSet,
 
         try {
             const result = await updateSet(setId, data);
+            
             if (result && typeof result === 'object' && result.error) {
-                Alert.alert('Update Failed', result.message || 'An error occurred while updating the set');
+                if (result.validationErrors) {
+                    const errorMessage = formatValidationErrors(result.validationErrors);
+                    Alert.alert('Validation Error', errorMessage);
+                } else if (result.message) {
+                    Alert.alert('Update Failed', result.message);
+                } else {
+                    Alert.alert('Update Failed', 'An error occurred while updating the set');
+                }
                 return;
             }
             
             if (result && typeof result === 'object' && !result.error) {
-                if (onUpdateSet) {
-                    onUpdateSet(setId, result);
-                }
+                // Update successful
+            } else if (result && typeof result === 'string') {
+                Alert.alert('Update Failed', result);
             }
         } catch (error) {
             console.error('Failed to update set - exception:', error);
             Alert.alert('Update Error', 'Failed to update set. Please try again.');
         }
     };
+
+    const renderLeftActions = (progress: any, dragX: any) => (
+        <SwipeAction
+            progress={progress}
+            dragX={dragX}
+            onPress={() => onToggleLock(idToLock)}
+            iconName={isLocked ? "lock-open-outline" : "lock-closed"}
+        />
+    );
 
     const renderRightActions = (progress: any, dragX: any) => (
         <SwipeAction
@@ -819,22 +847,15 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, onRemove, onAddSet,
         />
     );
 
-    const formatWeight = (weight: number) => {
-        if (!weight && weight !== 0) return '0';
-        const w = Number(weight);
-        if (isNaN(w)) return '0';
-        if (Math.abs(w % 1) < 0.0000001) return Math.round(w).toString();
-        return parseFloat(w.toFixed(2)).toString();
-    };
-
     return (
         <ReanimatedSwipeable
             ref={((ref: any) => swipeControl.register(exerciseKey, ref)) as any}
             onSwipeableWillOpen={() => swipeControl.onOpen(exerciseKey)}
             onSwipeableWillClose={() => swipeControl.onClose(exerciseKey)}
+            renderLeftActions={renderLeftActions}
             renderRightActions={onRemove ? renderRightActions : undefined}
             enabled={true}
-            containerStyle={{ marginBottom: theme.spacing.m }}
+            containerStyle={{ marginBottom: 12 }}
             overshootLeft={false}
             overshootRight={false}
             friction={2}
@@ -843,67 +864,221 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, onRemove, onAddSet,
         >
             <View style={styles.card}>
                 <View style={styles.header}>
-                    <Text style={styles.exerciseName}>
-                        {(exercise?.name || '').toUpperCase()}
-                    </Text>
-                    {sets.length > 0 && (
-                        <View style={styles.setsBadge}>
-                            <Text style={styles.setsBadgeText}>{sets.length} SETS</Text>
+                    <TouchableOpacity
+                        onLongPress={drag}
+                        delayLongPress={Platform.OS === 'android' ? 300 : 200}
+                        activeOpacity={0.7}
+                        style={{ flex: 1 }}
+                    >
+                        <View style={styles.exerciseInfo}>
+                            <View style={styles.exerciseNameRow}>
+                                <Text style={styles.exerciseName}>
+                                    {(exercise.name || '').toUpperCase()}
+                                    {isLocked && (
+                                        <>
+                                            {' '}
+                                            <Ionicons name="lock-closed" size={14} color="#8E8E93" />
+                                        </>
+                                    )}
+                                </Text>
+                                <TouchableOpacity 
+                                    onPress={() => setShowMenu(true)}
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                    style={styles.exerciseMenuButton}
+                                >
+                                    <Ionicons name="ellipsis-horizontal" size={20} color="#8E8E93" />
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.exerciseInfoRow}>
+                                <View style={styles.exerciseMusclesContainer}>
+                                    {exercise.primary_muscle && typeof exercise.primary_muscle === 'string' && (
+                                        <View style={[styles.exerciseTag, styles.primaryMuscleTag]}>
+                                            <Text style={styles.exerciseTagText}>{exercise.primary_muscle}</Text>
+                                        </View>
+                                    )}
+                                    {exercise.secondary_muscles && (
+                                        Array.isArray(exercise.secondary_muscles) 
+                                            ? exercise.secondary_muscles.map((muscle: string, idx: number) => (
+                                                <View key={idx} style={styles.exerciseTag}>
+                                                    <Text style={styles.secondaryMuscleTagText}>{muscle}</Text>
+                                                </View>
+                                              ))
+                                            : typeof exercise.secondary_muscles === 'string' ? (
+                                                <View style={styles.exerciseTag}>
+                                                    <Text style={styles.secondaryMuscleTagText}>{exercise.secondary_muscles}</Text>
+                                                </View>
+                                              ) : null
+                                    )}
+                                </View>
+                                {exercise.equipment_type && typeof exercise.equipment_type === 'string' && (
+                                    <View style={styles.exerciseTag}>
+                                        <Text style={styles.exerciseTagText}>{exercise.equipment_type}</Text>
+                                    </View>
+                                )}
+                            </View>
                         </View>
-                    )}
+                    </TouchableOpacity>
                 </View>
 
-                <View style={styles.setsHeader}>
-                    <View style={styles.setNumberContainer}>
-                        <Text style={styles.setHeaderText}>SET</Text>
-                    </View>
-                    <View style={styles.setData}>
-                        <View style={styles.setInputContainer}>
+                {(sets.length > 0 || !isLocked) && (
+                    <View style={styles.setsContainer}>
+                        <View style={styles.setsHeader}>
+                            <Text style={[styles.setHeaderText, {maxWidth: 30}]}>SET</Text>
                             <Text style={styles.setHeaderText}>REST</Text>
-                        </View>
-                        <View style={styles.divider} />
-                        <View style={styles.setInputContainer}>
-                            <Text style={styles.setHeaderText}>KG</Text>
-                        </View>
-                        <View style={styles.divider} />
-                        <View style={styles.setInputContainer}>
+                            <Text style={styles.setHeaderText}>WEIGHT</Text>
                             <Text style={styles.setHeaderText}>REPS</Text>
-                        </View>
-                        <View style={styles.divider} />
-                        <View style={styles.setInputContainer}>
                             <Text style={styles.setHeaderText}>RIR</Text>
                         </View>
+                        
+                        {sets.map((set: any, index: number) => {
+                            const setKey = `set-${set.id || index}`;
+                            return (
+                                <SetRow
+                                    key={set.id || index}
+                                    set={set}
+                                    index={index}
+                                    onDelete={onDeleteSet}
+                                    isLocked={isLocked}
+                                    onUpdate={handleUpdateSet}
+                                    swipeRef={(ref: any) => swipeControl.register(setKey, ref)}
+                                    onOpen={() => swipeControl.onOpen(setKey)}
+                                    onClose={() => swipeControl.onClose(setKey)}
+                                    onInputFocus={() => {
+                                        swipeControl.closeAll();
+                                        onInputFocus?.();
+                                    }}
+                                    onShowStatistics={onShowStatistics}
+                                    exerciseId={exercise.id}
+                                />
+                            );
+                        })}
+
+                        <AddSetRow 
+                            lastSet={lastSet}
+                            nextSetNumber={nextSetNumber}
+                            index={sets.length}
+                            onAdd={(data: any) => onAddSet(idToLock, data)}
+                            isLocked={isLocked}
+                            workoutExerciseId={idToLock}
+                            hasSets={sets.length > 0}
+                            onFocus={() => {
+                                swipeControl.closeAll();
+                                onInputFocus?.();
+                            }}
+                        />
                     </View>
-                </View>
-
-                {sets.map((set: any, index: number) => (
-                    <SetRow
-                        key={set.id || index}
-                        set={set}
-                        index={index}
-                        onDelete={onDeleteSet}
-                        onUpdate={handleUpdateSet}
-                        onInputFocus={() => {
-                            swipeControl.closeAll();
-                            onInputFocus?.();
-                        }}
-                        onShowStatistics={onShowStatistics}
-                        exerciseId={exercise.id}
-                    />
-                ))}
-
-                <AddSetRow 
-                    lastSet={lastSet}
-                    nextSetNumber={nextSetNumber}
-                    index={sets.length}
-                    onAdd={(data: any) => onAddSet(idToLock, data)}
-                    onFocus={() => {
-                        swipeControl.closeAll();
-                        onInputFocus?.();
-                    }}
-                    workoutExerciseId={idToLock}
-                />
+                )}
             </View>
+            
+            <Modal
+                visible={showMenu}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowMenu(false)}
+            >
+                <TouchableWithoutFeedback onPress={() => setShowMenu(false)}>
+                    <View style={styles.menuModalOverlay}>
+                        <View style={styles.menuModalContent}>
+                            <TouchableOpacity
+                                style={styles.menuItem}
+                                onPress={() => {
+                                    setShowMenu(false);
+                                    onShowInfo?.(exercise);
+                                }}
+                            >
+                                <Ionicons name="information-circle-outline" size={22} color="#FFFFFF" style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
+                                <Text style={styles.menuItemText}>Info</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity
+                                style={styles.menuItem}
+                                onPress={() => {
+                                    setShowMenu(false);
+                                    onShowStatistics?.(exercise.id);
+                                }}
+                            >
+                                <Ionicons name="stats-chart-outline" size={22} color="#FFFFFF" style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
+                                <Text style={styles.menuItemText}>Statistics</Text>
+                            </TouchableOpacity>
+                            
+                            {onToggleLock && (
+                                <TouchableOpacity
+                                    style={styles.menuItem}
+                                    onPress={() => {
+                                        setShowMenu(false);
+                                        onToggleLock(idToLock);
+                                    }}
+                                >
+                                    <Ionicons 
+                                        name={isLocked ? "lock-open-outline" : "lock-closed-outline"} 
+                                        size={22} 
+                                        color={isLocked ? "#FF9F0A" : "#FFFFFF"}
+                                        style={Platform.OS === 'web' ? { marginRight: 12 } : {}}
+                                    />
+                                    <Text style={styles.menuItemText}>
+                                        {isLocked ? "Unlock" : "Lock"}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                            
+                            {sets.length > 0 && onDeleteSet && (
+                                <TouchableOpacity
+                                    style={[styles.menuItem, styles.menuItemDelete]}
+                                    onPress={() => {
+                                        setShowMenu(false);
+                                        Alert.alert(
+                                            "Delete All Sets",
+                                            `Are you sure you want to delete all ${sets.length} set${sets.length > 1 ? 's' : ''}?`,
+                                            [
+                                                { text: "Cancel", style: "cancel" },
+                                                {
+                                                    text: "Delete All",
+                                                    style: "destructive",
+                                                    onPress: async () => {
+                                                        for (const set of sets) {
+                                                            if (set.id) {
+                                                                await onDeleteSet(set.id);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        );
+                                    }}
+                                >
+                                    <Ionicons name="trash-outline" size={22} color="#FF3B30" style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
+                                    <Text style={[styles.menuItemText, styles.menuItemTextDelete]}>Delete All Sets</Text>
+                                </TouchableOpacity>
+                            )}
+                            
+                            {onRemove && (
+                                <TouchableOpacity
+                                    style={[styles.menuItem, styles.menuItemDelete]}
+                                    onPress={() => {
+                                        setShowMenu(false);
+                                        Alert.alert(
+                                            "Delete Exercise",
+                                            "Are you sure you want to remove this exercise?",
+                                            [
+                                                { text: "Cancel", style: "cancel" },
+                                                {
+                                                    text: "Delete",
+                                                    style: "destructive",
+                                                    onPress: () => onRemove(idToLock)
+                                                }
+                                            ]
+                                        );
+                                    }}
+                                >
+                                    <Ionicons name="trash-outline" size={22} color="#FF3B30" style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
+                                    <Text style={[styles.menuItemText, styles.menuItemTextDelete]}>Delete Exercise</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
         </ReanimatedSwipeable>
     );
 };
@@ -923,6 +1098,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: theme.spacing.m,
     },
+    exerciseInfo: { 
+        flex: 1 
+    },
+    exerciseNameRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
     exerciseName: {
         fontSize: theme.typography.sizes.xl,
         fontWeight: '900',
@@ -931,208 +1115,129 @@ const styles = StyleSheet.create({
         color: theme.colors.text.primary,
         flex: 1,
     },
-    setsBadge: {
-        backgroundColor: theme.colors.ui.glassStrong,
-        borderWidth: 1,
-        borderColor: theme.colors.status.rest,
-        borderRadius: theme.borderRadius.m,
-        paddingHorizontal: theme.spacing.m,
-        paddingVertical: theme.spacing.xs,
+    exerciseMenuButton: {
+        padding: 8,
+        marginLeft: 8,
     },
-    setsBadgeText: {
-        fontSize: theme.typography.sizes.xs,
-        fontWeight: '700',
-        color: theme.colors.text.primary,
+    exerciseInfoRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    exerciseMusclesContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        flex: 1,
+        ...Platform.select({
+            web: {},
+            default: { gap: 8 },
+        }),
+    },
+    exerciseTag: {
+        backgroundColor: '#2C2C2E',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#3A3A3C',
+        ...Platform.select({
+            web: { marginRight: 6, marginBottom: 6 },
+            default: {},
+        }),
+    },
+    primaryMuscleTag: {
+        backgroundColor: '#3A3A3C',
+        borderColor: '#48484A',
+    },
+    exerciseTagText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        fontWeight: '500',
+        letterSpacing: 0.2,
+    },
+    secondaryMuscleTagText: {
+        color: '#8E8E93',
+        fontSize: 11,
+        fontWeight: '400',
+        letterSpacing: 0.1,
+    },
+    setsContainer: {
+        marginTop: 12,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: theme.colors.ui.border,
+    },
+    setsHeader: {
+        flexDirection: 'row',
+        marginBottom: 6,
+        paddingLeft: 4,
+    },
+    setHeaderText: {
+        flex: 1,
+        color: theme.colors.text.secondary,
+        fontSize: 11,
+        fontWeight: '600',
+        textAlign: 'center',
+        letterSpacing: 0.3,
         textTransform: 'uppercase',
-        letterSpacing: theme.typography.tracking.tight,
     },
     setRow: {
         flexDirection: 'row',
+        paddingBottom: 8,
+        paddingTop: 8,
+        paddingHorizontal: 4,
         alignItems: 'center',
-        marginBottom: theme.spacing.m,
-        paddingVertical: theme.spacing.xs,
-    },
-    setNumberContainer: {
-        width: 30,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    setNumberText: {
-        fontSize: theme.typography.sizes.s,
-        fontWeight: '600',
-        color: theme.colors.text.secondary,
-    },
-    setData: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.s,
-    },
-    setWeight: {
-        fontSize: theme.typography.sizes.l,
-        fontWeight: '800',
-        color: theme.colors.status.rest,
-    },
-    setReps: {
-        fontSize: theme.typography.sizes.l,
-        fontWeight: '800',
-        color: theme.colors.text.primary,
-    },
-    setUnit: {
-        fontSize: theme.typography.sizes.s,
-        fontWeight: '600',
-        color: theme.colors.text.secondary,
-    },
-    divider: {
-        width: 1,
-        height: 20,
-        backgroundColor: theme.colors.ui.border,
+        borderRadius: 8,
+        backgroundColor: 'transparent',
     },
     setRowWithBadInsights: {
         borderWidth: 2,
         borderColor: '#FF453A',
         backgroundColor: 'rgba(255, 69, 58, 0.08)',
-        borderRadius: theme.borderRadius.m,
-        padding: theme.spacing.s,
+        borderStyle: 'solid',
     },
-    addSetRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.s,
-        marginTop: theme.spacing.m,
-        paddingTop: theme.spacing.m,
-        paddingVertical: theme.spacing.xs,
-        borderTopWidth: 1,
-        borderTopColor: theme.colors.ui.border,
-    },
-    setInputContainer: {
+    setText: {
         flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 4,
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '500',
+        textAlign: 'center',
+        fontVariant: ['tabular-nums'],
+        lineHeight: 20,
     },
     setInput: {
-        fontSize: theme.typography.sizes.l,
-        fontWeight: '800',
-        color: theme.colors.text.primary,
-        textAlign: 'center',
-        padding: 0,
-        minWidth: 40,
-    },
-    setValueText: {
-        fontSize: theme.typography.sizes.l,
-        fontWeight: '800',
-        color: theme.colors.text.primary,
-        textAlign: 'center',
-    },
-    setsHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: theme.spacing.m,
-        marginBottom: theme.spacing.s,
-        paddingHorizontal: 4,
-        paddingVertical: theme.spacing.xs,
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.ui.border,
-    },
-    setHeaderText: {
-        fontSize: theme.typography.sizes.xs,
-        fontWeight: '600',
-        color: theme.colors.text.secondary,
-        textAlign: 'center',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    pickerInput: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingVertical: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.ui.border,
-        minHeight: 40,
-    },
-    pickerText: {
-        color: theme.colors.text.primary,
-        fontSize: theme.typography.sizes.l,
-        fontWeight: '800',
-    },
-    tutTimerContainer: {
-        backgroundColor: theme.colors.ui.glassStrong,
-        borderRadius: theme.borderRadius.m,
-        paddingVertical: theme.spacing.m,
-        paddingHorizontal: theme.spacing.m,
-        marginTop: theme.spacing.m,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: theme.colors.ui.border,
-    },
-    tutTimerLabel: {
-        color: theme.colors.text.secondary,
-        fontSize: theme.typography.sizes.xs,
-        fontWeight: '600',
-        textTransform: 'uppercase',
-        marginBottom: theme.spacing.xs,
-    },
-    tutInputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    tutInput: {
-        color: theme.colors.status.active,
-        fontSize: theme.typography.sizes.xl,
-        fontWeight: '700',
         textAlign: 'center',
-        minWidth: 60,
-        paddingVertical: 4,
-        paddingHorizontal: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.ui.border,
-    },
-    tutDisplayText: {
-        color: theme.colors.status.active,
-        fontSize: theme.typography.sizes.xxl,
-        fontWeight: '700',
-        textAlign: 'center',
-    },
-    tutInputSuffix: {
-        color: theme.colors.text.secondary,
-        fontSize: theme.typography.sizes.m,
-        fontWeight: '400',
-        marginLeft: 4,
-    },
-    addSetButton: {
-        marginTop: theme.spacing.m,
+        textAlignVertical: 'center',
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontVariant: ['tabular-nums'],
         backgroundColor: 'transparent',
+        borderBottomWidth: 1,
+        borderBottomColor: '#3A3A3C',
+        paddingVertical: 6,
+        paddingBottom: 6,
+        marginHorizontal: 6,
+        minHeight: 40,
+        lineHeight: 18,
+    },
+    addSetRowContainer: {
+        backgroundColor: '#1E1E20',
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        marginTop: 8,
         borderWidth: 1.5,
-        borderColor: theme.colors.ui.border,
-        borderRadius: theme.borderRadius.m,
-        paddingVertical: theme.spacing.s,
-        alignItems: 'center',
-        justifyContent: 'center',
+        borderColor: '#3A3A3C',
+        borderStyle: 'dashed',
     },
-    startSetButton: {
-        borderColor: theme.colors.status.active,
+    addSetInput: {
+        backgroundColor: '#252528',
+        borderBottomWidth: 1.5,
+        borderBottomColor: '#48484A',
+        borderRadius: 6,
     },
-    stopSetButton: {
-        borderColor: theme.colors.status.error,
-    },
-    addSetButtonText: {
-        color: theme.colors.text.primary,
-        fontSize: theme.typography.sizes.m,
-        fontWeight: '600',
-    },
-    stopSetButtonText: {
-        color: theme.colors.status.error,
-        fontWeight: '700',
-    },
-    startSetButtonText: {
-        color: theme.colors.status.active,
-        fontWeight: '700',
-    },
-    deleteSetAction: {
+    swipeAction: {
         backgroundColor: '#FF3B30',
         justifyContent: 'center',
         alignItems: 'center',
@@ -1140,107 +1245,146 @@ const styles = StyleSheet.create({
         height: '100%',
         borderRadius: 0,
     },
-    insightsSetAction: {
-        backgroundColor: '#FF9F0A',
-        justifyContent: 'center',
+    addSetButton: {
+        marginTop: 12,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderColor: '#48484A',
+        borderRadius: 10,
+        paddingVertical: 10,
         alignItems: 'center',
-        width: 60,
-        height: '100%',
-        borderRadius: 0,
-    },
-    analysisSetAction: {
-        backgroundColor: '#48484A',
         justifyContent: 'center',
-        alignItems: 'center',
-        width: 60,
-        height: '100%',
-        borderRadius: 0,
-    },
-    pickerModalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 24,
-    },
-    pickerModalContent: {
-        backgroundColor: '#1C1C1E',
-        borderRadius: 22,
-        padding: 24,
-        width: '100%',
-        maxWidth: 400,
-        maxHeight: '80%',
-        borderWidth: 1,
-        borderColor: '#2C2C2E',
-    },
-    pickerHeader: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 24,
+        overflow: 'hidden',
+        position: 'relative',
     },
-    pickerTitle: {
+    startSetButton: {
+        borderColor: '#48484A',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 2,
+        borderWidth: 0,
+    },
+    stopSetButton: {
+        borderColor: '#48484A',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 2,
+        borderWidth: 0,
+    },
+    addSetButtonText: {
         color: '#FFFFFF',
-        fontSize: 24,
+        fontSize: 17,
+        fontWeight: '600',
+        letterSpacing: 0.2,
+    },
+    stopSetButtonText: {
+        color: '#FFFFFF',
         fontWeight: '700',
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
     },
-    pickerScrollView: {
-        maxHeight: 300,
+    startSetButtonText: {
+        color: '#FFFFFF',
+        fontWeight: '700',
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
     },
-    pickerOption: {
-        paddingVertical: 16,
-        paddingHorizontal: 24,
+    tutTimerContainer: {
+        backgroundColor: '#1E1E20',
+        borderRadius: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        marginTop: 12,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#2A2A2E',
+    },
+    tutTimerLabel: {
+        color: '#8E8E93',
+        fontSize: 12,
+        fontWeight: '600',
+        letterSpacing: 0.3,
+        textTransform: 'uppercase',
+        marginBottom: 6,
+    },
+    tutInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    tutInput: {
+        color: '#0A84FF',
+        fontSize: 22,
+        fontWeight: '700',
+        fontVariant: ['tabular-nums'],
+        textAlign: 'center',
+        minWidth: 60,
+        paddingVertical: 4,
+        paddingHorizontal: 8,
         borderBottomWidth: 1,
         borderBottomColor: '#2C2C2E',
     },
-    pickerOptionSelected: {
-        backgroundColor: 'rgba(10, 132, 255, 0.1)',
-    },
-    pickerOptionText: {
-        color: '#FFFFFF',
-        fontSize: 17,
-        fontWeight: '400',
-    },
-    pickerOptionTextSelected: {
+    tutDisplayText: {
         color: '#0A84FF',
-        fontWeight: '500',
-    },
-    restTimePickerContainer: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        marginBottom: 24,
-    },
-    restTimePickerColumn: {
-        flex: 1,
-    },
-    restTimePickerLabel: {
-        color: '#8E8E93',
-        fontSize: 13,
-        fontWeight: '300',
-        textAlign: 'center',
-        marginBottom: 16,
-    },
-    restTimePickerSeparator: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingTop: 40,
-    },
-    restTimePickerSeparatorText: {
-        color: '#FFFFFF',
         fontSize: 24,
         fontWeight: '700',
+        fontVariant: ['tabular-nums'],
+        textAlign: 'center',
     },
-    pickerConfirmButton: {
-        backgroundColor: '#0A84FF',
-        borderRadius: 22,
-        paddingVertical: 16,
+    tutInputSuffix: {
+        color: '#8E8E93',
+        fontSize: 18,
+        fontWeight: '400',
+        marginLeft: 4,
+    },
+    menuModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
         alignItems: 'center',
     },
-    pickerConfirmButtonText: {
+    menuModalContent: {
+        backgroundColor: '#1A1A1C',
+        borderRadius: 24,
+        padding: 8,
+        minWidth: 220,
+        borderWidth: 1,
+        borderColor: '#2A2A2E',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 32,
+        elevation: 8,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        marginHorizontal: 4,
+        marginVertical: 2,
+    },
+    menuItemDelete: {
+        borderTopWidth: 1,
+        borderTopColor: '#2C2C2E',
+        marginTop: 8,
+    },
+    menuItemText: {
         color: '#FFFFFF',
         fontSize: 17,
-        fontWeight: '400',
+        fontWeight: '500',
+        letterSpacing: -0.2,
+    },
+    menuItemTextDelete: {
+        color: '#FF3B30',
     },
     insightsModalOverlay: {
         flex: 1,
@@ -1255,6 +1399,11 @@ const styles = StyleSheet.create({
         maxHeight: '80%',
         borderWidth: 1.5,
         borderColor: '#2A2A2E',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 32,
+        elevation: 12,
     },
     insightsModalHeader: {
         flexDirection: 'row',
@@ -1305,6 +1454,12 @@ const styles = StyleSheet.create({
         color: '#8E8E93',
         fontSize: 13,
         marginTop: 4,
+    },
+    noInsightsText: {
+        color: '#8E8E93',
+        fontSize: 15,
+        textAlign: 'center',
+        fontStyle: 'italic',
     },
 });
 

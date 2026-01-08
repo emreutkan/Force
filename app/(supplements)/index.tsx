@@ -1,4 +1,5 @@
 import { addUserSupplement, deleteSupplementLog, getSupplementLogs, getSupplements, getTodayLogs, getUserSupplements, logUserSupplement, Supplement, SupplementLog, UserSupplement } from '@/api/Supplements';
+import { theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -88,7 +89,11 @@ export default function SupplementsScreen() {
             
             const logMap = new Map<number, boolean>();
             if (todayData?.logs) {
-                todayData.logs.forEach(log => logMap.set(log.id, true));
+                todayData.logs.forEach(log => {
+                    if (log.user_supplement_id) {
+                        logMap.set(log.user_supplement_id, true);
+                    }
+                });
             }
             setTodayLogsMap(logMap);
         } catch (e) { console.error(e); }
@@ -151,24 +156,46 @@ export default function SupplementsScreen() {
         loadData();
     };
 
+    // --- Helper Functions ---
+    
+    const getSupplementBenefit = (name: string): string => {
+        const nameUpper = name.toUpperCase();
+        if (nameUpper.includes('CREATINE')) return 'PERFORMANCE';
+        if (nameUpper.includes('WHEY') || nameUpper.includes('PROTEIN')) return 'PROTEIN';
+        if (nameUpper.includes('VITAMIN')) return 'NUTRITION';
+        if (nameUpper.includes('OMEGA') || nameUpper.includes('FISH')) return 'HEALTH';
+        return 'WELLNESS';
+    };
+
+    const getLoggedCount = (): number => {
+        let count = 0;
+        todayLogsMap.forEach((logged) => {
+            if (logged) count++;
+        });
+        return count;
+    };
+
     // --- Render Items ---
 
     const renderItem = ({ item }: { item: UserSupplement }) => {
         const isLogged = todayLogsMap.get(item.id);
+        const benefit = getSupplementBenefit(item.supplement_details.name);
 
         return (
             <TouchableOpacity 
-                style={styles.rowItem} 
+                style={styles.supplementCard} 
                 activeOpacity={0.7}
                 onPress={() => openHistory(item)}
             >
-                <View style={styles.rowLeft}>
-                    <Text style={styles.rowTitle}>{item.supplement_details.name}</Text>
-                    <Text style={styles.rowSubtitle}>
-                        {item.dosage} {item.supplement_details.dosage_unit} • {item.frequency}
+                <View style={styles.supplementIcon}>
+                    <Ionicons name="medical-outline" size={24} color={theme.colors.text.secondary} />
+                </View>
+                <View style={styles.supplementInfo}>
+                    <Text style={styles.supplementName}>{item.supplement_details.name.toUpperCase()}</Text>
+                    <Text style={styles.supplementDetails}>
+                        {item.dosage}{item.supplement_details.dosage_unit.toUpperCase()} • {benefit}
                     </Text>
                 </View>
-
                 <TouchableOpacity 
                     style={[styles.logButton, isLogged && styles.logButtonDone]}
                     onPress={() => !isLogged && handleLog(item)}
@@ -183,21 +210,59 @@ export default function SupplementsScreen() {
         );
     };
 
+    const loggedCount = getLoggedCount();
+    const totalCount = userSupplements.length;
+
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <Stack.Screen options={{ headerShown: false }} />
 
-            <FlatList
-                data={userSupplements}
-                renderItem={renderItem}
-                keyExtractor={item => item.id.toString()}
-                contentContainerStyle={[styles.listContent, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
-                ListHeaderComponent={
-                    userSupplements.length > 0 ? (
-                        <Text style={styles.sectionHeader}>YOUR SUPPLEMENTS</Text>
-                    ) : null
-                }
-                ListEmptyComponent={
+            <ScrollView 
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Header */}
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <Text style={styles.mainTitle}>SUPPLEMENT STACK</Text>
+                    </View>
+                    <TouchableOpacity 
+                        style={styles.addButton}
+                        onPress={() => setModals(m => ({ ...m, add: true }))}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="add" size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Today's Progress Card */}
+                <View style={styles.progressCard}>
+                    <View style={styles.progressLeft}>
+                        <Text style={styles.progressLabel}>TODAY'S PROGRESS</Text>
+                        <View style={styles.progressCount}>
+                            <Text style={styles.progressNumber}>{loggedCount}/{totalCount}</Text>
+                            <Text style={styles.progressText}> LOGGED</Text>
+                        </View>
+                    </View>
+                    <View style={styles.progressIcon}>
+                        <View style={styles.progressIconContainer}>
+                            <Ionicons name="sparkles" size={24} color={theme.colors.status.active} />
+                        </View>
+                    </View>
+                </View>
+
+                {userSupplements.length > 0 && (
+                    <>
+                        <Text style={styles.sectionHeader}>ACTIVE</Text>
+                        {userSupplements.map((item) => (
+                            <View key={item.id.toString()}>
+                                {renderItem({ item })}
+                            </View>
+                        ))}
+                    </>
+                )}
+
+                {userSupplements.length === 0 && (
                     <View style={styles.emptyContainer}>
                         <View style={styles.emptyIcon}>
                             <Ionicons name="nutrition" size={32} color="#8E8E93" />
@@ -205,20 +270,8 @@ export default function SupplementsScreen() {
                         <Text style={styles.emptyTitle}>No Supplements</Text>
                         <Text style={styles.emptyText}>Add supplements to track your daily intake.</Text>
                     </View>
-                }
-            />
-
-            <View style={[styles.floatingButtonContainer, { bottom: insets.bottom + 80 }]}>
-                <View style={styles.floatingButtonBlur}>
-                    <TouchableOpacity 
-                        style={styles.floatingButton}
-                        onPress={() => setModals(m => ({ ...m, add: true }))}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="add" size={24} color="#0A84FF" />
-                    </TouchableOpacity>
-                </View>
-            </View>
+                )}
+            </ScrollView>
 
             <Modal visible={modals.add} animationType="slide" presentationStyle="pageSheet">
                 <View style={styles.modalContainer}>
@@ -318,13 +371,13 @@ export default function SupplementsScreen() {
                             <Text style={styles.modalSubtitle}>History</Text>
                         </View>
                         <TouchableOpacity onPress={() => setModals(m => ({ ...m, history: false }))}>
-                            <Ionicons name="close-circle" size={30} color="#3A3A3C" />
+                            <Ionicons name="close-circle" size={30} color={theme.colors.text.zinc600} />
                         </TouchableOpacity>
                     </View>
 
                     {isLoading ? (
                         <View style={styles.loadingContainer}>
-                            <ActivityIndicator color="#0A84FF" />
+                            <ActivityIndicator color={theme.colors.status.active} />
                         </View>
                     ) : (
                         <FlatList
@@ -364,153 +417,216 @@ export default function SupplementsScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#000000' },
-    listContent: { padding: 16 },
+    container: { flex: 1, backgroundColor: theme.colors.background },
+    scrollContent: { padding: theme.spacing.m },
+
+    // Header
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: theme.spacing.xl,
+    },
+    headerLeft: {
+        flex: 1,
+    },
+    mainTitle: {
+        ...typographyStyles.h3,
+        marginBottom: theme.spacing.xs,
+    },
+    subtitle: {
+        fontSize: theme.typography.sizes.s,
+        fontWeight: '600',
+        color: theme.colors.status.rest,
+        letterSpacing: theme.typography.tracking.wider,
+    },
+    addButton: {
+        width: 48,
+        height: 48,
+        borderRadius: theme.borderRadius.m,
+        backgroundColor: theme.colors.status.rest,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    // Progress Card
+    progressCard: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: theme.colors.ui.glass,
+        padding: theme.spacing.l,
+        borderRadius: theme.borderRadius.l,
+        marginBottom: theme.spacing.xxl,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+    },
+    progressLeft: {
+        flex: 1,
+    },
+    progressLabel: {
+        ...typographyStyles.labelMuted,
+        marginBottom: theme.spacing.s,
+    },
+    progressCount: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+    },
+    progressNumber: {
+        ...typographyStyles.data,
+        fontSize: theme.typography.sizes.xxxl,
+    },
+    progressText: {
+        fontSize: theme.typography.sizes.s,
+        fontWeight: '600',
+        color: theme.colors.text.secondary,
+        marginLeft: theme.spacing.xs,
+    },
+    progressIcon: {
+        width: 48,
+        height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    progressIconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: `${theme.colors.status.active}15`,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 
     // Section Header
     sectionHeader: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#636366',
-        marginBottom: 8,
-        marginLeft: 16,
+        ...typographyStyles.labelMuted,
+        marginBottom: theme.spacing.m,
     },
 
-    // List Item (Apple Style)
-    rowItem: {
+    // Supplement Card
+    supplementCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: '#1C1C1E',
-        padding: 16,
-        borderRadius: 16,
-        marginBottom: 8,
+        backgroundColor: theme.colors.ui.glass,
+        padding: theme.spacing.m,
+        borderRadius: theme.borderRadius.l,
+        marginBottom: theme.spacing.s,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
     },
-    rowLeft: {
+    supplementIcon: {
+        width: 40,
+        height: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: theme.spacing.s,
+    },
+    supplementInfo: {
         flex: 1,
         justifyContent: 'center',
     },
-    rowTitle: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: '#FFFFFF',
-        marginBottom: 4,
+    supplementName: {
+        fontSize: theme.typography.sizes.m,
+        fontWeight: '700',
+        color: theme.colors.text.primary,
+        textTransform: 'uppercase',
+        marginBottom: theme.spacing.xs,
+        letterSpacing: theme.typography.tracking.tight,
     },
-    rowSubtitle: {
-        fontSize: 14,
-        color: '#8E8E93',
+    supplementDetails: {
+        fontSize: theme.typography.sizes.xs,
+        fontWeight: '500',
+        color: theme.colors.text.secondary,
+        letterSpacing: theme.typography.tracking.wider,
     },
 
-    // Log Button (Pill)
+    // Log Button
     logButton: {
-        backgroundColor: '#2C2C2E', // Dark gray background initially
-        paddingVertical: 8,
-        paddingHorizontal: 20,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: '#0A84FF',
+        backgroundColor: theme.colors.status.rest,
+        paddingVertical: 10,
+        paddingHorizontal: theme.spacing.xl,
+        borderRadius: theme.borderRadius.m,
     },
     logButtonDone: {
-        backgroundColor: '#1C1C1E',
-        borderColor: '#32D74B', // Green border
+        backgroundColor: theme.colors.ui.glass,
+        borderWidth: 1,
+        borderColor: theme.colors.status.success,
     },
     logButtonText: {
-        color: '#0A84FF',
-        fontSize: 13,
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.xs,
         fontWeight: '700',
-        letterSpacing: 0.5,
+        textTransform: 'uppercase',
+        letterSpacing: theme.typography.tracking.wider,
     },
     logButtonTextDone: {
-        color: '#32D74B',
+        color: theme.colors.status.success,
     },
 
     // Empty State
     emptyContainer: { alignItems: 'center', paddingVertical: 40 },
     emptyIcon: { 
         width: 60, height: 60, borderRadius: 30, 
-        backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center', marginBottom: 16 
+        backgroundColor: theme.colors.ui.glass, alignItems: 'center', justifyContent: 'center', marginBottom: theme.spacing.m 
     },
-    emptyTitle: { fontSize: 20, fontWeight: '700', color: '#FFF', marginBottom: 8 },
-    emptyText: { fontSize: 15, color: '#8E8E93', textAlign: 'center' },
+    emptyTitle: { fontSize: theme.typography.sizes.l, fontWeight: '700', color: theme.colors.text.primary, marginBottom: theme.spacing.s },
+    emptyText: { fontSize: theme.typography.sizes.m, color: theme.colors.text.secondary, textAlign: 'center' },
 
     // Modals
-    modalContainer: { flex: 1, backgroundColor: '#1C1C1E' },
+    modalContainer: { flex: 1, backgroundColor: theme.colors.ui.glass },
     modalHeader: { 
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', 
-        padding: 20, borderBottomWidth: 1, borderBottomColor: '#2C2C2E' 
+        padding: theme.spacing.l, borderBottomWidth: 1, borderBottomColor: theme.colors.ui.border 
     },
-    modalTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },
-    modalSubtitle: { fontSize: 13, color: '#8E8E93' },
+    modalTitle: { fontSize: theme.typography.sizes.m, fontWeight: '600', color: theme.colors.text.primary },
+    modalSubtitle: { fontSize: theme.typography.sizes.s, color: theme.colors.text.secondary },
 
     // Selection List
     selectionRow: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#3A3A3C'
+        paddingVertical: theme.spacing.m, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.ui.border
     },
-    selectionText: { fontSize: 17, color: '#FFF' },
+    selectionText: { fontSize: theme.typography.sizes.m, color: theme.colors.text.primary },
 
     // Form
-    formContent: { padding: 20 },
+    formContent: { padding: theme.spacing.l },
     previewBanner: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        backgroundColor: '#2C2C2E', padding: 16, borderRadius: 12, marginBottom: 24,
-        borderWidth: 1, borderColor: '#3A3A3C'
+        backgroundColor: theme.colors.ui.glass, padding: theme.spacing.m, borderRadius: theme.borderRadius.m, marginBottom: theme.spacing.xl,
+        borderWidth: 1, borderColor: theme.colors.ui.border
     },
-    previewText: { fontSize: 17, fontWeight: '600', color: '#FFF' },
-    changeLink: { color: '#0A84FF', fontSize: 15 },
+    previewText: { fontSize: theme.typography.sizes.m, fontWeight: '600', color: theme.colors.text.primary },
+    changeLink: { color: theme.colors.status.active, fontSize: theme.typography.sizes.m },
     
-    label: { color: '#8E8E93', fontSize: 13, fontWeight: '600', marginBottom: 8 },
+    label: { color: theme.colors.text.secondary, fontSize: theme.typography.sizes.s, fontWeight: '600', marginBottom: theme.spacing.s },
     input: {
-        backgroundColor: '#2C2C2E', borderRadius: 12, padding: 16,
-        fontSize: 17, color: '#FFF', marginBottom: 24,
+        backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.m, padding: theme.spacing.m,
+        fontSize: theme.typography.sizes.m, color: theme.colors.text.primary, marginBottom: theme.spacing.xl,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
     },
-    pillRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
+    pillRow: { flexDirection: 'row', gap: theme.spacing.s, marginBottom: theme.spacing.xl },
     pill: {
-        flex: 1, padding: 12, borderRadius: 10, backgroundColor: '#2C2C2E',
-        borderWidth: 1, borderColor: '#3A3A3C', alignItems: 'center'
+        flex: 1, padding: theme.spacing.s, borderRadius: theme.borderRadius.m, backgroundColor: theme.colors.ui.glass,
+        borderWidth: 1, borderColor: theme.colors.ui.border, alignItems: 'center'
     },
-    pillActive: { backgroundColor: '#0A84FF', borderColor: '#0A84FF' },
-    pillText: { color: '#8E8E93', fontWeight: '600' },
-    pillTextActive: { color: '#FFF' },
-    saveButton: { backgroundColor: '#0A84FF', padding: 16, borderRadius: 14, alignItems: 'center', marginTop: 8 },
-    saveButtonText: { color: '#FFF', fontSize: 17, fontWeight: '600' },
+    pillActive: { backgroundColor: theme.colors.status.active, borderColor: theme.colors.status.active },
+    pillText: { color: theme.colors.text.secondary, fontWeight: '600' },
+    pillTextActive: { color: theme.colors.text.primary },
+    saveButton: { backgroundColor: theme.colors.status.active, padding: theme.spacing.m, borderRadius: theme.borderRadius.l, alignItems: 'center', marginTop: theme.spacing.s },
+    saveButtonText: { color: theme.colors.text.primary, fontSize: theme.typography.sizes.m, fontWeight: '600' },
 
     // Logs
     logRow: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        padding: 16, backgroundColor: '#1C1C1E', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#3A3A3C'
+        padding: theme.spacing.m, backgroundColor: theme.colors.ui.glass, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.ui.border
     },
     logRowLast: { borderBottomWidth: 0 },
-    logDate: { color: '#FFF', fontSize: 17 },
-    logDetail: { color: '#8E8E93', fontSize: 15 },
-    logDosage: { color: '#FFF', fontSize: 15, fontWeight: '500' },
+    logDate: { color: theme.colors.text.primary, fontSize: theme.typography.sizes.m },
+    logDetail: { color: theme.colors.text.secondary, fontSize: theme.typography.sizes.m },
+    logDosage: { color: theme.colors.text.primary, fontSize: theme.typography.sizes.m, fontWeight: '500' },
     
     loadingContainer: { padding: 40, alignItems: 'center' },
-    deleteAction: { backgroundColor: '#FF3B30', width: 80, alignItems: 'center', justifyContent: 'center' },
+    deleteAction: { backgroundColor: theme.colors.status.error, width: 80, alignItems: 'center', justifyContent: 'center' },
     
-    // Floating Button
-    floatingButtonContainer: {
-        position: 'absolute',
-        right: 12,
-        zIndex: 1000,
-    },
-    floatingButtonBlur: {
-        borderRadius: 24,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 12,
-        elevation: 10,
-    },
-    floatingButton: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'transparent',
-    },
 });

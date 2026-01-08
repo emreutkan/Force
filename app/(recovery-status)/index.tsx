@@ -168,10 +168,10 @@ export default function RecoveryStatusScreen() {
 
                 <View style={styles.cardFooter}>
                     <Text style={styles.pctText}>{pct.toFixed(0)}% Recovered</Text>
-                    {!isReady && data.cns_load != null && data.cns_load > 0 && (
+                    {!isReady && data.cns_load > 0 && (
                         <View style={styles.fatigueRow}>
                             <Ionicons name="flash" size={12} color="#8E8E93" />
-                            <Text style={styles.fatigueText}>Load: {Number(data.cns_load).toFixed(1)}</Text>
+                            <Text style={styles.fatigueText}>Load: {data.cns_load.toFixed(1)}</Text>
                         </View>
                     )}
                 </View>
