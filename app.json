@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.emre.force.app",
+      "bundleIdentifier": "com.force.performance.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
@@ -21,7 +21,7 @@
       }
     },
     "android": {
-      "package": "com.emre.force.app",
+      "package": "com.force.performance.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
