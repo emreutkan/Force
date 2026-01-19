@@ -278,6 +278,27 @@ export default function AccountScreen() {
 
                 {/* Biometrics Section */}
                 <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionHeaderText}>ANALYTICS</Text>
+                </View>
+                <View style={styles.settingsContainer}>
+                    <TouchableOpacity 
+                        style={styles.settingCard}
+                        onPress={() => router.push('/(exercise-statistics)/list')}
+                        activeOpacity={0.7}
+                    >
+                        <View style={[styles.iconBox, { backgroundColor: 'rgba(99, 102, 241, 0.1)' }]}>
+                            <Ionicons name="barbell-outline" size={20} color={theme.colors.text.brand} />
+                        </View>
+                        <View style={styles.settingContent}>
+                            <Text style={styles.settingTitle}>EXERCISE STATISTICS</Text>
+                            <Text style={styles.settingSubtitle}>VIEW PERFORMANCE BY EXERCISE</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Biometrics Section */}
+                <View style={styles.sectionHeader}>
                     <Text style={styles.sectionHeaderText}>BIOMETRICS</Text>
                 </View>
                 <View style={styles.settingsContainer}>

@@ -117,3 +117,17 @@ export const getExercise1RMHistory = async (exerciseId: number): Promise<any> =>
         return error.message || 'An unknown error occurred';
     }
 }
+
+export const getExerciseSetHistory = async (exerciseId: number, page: number = 1): Promise<any> => {
+    try {
+        const response = await apiClient.get(`/workout/exercise/${exerciseId}/set-history/`, {
+            params: { page }
+        });
+        return response.data;
+    } catch (error: any) {
+        if (error.response) {
+            return error.response.data;
+        }
+        return error.message || 'An unknown error occurred';
+    }
+}

@@ -1,4 +1,4 @@
-import { getExercise1RMHistory } from '@/api/Exercises';
+import { getExercise1RMHistory, getExerciseSetHistory } from '@/api/Exercises';
 import { Exercise1RMHistory } from '@/api/types';
 import { theme, typographyStyles, commonStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -150,22 +150,30 @@ const NeuralBarChart = ({ data }: { data: any[] }) => {
 export default function ExerciseStatisticsScreen() {
     const { id } = useLocalSearchParams();
     const [history, setHistory] = useState<Exercise1RMHistory | null>(null);
+    const [recentPerformance, setRecentPerformance] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const insets = useSafeAreaInsets();
 
     useEffect(() => {
-        if (id) fetchHistory();
+        if (id) fetchData();
     }, [id]);
 
-    const fetchHistory = async () => {
+    const fetchData = async () => {
         setIsLoading(true);
         try {
-            const data = await getExercise1RMHistory(Number(id));
-            if (data && typeof data === 'object' && 'history' in data) {
-                setHistory(data);
+            const [rmData, sData] = await Promise.all([
+                getExercise1RMHistory(Number(id)),
+                getExerciseSetHistory(Number(id))
+            ]);
+            
+            if (rmData && typeof rmData === 'object' && 'history' in rmData) {
+                setHistory(rmData);
+            }
+            if (sData?.results) {
+                setRecentPerformance(sData.results);
             }
         } catch (error) {
-            console.error('Failed to fetch 1RM history:', error);
+            console.error('Failed to fetch statistics:', error);
         } finally {
             setIsLoading(false);
         }
@@ -206,7 +214,7 @@ export default function ExerciseStatisticsScreen() {
                     </Text>
                     <Text style={styles.headerSubtitle}>PERFORMANCE ANALYSIS</Text>
                 </View>
-                <TouchableOpacity onPress={fetchHistory} style={styles.refreshButton}>
+                <TouchableOpacity onPress={fetchData} style={styles.refreshButton}>
                     <Ionicons name="refresh" size={20} color={theme.colors.text.secondary} />
                 </TouchableOpacity>
             </View>
@@ -273,8 +281,42 @@ export default function ExerciseStatisticsScreen() {
                         <NeuralBarChart data={[...history.history].reverse()} />
                     </View>
 
-                    {/* History Section */}
-                    <Text style={styles.historySectionTitle}>RECENT HISTORY</Text>
+                    {/* Set History Section */}
+                    {recentPerformance.length > 0 && (
+                        <View style={{ marginBottom: 30 }}>
+                            <Text style={styles.historySectionTitle}>RECENT PERFORMANCE</Text>
+                            <View style={styles.historyList}>
+                                {recentPerformance.map((set, idx) => {
+                                    const date = new Date(set.workout_date);
+                                    return (
+                                        <View key={idx} style={styles.historyItem}>
+                                            <View style={styles.historyItemMain}>
+                                                <View style={styles.dateContainer}>
+                                                    <Text style={styles.dateDay}>{date.getDate()}</Text>
+                                                    <Text style={styles.dateMonth}>
+                                                        {date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
+                                                    </Text>
+                                                </View>
+                                                <View style={styles.workoutInfo}>
+                                                    <Text style={styles.workoutTitle} numberOfLines={1}>{set.workout_title || 'Workout'}</Text>
+                                                    <Text style={styles.workoutYear}>SET {set.set_number} {set.is_warmup ? '• WARMUP' : ''}</Text>
+                                                </View>
+                                            </View>
+                                            <View style={styles.historyItemRight}>
+                                                <Text style={styles.historyValue}>{set.weight}</Text>
+                                                <Text style={styles.historyUnit}>KG</Text>
+                                                <Text style={[styles.historyValue, { marginLeft: 8 }]}>×</Text>
+                                                <Text style={[styles.historyValue, { marginLeft: 4 }]}>{set.reps}</Text>
+                                            </View>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        </View>
+                    )}
+
+                    {/* 1RM History (Summary) */}
+                    <Text style={styles.historySectionTitle}>1RM HISTORY</Text>
                     <View style={styles.historyList}>
                         {history.history.map((entry, idx) => {
                             const date = new Date(entry.workout_date);
@@ -318,7 +360,7 @@ export default function ExerciseStatisticsScreen() {
                     </View>
                     <Text style={styles.emptyText}>NO DATA YET</Text>
                     <Text style={styles.emptySubtext}>
-                        Complete workouts with this exercise to track your 1RM progression.
+                        Complete workouts with this exercise to track your performance.
                     </Text>
                     <TouchableOpacity 
                         style={styles.emptyButton}

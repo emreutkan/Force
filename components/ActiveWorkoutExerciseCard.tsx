@@ -1,10 +1,10 @@
-import { updateSet } from '@/api/Exercises';
+import { updateSet, getExerciseSetHistory } from '@/api/Exercises';
 import { getRestTimerState, stopRestTimer } from '@/api/Workout';
 import { theme } from '@/constants/theme';
 import { useActiveWorkoutStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Dimensions, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, ActivityIndicator } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SwipeAction } from './SwipeAction';
 import { useRestTimer } from './RestTimerBar';
@@ -768,6 +768,29 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
     const lastSet = sets.length > 0 ? sets[sets.length - 1] : null;
     const nextSetNumber = sets.length + 1;
     const [showMenu, setShowMenu] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
+    const [setHistory, setSetHistory] = useState<any[]>([]);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+    useEffect(() => {
+        if (showHistory) {
+            loadHistory();
+        }
+    }, [showHistory]);
+
+    const loadHistory = async () => {
+        setIsLoadingHistory(true);
+        try {
+            const data = await getExerciseSetHistory(exercise.id);
+            if (data?.results) {
+                setSetHistory(data.results.slice(0, 5)); // Just show last 5
+            }
+        } catch (error) {
+            console.error('Failed to load set history:', error);
+        } finally {
+            setIsLoadingHistory(false);
+        }
+    };
 
     const handleUpdateSet = async (setId: number, data: any) => {
         const validation = validateSetData(data);
@@ -867,29 +890,40 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
                                             <Text style={styles.exerciseTagText}>{exercise.primary_muscle}</Text>
                                         </View>
                                     )}
-                                    {exercise.secondary_muscles && (
-                                        Array.isArray(exercise.secondary_muscles) 
-                                            ? exercise.secondary_muscles.map((muscle: string, idx: number) => (
-                                                <View key={idx} style={styles.exerciseTag}>
-                                                    <Text style={styles.secondaryMuscleTagText}>{muscle}</Text>
-                                                </View>
-                                              ))
-                                            : typeof exercise.secondary_muscles === 'string' ? (
-                                                <View style={styles.exerciseTag}>
-                                                    <Text style={styles.secondaryMuscleTagText}>{exercise.secondary_muscles}</Text>
-                                                </View>
-                                              ) : null
-                                    )}
                                 </View>
-                                {exercise.equipment_type && typeof exercise.equipment_type === 'string' && (
-                                    <View style={styles.exerciseTag}>
-                                        <Text style={styles.exerciseTagText}>{exercise.equipment_type}</Text>
-                                    </View>
-                                )}
+                                <TouchableOpacity 
+                                    onPress={() => setShowHistory(!showHistory)}
+                                    style={[styles.historyToggleButton, showHistory && styles.historyToggleButtonActive]}
+                                >
+                                    <Ionicons name="time-outline" size={14} color={showHistory ? theme.colors.text.brand : theme.colors.text.tertiary} />
+                                    <Text style={[styles.historyToggleText, showHistory && styles.historyToggleTextActive]}>HISTORY</Text>
+                                </TouchableOpacity>
                             </View>
                         </View>
                     </TouchableOpacity>
                 </View>
+
+                {showHistory && (
+                    <View style={styles.quickHistoryContainer}>
+                        <Text style={styles.quickHistoryTitle}>RECENT PERFORMANCE</Text>
+                        {isLoadingHistory ? (
+                            <ActivityIndicator size="small" color={theme.colors.text.brand} style={{ marginVertical: 10 }} />
+                        ) : setHistory.length > 0 ? (
+                            <View style={styles.quickHistoryList}>
+                                {setHistory.map((set, i) => (
+                                    <View key={i} style={styles.quickHistoryItem}>
+                                        <Text style={styles.quickHistoryDate}>
+                                            {new Date(set.workout_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                        </Text>
+                                        <Text style={styles.quickHistoryValue}>{set.weight}kg × {set.reps}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        ) : (
+                            <Text style={styles.emptyHistoryText}>No past sets found</Text>
+                        )}
+                    </View>
+                )}
 
                 {(sets.length > 0 || !isLocked) && (
                     <View style={styles.setsContainer}>
@@ -1448,5 +1482,69 @@ const styles = StyleSheet.create({
         fontSize: 15,
         textAlign: 'center',
         fontStyle: 'italic',
+    },
+    historyToggleButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+        backgroundColor: theme.colors.ui.glassStrong,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+    },
+    historyToggleButtonActive: {
+        borderColor: theme.colors.text.brand,
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    },
+    historyToggleText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 0.5,
+    },
+    historyToggleTextActive: {
+        color: theme.colors.text.brand,
+    },
+    quickHistoryContainer: {
+        marginTop: 10,
+        padding: 12,
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+    },
+    quickHistoryTitle: {
+        fontSize: 9,
+        fontWeight: '900',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 1,
+        marginBottom: 8,
+    },
+    quickHistoryList: {
+        gap: 6,
+    },
+    quickHistoryItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    quickHistoryDate: {
+        fontSize: 11,
+        color: theme.colors.text.secondary,
+        fontWeight: '600',
+    },
+    quickHistoryValue: {
+        fontSize: 12,
+        color: theme.colors.text.primary,
+        fontWeight: '700',
+    },
+    emptyHistoryText: {
+        fontSize: 11,
+        color: theme.colors.text.tertiary,
+        fontStyle: 'italic',
+        textAlign: 'center',
+        marginVertical: 4,
     },
 });
