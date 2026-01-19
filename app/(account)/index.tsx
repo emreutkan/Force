@@ -1,6 +1,8 @@
 import { changePassword, updateGender, updateHeight, updateWeight } from '@/api/account';
+import { getUserStatistics } from '@/api/Achievements';
 import { clearTokens } from '@/api/Storage';
 import { getWorkouts } from '@/api/Workout';
+import { UserStatistics } from '@/api/types';
 import { theme } from '@/constants/theme';
 import { useUserStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -96,8 +98,7 @@ export default function AccountScreen() {
     const { user, fetchUser, clearUser } = useUserStore();
     
     // --- State Management ---
-    const [sessionsCount, setSessionsCount] = useState(0);
-    const [totalVolume, setTotalVolume] = useState(0);
+    const [stats, setStats] = useState<UserStatistics | null>(null);
     const [isLoadingStats, setIsLoadingStats] = useState(true);
     
     // Controls visibility of the 3 modals
@@ -126,19 +127,9 @@ export default function AccountScreen() {
     const fetchStats = useCallback(async () => {
         try {
             setIsLoadingStats(true);
-            const workoutsData = await getWorkouts(1, 1000); // Get a large page to calculate totals
-            if (workoutsData?.results) {
-                const workouts = workoutsData.results;
-                setSessionsCount(workouts.length);
-                
-                // Calculate total volume
-                const volume = workouts.reduce((sum: number, workout: any) => {
-                    if (workout.total_volume) {
-                        return sum + parseFloat(String(workout.total_volume));
-                    }
-                    return sum;
-                }, 0);
-                setTotalVolume(volume);
+            const statsData = await getUserStatistics();
+            if (statsData) {
+                setStats(statsData);
             }
         } catch (error) {
             console.error('Failed to fetch stats:', error);
@@ -168,13 +159,14 @@ export default function AccountScreen() {
 
     // Format total volume
     const formattedVolume = useMemo(() => {
-        if (totalVolume >= 1000000) {
-            return `${(totalVolume / 1000000).toFixed(1)}T`;
-        } else if (totalVolume >= 1000) {
-            return `${(totalVolume / 1000).toFixed(1)}K`;
+        const volume = stats?.total_volume || 0;
+        if (volume >= 1000000) {
+            return `${(volume / 1000000).toFixed(1)}T`;
+        } else if (volume >= 1000) {
+            return `${(volume / 1000).toFixed(1)}K`;
         }
-        return totalVolume.toFixed(0);
-    }, [totalVolume]);
+        return volume.toFixed(0);
+    }, [stats]);
 
     // --- Handlers ---
 
@@ -266,17 +258,24 @@ export default function AccountScreen() {
                     <View style={styles.statCard}>
                         <Text style={styles.statLabel}>SESSIONS</Text>
                         <View style={styles.statValueContainer}>
-                            <Text style={styles.statValue}>{sessionsCount}</Text>
-                            <Ionicons name="trophy" size={16} color={theme.colors.status.rest} style={styles.statIcon} />
+                            <Text style={styles.statValue}>{stats?.total_workouts || 0}</Text>
+                            <Ionicons name="barbell" size={16} color={theme.colors.status.rest} style={styles.statIcon} />
                         </View>
                     </View>
                     <View style={styles.statCard}>
-                        <Text style={styles.statLabel}>TOTAL VOLUME</Text>
+                        <Text style={styles.statLabel}>STREAK</Text>
+                        <View style={styles.statValueContainer}>
+                            <Text style={styles.statValue}>{stats?.current_streak || 0}</Text>
+                            <Ionicons name="flame" size={16} color="#FF9F0A" style={styles.statIcon} />
+                        </View>
+                    </View>
+                    <View style={styles.statCard}>
+                        <Text style={styles.statLabel}>VOLUME</Text>
                         <Text style={styles.statValue}>{formattedVolume}</Text>
                     </View>
                 </View>
 
-                {/* Biometrics Section */}
+                {/* Analytics Section */}
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionHeaderText}>ANALYTICS</Text>
                 </View>
@@ -292,6 +291,36 @@ export default function AccountScreen() {
                         <View style={styles.settingContent}>
                             <Text style={styles.settingTitle}>EXERCISE STATISTICS</Text>
                             <Text style={styles.settingSubtitle}>VIEW PERFORMANCE BY EXERCISE</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={styles.settingCard}
+                        onPress={() => router.push('/(achievements)')}
+                        activeOpacity={0.7}
+                    >
+                        <View style={[styles.iconBox, { backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}>
+                            <Ionicons name="trophy-outline" size={20} color="#F59E0B" />
+                        </View>
+                        <View style={styles.settingContent}>
+                            <Text style={styles.settingTitle}>ACHIEVEMENTS</Text>
+                            <Text style={styles.settingSubtitle}>{stats?.total_achievements || 0} EARNED • {stats?.total_points || 0} PTS</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={styles.settingCard}
+                        onPress={() => router.push('/(prs)')}
+                        activeOpacity={0.7}
+                    >
+                        <View style={[styles.iconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                            <Ionicons name="medal-outline" size={20} color="#10B981" />
+                        </View>
+                        <View style={styles.settingContent}>
+                            <Text style={styles.settingTitle}>PERSONAL RECORDS</Text>
+                            <Text style={styles.settingSubtitle}>{stats?.total_prs || 0} RECORDS TRACKED</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                     </TouchableOpacity>

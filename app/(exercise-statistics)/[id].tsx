@@ -1,5 +1,6 @@
 import { getExercise1RMHistory, getExerciseSetHistory } from '@/api/Exercises';
-import { Exercise1RMHistory } from '@/api/types';
+import { getExerciseRanking } from '@/api/Achievements';
+import { Exercise1RMHistory, ExerciseRanking } from '@/api/types';
 import { theme, typographyStyles, commonStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -168,6 +169,7 @@ const NeuralBarChart = ({ data, valueKey, secondaryKey, showPercentage = false }
 export default function ExerciseStatisticsScreen() {
     const { id } = useLocalSearchParams();
     const [history, setHistory] = useState<Exercise1RMHistory | null>(null);
+    const [ranking, setRanking] = useState<ExerciseRanking | null>(null);
     const [recentPerformance, setRecentPerformance] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [rmChartMode, setRmChartMode] = useState<'1RM' | 'PROGRESS'>('1RM');
@@ -180,9 +182,10 @@ export default function ExerciseStatisticsScreen() {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [rmData, sData] = await Promise.all([
+            const [rmData, sData, rData] = await Promise.all([
                 getExercise1RMHistory(Number(id)),
-                getExerciseSetHistory(Number(id))
+                getExerciseSetHistory(Number(id)),
+                getExerciseRanking(Number(id))
             ]);
             
             if (rmData && typeof rmData === 'object' && 'history' in rmData) {
@@ -193,6 +196,10 @@ export default function ExerciseStatisticsScreen() {
                 setRecentPerformance(sData.results);
             } else if (Array.isArray(sData)) {
                 setRecentPerformance(sData);
+            }
+
+            if (rData) {
+                setRanking(rData);
             }
         } catch (error) {
             console.error('Failed to fetch statistics:', error);
@@ -318,10 +325,34 @@ export default function ExerciseStatisticsScreen() {
                                     { color: progressionPct >= 0 ? theme.colors.status.success : theme.colors.status.error }
                                 ]}>%</Text>
                             </View>
+                            </View>
                         </View>
-                    </View>
 
-                            {/* Chart Section */}
+                        {/* Ranking Bento */}
+                        {ranking && (
+                            <View style={styles.rankingCard}>
+                                <View style={styles.rankingHeader}>
+                                    <View style={styles.rankingBadge}>
+                                        <Text style={styles.rankingBadgeText}>TOP {100 - (ranking.one_rm_percentile || 0)}%</Text>
+                                    </View>
+                                    <Text style={styles.rankingMessage}>{ranking.percentile_message}</Text>
+                                </View>
+                                <View style={styles.rankingStats}>
+                                    <View style={styles.rankingStat}>
+                                        <Text style={styles.rankingStatLabel}>GLOBAL RANK</Text>
+                                        <Text style={styles.rankingStatValue}>
+                                            STRENGTH: {ranking.weight_percentile}%
+                                        </Text>
+                                    </View>
+                                    <View style={styles.rankingStat}>
+                                        <Text style={styles.rankingStatLabel}>TOTAL USERS</Text>
+                                        <Text style={styles.rankingStatValue}>{ranking.total_users}</Text>
+                                    </View>
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Chart Section */}
                             <View style={styles.sectionCard}>
                                 <View style={styles.sectionHeader}>
                                     <View style={styles.sectionIconContainer}>
@@ -578,6 +609,61 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: theme.colors.text.tertiary,
         marginLeft: 4,
+    },
+
+    // Ranking Bento
+    rankingCard: {
+        ...commonStyles.glassPanel,
+        padding: 20,
+        marginBottom: 20,
+        borderRadius: 24,
+        borderColor: 'rgba(245, 158, 11, 0.3)',
+    },
+    rankingHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 15,
+    },
+    rankingBadge: {
+        backgroundColor: '#F59E0B',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    rankingBadgeText: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#000',
+    },
+    rankingMessage: {
+        flex: 1,
+        fontSize: 11,
+        fontWeight: '700',
+        color: theme.colors.text.primary,
+        lineHeight: 16,
+    },
+    rankingStats: {
+        flexDirection: 'row',
+        gap: 20,
+        paddingTop: 15,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255,255,255,0.05)',
+    },
+    rankingStat: {
+        flex: 1,
+    },
+    rankingStatLabel: {
+        fontSize: 8,
+        fontWeight: '900',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 1,
+        marginBottom: 4,
+    },
+    rankingStatValue: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: theme.colors.text.secondary,
     },
 
     // Section Card (Chart)

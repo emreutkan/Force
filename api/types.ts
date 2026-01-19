@@ -760,3 +760,125 @@ export interface PROErrorResponse {
     is_pro: false;
     upgrade_url: string;
 }
+
+// ============================================
+// ACHIEVEMENTS & PERSONAL RECORDS TYPES
+// ============================================
+
+export type AchievementCategory =
+  | 'workout_count'
+  | 'workout_streak'
+  | 'pr_weight'
+  | 'pr_one_rep_max'
+  | 'total_volume'
+  | 'exercise_count'
+  | 'muscle_volume'
+  | 'consistency';
+
+export type AchievementRarity =
+  | 'common'
+  | 'uncommon'
+  | 'rare'
+  | 'epic'
+  | 'legendary';
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: AchievementCategory;
+  category_display: string;
+  rarity: AchievementRarity;
+  rarity_display: string;
+  requirement_value: number;
+  exercise: string | null;
+  exercise_name: string | null;
+  muscle_group: string | null;
+  points: number;
+  is_hidden: boolean;
+  order: number;
+}
+
+export interface UserAchievement {
+  achievement: Achievement;
+  is_earned: boolean;
+  current_progress: number;
+  progress_percentage: number;
+  earned_at: string | null;
+  earned_value: number | null;
+}
+
+export interface AchievementCategoryStats {
+  code: AchievementCategory;
+  name: string;
+  total: number;
+  earned: number;
+  progress_percentage: number;
+}
+
+export interface UnnotifiedAchievement extends UserAchievement {
+  message: string;
+}
+
+export interface PersonalRecord {
+  id: string;
+  exercise_id: string;
+  exercise_name: string;
+  best_weight: number;
+  best_weight_reps: number;
+  best_weight_date: string | null;
+  best_one_rep_max: number;
+  best_one_rep_max_weight: number;
+  best_one_rep_max_reps: number;
+  best_one_rep_max_date: string | null;
+  best_set_volume: number;
+  best_set_volume_date: string | null;
+  total_volume: number;
+  total_sets: number;
+  total_reps: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserStatistics {
+  total_workouts: number;
+  total_workout_duration: number;
+  total_volume: number;
+  total_sets: number;
+  total_reps: number;
+  current_streak: number;
+  longest_streak: number;
+  last_workout_date: string | null;
+  total_achievements: number;
+  total_points: number;
+  total_prs: number;
+  prs_this_month: number;
+}
+
+export interface ExerciseRanking {
+  exercise_id: string;
+  exercise_name: string;
+  user_best_weight: number;
+  user_best_one_rm: number;
+  weight_percentile: number;
+  one_rm_percentile: number;
+  total_users: number;
+  percentile_message: string;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  user_id: string;
+  display_name: string;
+  value: number;
+  is_current_user: boolean;
+}
+
+export interface ExerciseLeaderboard {
+  exercise_id: string;
+  exercise_name: string;
+  stat_type: 'weight' | 'one_rm';
+  leaderboard: LeaderboardEntry[];
+  user_entry: LeaderboardEntry | null;
+}

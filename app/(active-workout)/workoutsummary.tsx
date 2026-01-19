@@ -1,6 +1,8 @@
 import { getWorkout, getWorkoutSummary } from '@/api/Workout';
-import { WorkoutSummaryResponse } from '@/api/types';
+import { getUnnotifiedAchievements, markAchievementsSeen } from '@/api/Achievements';
+import { WorkoutSummaryResponse, UnnotifiedAchievement } from '@/api/types';
 import UpgradePrompt from '@/components/UpgradePrompt';
+import AchievementUnlockModal from '@/components/AchievementUnlockModal';
 import { theme, typographyStyles, commonStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
@@ -70,6 +72,8 @@ export default function WorkoutSummaryScreen() {
     const insets = useSafeAreaInsets();
     const [workout, setWorkout] = useState<any>(null);
     const [summary, setSummary] = useState<WorkoutSummaryResponse | null>(null);
+    const [achievements, setAchievements] = useState<UnnotifiedAchievement[]>([]);
+    const [showAchievements, setShowAchievements] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -78,17 +82,28 @@ export default function WorkoutSummaryScreen() {
 
     const fetchData = async () => {
         try {
-            const [wData, sData] = await Promise.all([
+            const [wData, sData, achData] = await Promise.all([
                 getWorkout(parseInt(workoutId)),
-                getWorkoutSummary(parseInt(workoutId))
+                getWorkoutSummary(parseInt(workoutId)),
+                getUnnotifiedAchievements()
             ]);
             if (wData && !wData.error) setWorkout(wData);
             if (sData && !sData.error) setSummary(sData);
+            if (achData && achData.length > 0) {
+                setAchievements(achData);
+                setShowAchievements(true);
+            }
         } catch (error) {
             console.error(error);
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleCloseAchievements = async () => {
+        setShowAchievements(false);
+        const achIds = achievements.map(a => a.achievement.id);
+        await markAchievementsSeen(achIds);
     };
 
     const formatDuration = (s: number) => {
@@ -304,6 +319,12 @@ export default function WorkoutSummaryScreen() {
                         <Ionicons name="checkmark-done" size={20} color="#FFF" />
                     </TouchableOpacity>
                 </Animated.View>
+
+                <AchievementUnlockModal 
+                    achievements={achievements}
+                    visible={showAchievements}
+                    onClose={handleCloseAchievements}
+                />
 
             </ScrollView>
         </View>
