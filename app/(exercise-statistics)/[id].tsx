@@ -158,26 +158,29 @@ export default function ExerciseStatisticsScreen() {
         if (id) fetchData();
     }, [id]);
 
-    const fetchData = async () => {
-        setIsLoading(true);
-        try {
-            const [rmData, sData] = await Promise.all([
-                getExercise1RMHistory(Number(id)),
-                getExerciseSetHistory(Number(id))
-            ]);
-            
-            if (rmData && typeof rmData === 'object' && 'history' in rmData) {
-                setHistory(rmData);
-            }
-            if (sData?.results) {
-                setRecentPerformance(sData.results);
-            }
-        } catch (error) {
-            console.error('Failed to fetch statistics:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+            const fetchData = async () => {
+                setIsLoading(true);
+                try {
+                    const [rmData, sData] = await Promise.all([
+                        getExercise1RMHistory(Number(id)),
+                        getExerciseSetHistory(Number(id))
+                    ]);
+                    
+                    if (rmData && typeof rmData === 'object' && 'history' in rmData) {
+                        setHistory(rmData);
+                    }
+                    
+                    if (sData?.results) {
+                        setRecentPerformance(sData.results);
+                    } else if (Array.isArray(sData)) {
+                        setRecentPerformance(sData);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch statistics:', error);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
 
     const best1RM = useMemo(() => {
         if (!history || history.history.length === 0) return 0;

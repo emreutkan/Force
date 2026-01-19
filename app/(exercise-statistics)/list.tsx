@@ -33,7 +33,9 @@ export default function ExerciseListScreen() {
         try {
             const pageToFetch = reset ? 1 : page + 1;
             const data = await getExercises(searchQuery, pageToFetch);
+            
             if (data?.results) {
+                // Paginated response
                 if (reset) {
                     setExercises(data.results);
                     setPage(1);
@@ -42,6 +44,16 @@ export default function ExerciseListScreen() {
                     setPage(pageToFetch);
                 }
                 setHasMore(!!data.next);
+            } else if (Array.isArray(data)) {
+                // Raw array response
+                if (reset) {
+                    setExercises(data);
+                    setPage(1);
+                } else {
+                    setExercises(prev => [...prev, ...data]);
+                    setPage(pageToFetch);
+                }
+                setHasMore(false);
             }
         } catch (error) {
             console.error("Failed to load exercises:", error);

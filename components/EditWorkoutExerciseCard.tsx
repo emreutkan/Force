@@ -712,6 +712,8 @@ export const EditWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleLoc
             const data = await getExerciseSetHistory(exercise.id);
             if (data?.results) {
                 setSetHistory(data.results.slice(0, 5));
+            } else if (Array.isArray(data)) {
+                setSetHistory(data.slice(0, 5));
             }
         } catch (error) {
             console.error('Failed to load set history:', error);
