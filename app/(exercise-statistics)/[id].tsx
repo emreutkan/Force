@@ -27,15 +27,20 @@ const CHART_WIDTH = SCREEN_WIDTH - 48; // Consistent with other screens
 // HELPER COMPONENTS
 // ============================================================================
 
-const NeuralBarChart = ({ data }: { data: any[] }) => {
+const NeuralBarChart = ({ data, valueKey, secondaryKey, showPercentage = false }: { 
+    data: any[], 
+    valueKey: string, 
+    secondaryKey?: string,
+    showPercentage?: boolean 
+}) => {
     if (!data || data.length === 0) return null;
 
-    const values = data.map(entry => entry.one_rep_max);
+    const values = data.map(entry => entry[valueKey]);
     const minVal = Math.min(...values);
     const maxVal = Math.max(...values);
     const range = maxVal - minVal || 1;
     
-    // Add 10% padding to top and bottom of range for better visualization
+    // Add padding to range for better visualization
     const padding = range * 0.15;
     const effectiveMin = Math.max(0, minVal - padding);
     const effectiveMax = maxVal + padding;
@@ -47,21 +52,34 @@ const NeuralBarChart = ({ data }: { data: any[] }) => {
         return { x, y };
     };
 
-    // Generate path for the line
+    // Generate path for the primary line
     let pathD = "";
     data.forEach((entry, i) => {
-        const { x, y } = getCoordinates(i, entry.one_rep_max);
+        const { x, y } = getCoordinates(i, entry[valueKey]);
         if (i === 0) pathD = `M ${x} ${y}`;
         else {
-            const prev = getCoordinates(i - 1, data[i - 1].one_rep_max);
+            const prev = getCoordinates(i - 1, data[i - 1][valueKey]);
             const cp1x = prev.x + (x - prev.x) / 2;
             pathD += ` C ${cp1x} ${prev.y}, ${cp1x} ${y}, ${x} ${y}`;
         }
     });
 
     const fillPathD = data.length > 1 
-        ? `${pathD} L ${getCoordinates(data.length - 1, data[data.length-1].one_rep_max).x} ${CHART_HEIGHT} L ${getCoordinates(0, data[0].one_rep_max).x} ${CHART_HEIGHT} Z`
+        ? `${pathD} L ${getCoordinates(data.length - 1, data[data.length-1][valueKey]).x} ${CHART_HEIGHT} L ${getCoordinates(0, data[0][valueKey]).x} ${CHART_HEIGHT} Z`
         : "";
+
+    // Generate points for secondary line if provided (e.g. reps)
+    let secondaryPoints: any[] = [];
+    if (secondaryKey) {
+        const secValues = data.map(entry => entry[secondaryKey]);
+        const secMax = Math.max(...secValues) || 1;
+        secondaryPoints = data.map((entry, i) => {
+            const x = (i / (data.length - 1 || 1)) * (CHART_WIDTH - 40) + 20;
+            // Map secondary values to 0-40% of chart height at the bottom
+            const y = CHART_HEIGHT - (entry[secondaryKey] / secMax) * 40 - 20;
+            return { x, y, value: entry[secondaryKey] };
+        });
+    }
 
     return (
         <View style={styles.chartWrapper}>
@@ -90,16 +108,16 @@ const NeuralBarChart = ({ data }: { data: any[] }) => {
                 {/* Fill */}
                 {fillPathD && <Path d={fillPathD} fill="url(#lineGradient)" />}
 
-                {/* Line Glow */}
-                <Path 
-                    d={pathD} 
-                    stroke={theme.colors.text.brand} 
-                    strokeWidth="6" 
-                    fill="none" 
-                    opacity="0.15" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                />
+                {/* Secondary data bars (reps) */}
+                {secondaryPoints.map((pt, i) => (
+                    <Path 
+                        key={`sec-${i}`}
+                        d={`M ${pt.x} ${CHART_HEIGHT-15} L ${pt.x} ${pt.y}`}
+                        stroke={theme.colors.text.tertiary}
+                        strokeWidth="2"
+                        opacity="0.2"
+                    />
+                ))}
 
                 {/* Main Line */}
                 <Path 
@@ -113,11 +131,11 @@ const NeuralBarChart = ({ data }: { data: any[] }) => {
 
                 {/* Points */}
                 {data.map((entry, i) => {
-                    const { x, y } = getCoordinates(i, entry.one_rep_max);
+                    const { x, y } = getCoordinates(i, entry[valueKey]);
                     return (
                         <View key={i}>
                             <Path 
-                                d={`M ${x-1} ${y} a 1 1 0 1 0 2 0 a 1 1 0 1 0 -2 0`} 
+                                d={`M ${x-1.5} ${y} a 1.5 1.5 0 1 0 3 0 a 1.5 1.5 0 1 0 -3 0`} 
                                 fill={theme.colors.text.brand}
                                 stroke={theme.colors.background}
                                 strokeWidth="2"
@@ -152,35 +170,36 @@ export default function ExerciseStatisticsScreen() {
     const [history, setHistory] = useState<Exercise1RMHistory | null>(null);
     const [recentPerformance, setRecentPerformance] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [rmChartMode, setRmChartMode] = useState<'1RM' | 'PROGRESS'>('1RM');
     const insets = useSafeAreaInsets();
 
     useEffect(() => {
         if (id) fetchData();
     }, [id]);
 
-            const fetchData = async () => {
-                setIsLoading(true);
-                try {
-                    const [rmData, sData] = await Promise.all([
-                        getExercise1RMHistory(Number(id)),
-                        getExerciseSetHistory(Number(id))
-                    ]);
-                    
-                    if (rmData && typeof rmData === 'object' && 'history' in rmData) {
-                        setHistory(rmData);
-                    }
-                    
-                    if (sData?.results) {
-                        setRecentPerformance(sData.results);
-                    } else if (Array.isArray(sData)) {
-                        setRecentPerformance(sData);
-                    }
-                } catch (error) {
-                    console.error('Failed to fetch statistics:', error);
-                } finally {
-                    setIsLoading(false);
-                }
-            };
+    const fetchData = async () => {
+        setIsLoading(true);
+        try {
+            const [rmData, sData] = await Promise.all([
+                getExercise1RMHistory(Number(id)),
+                getExerciseSetHistory(Number(id))
+            ]);
+            
+            if (rmData && typeof rmData === 'object' && 'history' in rmData) {
+                setHistory(rmData);
+            }
+            
+            if (sData?.results) {
+                setRecentPerformance(sData.results);
+            } else if (Array.isArray(sData)) {
+                setRecentPerformance(sData);
+            }
+        } catch (error) {
+            console.error('Failed to fetch statistics:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const best1RM = useMemo(() => {
         if (!history || history.history.length === 0) return 0;
@@ -198,6 +217,39 @@ export default function ExerciseStatisticsScreen() {
         const newest = history.history[0].one_rep_max;
         return ((newest - oldest) / oldest) * 100;
     }, [history]);
+
+    // Data for 1RM Chart (including progress % if mode is PROGRESS)
+    const rmChartData = useMemo(() => {
+        if (!history) return [];
+        const baseHistory = [...history.history].reverse();
+        if (rmChartMode === '1RM') return baseHistory;
+        
+        const firstVal = baseHistory[0]?.one_rep_max || 1;
+        return baseHistory.map(entry => ({
+            ...entry,
+            progress_pct: ((entry.one_rep_max - firstVal) / firstVal) * 100
+        }));
+    }, [history, rmChartMode]);
+
+    // Data for KG + Reps chart (Best set per workout)
+    const kgRepsData = useMemo(() => {
+        if (!recentPerformance || recentPerformance.length === 0) return [];
+        
+        // Group by date and take the best set (Max Weight, then Max Reps)
+        const groups: { [key: string]: any } = {};
+        recentPerformance.forEach(set => {
+            const date = set.workout_date.split('T')[0];
+            if (!groups[date] || 
+                set.weight > groups[date].weight || 
+                (set.weight === groups[date].weight && set.reps > groups[date].reps)) {
+                groups[date] = set;
+            }
+        });
+
+        return Object.values(groups).sort((a, b) => 
+            new Date(a.workout_date).getTime() - new Date(b.workout_date).getTime()
+        );
+    }, [recentPerformance]);
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -269,22 +321,75 @@ export default function ExerciseStatisticsScreen() {
                         </View>
                     </View>
 
-                    {/* Chart Section */}
-                    <View style={styles.sectionCard}>
-                        <View style={styles.sectionHeader}>
-                            <View style={styles.sectionIconContainer}>
-                                <Ionicons name="analytics" size={18} color={theme.colors.text.brand} />
+                            {/* Chart Section */}
+                            <View style={styles.sectionCard}>
+                                <View style={styles.sectionHeader}>
+                                    <View style={styles.sectionIconContainer}>
+                                        <Ionicons name="analytics" size={18} color={theme.colors.text.brand} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.sectionTitle}>1RM PROGRESSION</Text>
+                                        <Text style={styles.sectionSubtitle}>
+                                            {rmChartMode === '1RM' ? 'ESTIMATED MAX OVER TIME' : 'PERCENTAGE CHANGE FROM START'}
+                                        </Text>
+                                    </View>
+                                    
+                                    {/* Toggle Buttons */}
+                                    <View style={styles.toggleContainer}>
+                                        <TouchableOpacity 
+                                            onPress={() => setRmChartMode('1RM')}
+                                            style={[styles.toggleButton, rmChartMode === '1RM' && styles.toggleButtonActive]}
+                                        >
+                                            <Text style={[styles.toggleButtonText, rmChartMode === '1RM' && styles.toggleButtonTextActive]}>1RM</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity 
+                                            onPress={() => setRmChartMode('PROGRESS')}
+                                            style={[styles.toggleButton, rmChartMode === 'PROGRESS' && styles.toggleButtonActive]}
+                                        >
+                                            <Text style={[styles.toggleButtonText, rmChartMode === 'PROGRESS' && styles.toggleButtonTextActive]}>PROGRESS</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                                
+                                <NeuralBarChart 
+                                    data={rmChartData} 
+                                    valueKey={rmChartMode === '1RM' ? 'one_rep_max' : 'progress_pct'} 
+                                />
                             </View>
-                            <View>
-                                <Text style={styles.sectionTitle}>1RM PROGRESSION</Text>
-                                <Text style={styles.sectionSubtitle}>ESTIMATED MAX OVER TIME</Text>
-                            </View>
-                        </View>
-                        
-                        <NeuralBarChart data={[...history.history].reverse()} />
-                    </View>
 
-                    {/* Set History Section */}
+                            {/* Weight + Reps Section */}
+                            {kgRepsData.length > 0 && (
+                                <View style={styles.sectionCard}>
+                                    <View style={styles.sectionHeader}>
+                                        <View style={styles.sectionIconContainer}>
+                                            <Ionicons name="barbell" size={18} color={theme.colors.text.brand} />
+                                        </View>
+                                        <View>
+                                            <Text style={styles.sectionTitle}>WEIGHT & REPS</Text>
+                                            <Text style={styles.sectionSubtitle}>TOP SET PERFORMANCE BY WORKOUT</Text>
+                                        </View>
+                                    </View>
+                                    
+                                    <NeuralBarChart 
+                                        data={kgRepsData} 
+                                        valueKey="weight"
+                                        secondaryKey="reps"
+                                    />
+                                    
+                                    <View style={styles.chartLegend}>
+                                        <View style={styles.legendItem}>
+                                            <View style={[styles.legendDot, { backgroundColor: theme.colors.text.brand }]} />
+                                            <Text style={styles.legendText}>WEIGHT (KG)</Text>
+                                        </View>
+                                        <View style={styles.legendItem}>
+                                            <View style={[styles.legendDot, { backgroundColor: theme.colors.text.tertiary, opacity: 0.5 }]} />
+                                            <Text style={styles.legendText}>REPS</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            )}
+
+                            {/* Set History Section */}
                     {recentPerformance.length > 0 && (
                         <View style={{ marginBottom: 30 }}>
                             <Text style={styles.historySectionTitle}>RECENT PERFORMANCE</Text>
@@ -511,6 +616,37 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     
+    // Toggle Buttons
+    toggleContainer: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 10,
+        padding: 3,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border,
+    },
+    toggleButton: {
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+    },
+    toggleButtonActive: {
+        backgroundColor: theme.colors.ui.glassStrong,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+    },
+    toggleButtonText: {
+        fontSize: 9,
+        fontWeight: '900',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 0.5,
+    },
+    toggleButtonTextActive: {
+        color: theme.colors.text.brand,
+    },
+
     // Chart
     chartWrapper: {
         alignItems: 'center',
@@ -526,6 +662,28 @@ const styles = StyleSheet.create({
         fontSize: 9,
         fontWeight: '700',
         color: theme.colors.text.tertiary,
+    },
+    chartLegend: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 20,
+        marginTop: 15,
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    legendDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+    },
+    legendText: {
+        fontSize: 9,
+        fontWeight: '900',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 0.5,
     },
 
     // History
