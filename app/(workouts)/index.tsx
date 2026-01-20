@@ -15,6 +15,7 @@ import {
     TouchableOpacity,
     View
 } from "react-native";
+import Modal from "react-native-modal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // ============================================================================
