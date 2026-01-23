@@ -1,4 +1,17 @@
 import { getAccount } from '@/api/account';
+import {
+    addUserSupplement,
+    CreateUserSupplementRequest,
+    deleteSupplementLog,
+    getSupplementLogs,
+    getSupplements,
+    getTodayLogs,
+    getUserSupplements,
+    logUserSupplement,
+    Supplement,
+    SupplementLog,
+    UserSupplement
+} from '@/api/Supplements';
 import { getAccountResponse, Workout } from '@/api/types';
 import { getWorkouts } from '@/api/Workout';
 import { create } from 'zustand';
@@ -132,4 +145,113 @@ interface DateState {
 export const useDateStore = create<DateState>((set) => ({
     today: new Date(),
     setToday: (date) => set({ today: date }),
+}));
+
+interface SupplementState {
+    userSupplements: UserSupplement[];
+    availableSupplements: Supplement[];
+    todayLogsMap: Map<number, boolean>;
+    viewingLogs: SupplementLog[];
+    isLoading: boolean;
+    isLoadingLogs: boolean;
+    fetchData: () => Promise<void>;
+    logSupplement: (item: UserSupplement) => Promise<{ success: boolean; error?: string }>;
+    addSupplement: (data: CreateUserSupplementRequest) => Promise<boolean>;
+    fetchLogs: (userSupplementId: number) => Promise<void>;
+    deleteLog: (logId: number) => Promise<void>;
+    clearSupplements: () => void;
+}
+
+export const useSupplementStore = create<SupplementState>((set, get) => ({
+    userSupplements: [],
+    availableSupplements: [],
+    todayLogsMap: new Map(),
+    viewingLogs: [],
+    isLoading: false,
+    isLoadingLogs: false,
+    
+    fetchData: async () => {
+        set({ isLoading: true });
+        try {
+            const [userData, allData, todayData] = await Promise.all([
+                getUserSupplements(),
+                getSupplements(),
+                getTodayLogs()
+            ]);
+            
+            const logMap = new Map<number, boolean>();
+            if (todayData?.logs) {
+                todayData.logs.forEach(log => {
+                    if (log.user_supplement_details?.id) {
+                        logMap.set(log.user_supplement_id, true);
+                    }
+                });
+            }
+            
+            set({ 
+                userSupplements: userData,
+                availableSupplements: allData,
+                todayLogsMap: logMap,
+                isLoading: false
+            });
+        } catch (error) {
+            console.error('Failed to fetch supplements:', error);
+            set({ isLoading: false });
+        }
+    },
+    
+    logSupplement: async (item: UserSupplement): Promise<{ success: boolean; error?: string }> => {
+        const now = new Date();
+        const result = await logUserSupplement({
+            user_supplement_id: item.id,
+            date: now.toISOString().split('T')[0],
+            time: `${now.getHours()}:${now.getMinutes()}:00`,
+            dosage: item.dosage
+        });
+        if (result && 'error' in result) {
+            return { success: false, error: result.error };
+        }
+        if (result) {
+            await get().fetchData();
+            return { success: true };
+        }
+        return { success: false, error: 'Failed to log supplement' };
+    },
+    
+    addSupplement: async (data: CreateUserSupplementRequest) => {
+        const result = await addUserSupplement(data);
+        if (result) {
+            await get().fetchData();
+            return true;
+        }
+        return false;
+    },
+    
+    fetchLogs: async (userSupplementId: number) => {
+        set({ isLoadingLogs: true });
+        try {
+            const logs = await getSupplementLogs(userSupplementId);
+            set({ viewingLogs: logs, isLoadingLogs: false });
+        } catch (error) {
+            console.error('Failed to fetch logs:', error);
+            set({ isLoadingLogs: false });
+        }
+    },
+    
+    deleteLog: async (logId: number) => {
+        await deleteSupplementLog(logId);
+        const { viewingLogs } = get();
+        const log = viewingLogs.find(l => l.id === logId);
+        if (log) {
+            await get().fetchLogs(log.user_supplement_id);
+        }
+        await get().fetchData();
+    },
+    
+    clearSupplements: () => set({ 
+        userSupplements: [], 
+        availableSupplements: [], 
+        todayLogsMap: new Map(),
+        viewingLogs: []
+    }),
 }));

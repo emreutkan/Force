@@ -1,6 +1,7 @@
-import { addUserSupplement, deleteSupplementLog, getSupplementLogs, getSupplements, getTodayLogs, getUserSupplements, logUserSupplement, Supplement, SupplementLog, UserSupplement } from '@/api/Supplements';
+import { Supplement, UserSupplement } from '@/api/Supplements';
 import { SwipeAction } from '@/components/SwipeAction';
 import { theme, typographyStyles } from '@/constants/theme';
+import { useSupplementStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useFocusEffect } from 'expo-router';
@@ -29,18 +30,25 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function SupplementsScreen() {
     const insets = useSafeAreaInsets();
     
-    // --- Data State ---
-    const [userSupplements, setUserSupplements] = useState<UserSupplement[]>([]);
-    const [availableSupplements, setAvailableSupplements] = useState<Supplement[]>([]);
-    const [todayLogsMap, setTodayLogsMap] = useState<Map<number, boolean>>(new Map());
+    // --- Store ---
+    const {
+        userSupplements,
+        availableSupplements,
+        todayLogsMap,
+        viewingLogs,
+        isLoadingLogs,
+        fetchData,
+        logSupplement,
+        addSupplement,
+        fetchLogs,
+        deleteLog
+    } = useSupplementStore();
     
     // --- UI State ---
     const [modals, setModals] = useState({ add: false, history: false });
-    const [isLoading, setIsLoading] = useState(false);
     
     // --- Selection & Form State ---
     const [selectedSupp, setSelectedSupp] = useState<UserSupplement | null>(null);
-    const [viewingLogs, setViewingLogs] = useState<SupplementLog[]>([]);
     
     const [addStep, setAddStep] = useState<1 | 2>(1);
     const [newSuppData, setNewSuppData] = useState<{
@@ -54,64 +62,23 @@ export default function SupplementsScreen() {
 
     useFocusEffect(
         useCallback(() => {
-            loadData();
+            fetchData();
         }, [])
     );
-
-    const loadData = async () => {
-        try {
-            const [userData, allData, todayData] = await Promise.all([
-                getUserSupplements(),
-                getSupplements(),
-                getTodayLogs()
-            ]);
-            
-            setUserSupplements(userData);
-            setAvailableSupplements(allData);
-            
-            const logMap = new Map<number, boolean>();
-            if (todayData?.logs) {
-                todayData.logs.forEach(log => {
-                    if (log.user_supplement_id) {
-                        logMap.set(log.user_supplement_id, true);
-                    }
-                });
-            }
-            setTodayLogsMap(logMap);
-        } catch (e) { console.error(e); }
-    };
-
-    const loadLogs = async (id: number) => {
-        setIsLoading(true);
-        try {
-            const logs = await getSupplementLogs(id);
-            setViewingLogs(logs);
-        } catch (e) { console.error(e); } finally { setIsLoading(false); }
-    };
 
     // --- Actions ---
 
     const handleLog = async (item: UserSupplement) => {
-        // Immediate feedback
-        const now = new Date();
-        const result = await logUserSupplement({
-            user_supplement_id: item.id,
-            date: now.toISOString().split('T')[0],
-            time: `${now.getHours()}:${now.getMinutes()}:00`,
-            dosage: item.dosage
-        });
-
-        if (result) {
-            loadData();
-        } else {
-            Alert.alert("Error", "Failed to log.");
+        const result = await logSupplement(item);
+        if (!result.success && result.error) {
+            Alert.alert("Error", result.error);
         }
     };
 
     const handleAddSubmit = async () => {
         if (!newSuppData.base || !newSuppData.dosage) return;
         
-        const result = await addUserSupplement({
+        const result = await addSupplement({
             supplement_id: newSuppData.base.id,
             dosage: parseFloat(newSuppData.dosage),
             frequency: newSuppData.freq,
@@ -122,20 +89,17 @@ export default function SupplementsScreen() {
             setModals(m => ({ ...m, add: false }));
             setAddStep(1);
             setNewSuppData({ base: null, dosage: '', freq: 'daily', time: '' });
-            loadData();
         }
     };
 
     const openHistory = (item: UserSupplement) => {
         setSelectedSupp(item);
         setModals(m => ({ ...m, history: true }));
-        loadLogs(item.id);
+        fetchLogs(item.id);
     };
 
     const handleDeleteLog = async (logId: number) => {
-        await deleteSupplementLog(logId);
-        if (selectedSupp) loadLogs(selectedSupp.id);
-        loadData();
+        await deleteLog(logId);
     };
 
     // --- Helper Functions ---
@@ -269,7 +233,7 @@ export default function SupplementsScreen() {
                             setModals(m => ({ ...m, add: false }));
                             setAddStep(1);
                         }}>
-                            <Ionicons name="close-circle" size={30} color="#3A3A3C" />
+                            <Ionicons name="close-circle" size={30} color={theme.colors.text.tertiary} />
                         </TouchableOpacity>
                     </View>
 
@@ -292,7 +256,7 @@ export default function SupplementsScreen() {
                                     }}
                                 >
                                     <Text style={styles.selectionText}>{item.name}</Text>
-                                    <Ionicons name="chevron-forward" size={20} color="#545458" />
+                                    <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />
                                 </TouchableOpacity>
                             )}
                         />
@@ -314,7 +278,7 @@ export default function SupplementsScreen() {
                                     onChangeText={t => setNewSuppData(p => ({ ...p, dosage: t }))}
                                     keyboardType="numeric"
                                     placeholder="0"
-                                    placeholderTextColor="#545458"
+                                    placeholderTextColor={theme.colors.text.tertiary}
                                     autoFocus
                                 />
 
@@ -337,7 +301,7 @@ export default function SupplementsScreen() {
                                     value={newSuppData.time}
                                     onChangeText={t => setNewSuppData(p => ({ ...p, time: t }))}
                                     placeholder="Morning, Pre-workout..."
-                                    placeholderTextColor="#545458"
+                                    placeholderTextColor={theme.colors.text.tertiary}
                                 />
 
                                 <TouchableOpacity style={styles.saveButton} onPress={handleAddSubmit}>
@@ -361,7 +325,7 @@ export default function SupplementsScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    {isLoading ? (
+                    {isLoadingLogs ? (
                         <View style={styles.loadingContainer}>
                             <ActivityIndicator color={theme.colors.status.active} />
                         </View>
@@ -377,7 +341,6 @@ export default function SupplementsScreen() {
                                             dragX={d} 
                                             onPress={() => handleDeleteLog(item.id)} 
                                             iconName="trash-outline"
-                                            side="right"
                                         />
                                     )}
                                     friction={2}
@@ -576,58 +539,162 @@ const styles = StyleSheet.create({
     emptyText: { fontSize: theme.typography.sizes.m, color: theme.colors.text.secondary, textAlign: 'center' },
 
     // Modals
-    modalContainer: { flex: 1, backgroundColor: theme.colors.ui.glass },
-    modalHeader: { 
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', 
-        padding: theme.spacing.l, borderBottomWidth: 1, borderBottomColor: theme.colors.ui.border 
+    modalContainer: { 
+        flex: 1, 
+        backgroundColor: theme.colors.background 
     },
-    modalTitle: { fontSize: theme.typography.sizes.m, fontWeight: '600', color: theme.colors.text.primary },
-    modalSubtitle: { fontSize: theme.typography.sizes.s, color: theme.colors.text.secondary },
+    modalHeader: { 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        padding: theme.spacing.l, 
+        borderBottomWidth: 1, 
+        borderBottomColor: theme.colors.ui.border,
+        backgroundColor: theme.colors.ui.glassStrong
+    },
+    modalTitle: { 
+        fontSize: theme.typography.sizes.l, 
+        fontWeight: '700', 
+        color: theme.colors.text.primary 
+    },
+    modalSubtitle: { 
+        fontSize: theme.typography.sizes.s, 
+        color: theme.colors.text.secondary 
+    },
 
     // Selection List
     selectionRow: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingVertical: theme.spacing.m, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.ui.border
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        paddingVertical: theme.spacing.m, 
+        paddingHorizontal: theme.spacing.m,
+        borderBottomWidth: StyleSheet.hairlineWidth, 
+        borderBottomColor: theme.colors.ui.border,
+        backgroundColor: theme.colors.ui.glass
     },
-    selectionText: { fontSize: theme.typography.sizes.m, color: theme.colors.text.primary },
+    selectionText: { 
+        fontSize: theme.typography.sizes.m, 
+        color: theme.colors.text.primary,
+        fontWeight: '500'
+    },
 
     // Form
-    formContent: { padding: theme.spacing.l },
-    previewBanner: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        backgroundColor: theme.colors.ui.glass, padding: theme.spacing.m, borderRadius: theme.borderRadius.m, marginBottom: theme.spacing.xl,
-        borderWidth: 1, borderColor: theme.colors.ui.border
+    formContent: { 
+        padding: theme.spacing.l,
+        backgroundColor: theme.colors.background
     },
-    previewText: { fontSize: theme.typography.sizes.m, fontWeight: '600', color: theme.colors.text.primary },
-    changeLink: { color: theme.colors.status.active, fontSize: theme.typography.sizes.m },
+    previewBanner: {
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        backgroundColor: theme.colors.ui.glassStrong, 
+        padding: theme.spacing.m, 
+        borderRadius: theme.borderRadius.m, 
+        marginBottom: theme.spacing.xl,
+        borderWidth: 1, 
+        borderColor: theme.colors.ui.border
+    },
+    previewText: { 
+        fontSize: theme.typography.sizes.m, 
+        fontWeight: '600', 
+        color: theme.colors.text.primary 
+    },
+    changeLink: { 
+        color: theme.colors.status.active, 
+        fontSize: theme.typography.sizes.m,
+        fontWeight: '600'
+    },
     
-    label: { color: theme.colors.text.secondary, fontSize: theme.typography.sizes.s, fontWeight: '600', marginBottom: theme.spacing.s },
+    label: { 
+        color: theme.colors.text.secondary, 
+        fontSize: theme.typography.sizes.s, 
+        fontWeight: '600', 
+        marginBottom: theme.spacing.s,
+        textTransform: 'uppercase',
+        letterSpacing: theme.typography.tracking.wide
+    },
     input: {
-        backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.m, padding: theme.spacing.m,
-        fontSize: theme.typography.sizes.m, color: theme.colors.text.primary, marginBottom: theme.spacing.xl,
+        backgroundColor: theme.colors.ui.glassStrong, 
+        borderRadius: theme.borderRadius.m, 
+        padding: theme.spacing.m,
+        fontSize: theme.typography.sizes.m, 
+        color: theme.colors.text.primary, 
+        marginBottom: theme.spacing.xl,
         borderWidth: 1,
         borderColor: theme.colors.ui.border,
     },
-    pillRow: { flexDirection: 'row', gap: theme.spacing.s, marginBottom: theme.spacing.xl },
-    pill: {
-        flex: 1, padding: theme.spacing.s, borderRadius: theme.borderRadius.m, backgroundColor: theme.colors.ui.glass,
-        borderWidth: 1, borderColor: theme.colors.ui.border, alignItems: 'center'
+    pillRow: { 
+        flexDirection: 'row', 
+        gap: theme.spacing.s, 
+        marginBottom: theme.spacing.xl 
     },
-    pillActive: { backgroundColor: theme.colors.status.active, borderColor: theme.colors.status.active },
-    pillText: { color: theme.colors.text.secondary, fontWeight: '600' },
-    pillTextActive: { color: theme.colors.text.primary },
-    saveButton: { backgroundColor: theme.colors.status.active, padding: theme.spacing.m, borderRadius: theme.borderRadius.l, alignItems: 'center', marginTop: theme.spacing.s },
-    saveButtonText: { color: theme.colors.text.primary, fontSize: theme.typography.sizes.m, fontWeight: '600' },
+    pill: {
+        flex: 1, 
+        padding: theme.spacing.m, 
+        borderRadius: theme.borderRadius.m, 
+        backgroundColor: theme.colors.ui.glassStrong,
+        borderWidth: 1, 
+        borderColor: theme.colors.ui.border, 
+        alignItems: 'center'
+    },
+    pillActive: { 
+        backgroundColor: theme.colors.status.active, 
+        borderColor: theme.colors.status.active 
+    },
+    pillText: { 
+        color: theme.colors.text.secondary, 
+        fontWeight: '600',
+        fontSize: theme.typography.sizes.m
+    },
+    pillTextActive: { 
+        color: theme.colors.text.primary,
+        fontWeight: '700'
+    },
+    saveButton: { 
+        backgroundColor: theme.colors.status.active, 
+        padding: theme.spacing.m, 
+        borderRadius: theme.borderRadius.l, 
+        alignItems: 'center', 
+        marginTop: theme.spacing.s 
+    },
+    saveButtonText: { 
+        color: theme.colors.text.primary, 
+        fontSize: theme.typography.sizes.m, 
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        letterSpacing: theme.typography.tracking.wide
+    },
 
     // Logs
     logRow: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        padding: theme.spacing.m, backgroundColor: theme.colors.ui.glass, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.ui.border
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        padding: theme.spacing.m, 
+        backgroundColor: theme.colors.ui.glassStrong, 
+        borderBottomWidth: StyleSheet.hairlineWidth, 
+        borderBottomColor: theme.colors.ui.border
     },
     logRowLast: { borderBottomWidth: 0 },
-    logDate: { color: theme.colors.text.primary, fontSize: theme.typography.sizes.m },
-    logDetail: { color: theme.colors.text.secondary, fontSize: theme.typography.sizes.m },
-    logDosage: { color: theme.colors.text.primary, fontSize: theme.typography.sizes.m, fontWeight: '500' },
+    logDate: { 
+        color: theme.colors.text.primary, 
+        fontSize: theme.typography.sizes.m,
+        fontWeight: '600'
+    },
+    logDetail: { 
+        color: theme.colors.text.secondary, 
+        fontSize: theme.typography.sizes.s 
+    },
+    logDosage: { 
+        color: theme.colors.text.primary, 
+        fontSize: theme.typography.sizes.m, 
+        fontWeight: '600' 
+    },
     
-    loadingContainer: { padding: 40, alignItems: 'center' },
+    loadingContainer: { 
+        padding: 40, 
+        alignItems: 'center',
+        backgroundColor: theme.colors.background
+    },
 });

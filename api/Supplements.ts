@@ -80,13 +80,16 @@ export const addUserSupplement = async (data: CreateUserSupplementRequest): Prom
 }
 
 
-export const logUserSupplement = async (data: LogUserSupplementRequest): Promise<SupplementLog | null> => {
+export const logUserSupplement = async (data: LogUserSupplementRequest): Promise<SupplementLog | { error: string }> => {
     try {
         const response = await apiClient.post('/supplements/user/log/add/', data);
         return response.data;
     } catch (error: any) {
         console.error('Error logging user supplement:', error);
-        return null;
+        if (error.response?.data?.error) {
+            return { error: error.response.data.error };
+        }
+        return { error: error.message || 'An unknown error occurred' };
     }
 }
 
