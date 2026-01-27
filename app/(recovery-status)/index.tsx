@@ -253,8 +253,10 @@ export default function RecoveryStatusScreen() {
 
                     <View style={styles.section }>
                         <Text style={styles.sectionTitle}>System Recovery</Text>
-                        {cnsRecovery ? (
-                            !cnsRecovery.is_recovered && cnsRecovery.cns_load > 0 && renderCNSCard(cnsRecovery)
+                        {isPro ? (
+                            cnsRecovery && !cnsRecovery.is_recovered && cnsRecovery.cns_load > 0 ? (
+                                renderCNSCard(cnsRecovery)
+                            ) : null
                         ) : (
                             <UpgradePrompt
                                 feature="CNS Recovery Tracking"

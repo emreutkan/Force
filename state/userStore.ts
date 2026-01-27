@@ -183,7 +183,7 @@ export const useSupplementStore = create<SupplementState>((set, get) => ({
             if (todayData?.logs) {
                 todayData.logs.forEach(log => {
                     if (log.user_supplement_details?.id) {
-                        logMap.set(log.user_supplement_id, true);
+                        logMap.set(log.user_supplement_details.id, true);
                     }
                 });
             }

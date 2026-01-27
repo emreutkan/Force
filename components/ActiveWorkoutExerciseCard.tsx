@@ -1,114 +1,20 @@
-import { updateSet, getExerciseSetHistory } from '@/api/Exercises';
-import { getRestTimerState, stopRestTimer } from '@/api/Workout';
+import { getExerciseSetHistory, updateSet } from '@/api/Exercises';
+import { stopRestTimer } from '@/api/Workout';
 import { theme } from '@/constants/theme';
 import { useActiveWorkoutStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { SwipeAction } from './SwipeAction';
 import { useRestTimer } from './RestTimerBar';
+import { SwipeAction } from './SwipeAction';
+import { formatRestTimeForDisplay, formatRestTimeForInput, formatValidationErrors, formatWeight, parseRestTime, validateSetData } from './shared/ExerciseCardUtils';
+import { ExerciseHeader } from './shared/ExerciseHeader';
+import { ExerciseMenuModal } from './shared/ExerciseMenuModal';
+import { InsightsModal } from './shared/InsightsModal';
+import { SetsHeader } from './shared/SetsHeader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// Validation functions
-const validateSetData = (data: any): { isValid: boolean, errors: string[] } => {
-    const errors: string[] = [];
-
-    if (data.reps !== undefined && data.reps !== null) {
-        const reps = typeof data.reps === 'string' ? parseInt(data.reps) : data.reps;
-        if (isNaN(reps) || reps < 1 || reps > 100) {
-            errors.push('Reps must be between 1 and 100');
-        }
-    }
-
-    if (data.reps_in_reserve !== undefined && data.reps_in_reserve !== null) {
-        const rir = typeof data.reps_in_reserve === 'string' ? parseInt(data.reps_in_reserve) : data.reps_in_reserve;
-        if (isNaN(rir) || rir < 0 || rir > 100) {
-            errors.push('RIR must be between 0 and 100');
-        }
-    }
-
-    if (data.rest_time_before_set !== undefined && data.rest_time_before_set !== null) {
-        const restTime = typeof data.rest_time_before_set === 'string' ? parseInt(data.rest_time_before_set) : data.rest_time_before_set;
-        if (isNaN(restTime) || restTime < 0 || restTime > 10800) {
-            errors.push('Rest time cannot exceed 3 hours');
-        }
-    }
-
-    if (data.total_tut !== undefined && data.total_tut !== null) {
-        const tut = typeof data.total_tut === 'string' ? parseInt(data.total_tut) : data.total_tut;
-        if (isNaN(tut) || tut < 0 || tut > 600) {
-            errors.push('Time under tension cannot exceed 10 minutes');
-        }
-    }
-
-    return { isValid: errors.length === 0, errors };
-};
-
-const formatValidationErrors = (validationErrors: any): string => {
-    if (!validationErrors || typeof validationErrors !== 'object') {
-        return 'Validation failed';
-    }
-
-    const messages: string[] = [];
-    Object.keys(validationErrors).forEach(field => {
-        const fieldErrors = validationErrors[field];
-        if (Array.isArray(fieldErrors)) {
-            fieldErrors.forEach((error: string) => {
-                let friendlyMessage = error;
-                if (error.includes('less than or equal to 100')) {
-                    friendlyMessage = field === 'reps' ? 'Reps must be between 1 and 100' : 'RIR must be between 0 and 100';
-                } else if (error.includes('less than or equal to 10800')) {
-                    friendlyMessage = 'Rest time cannot exceed 3 hours';
-                } else if (error.includes('less than or equal to 600')) {
-                    friendlyMessage = 'Time under tension cannot exceed 10 minutes';
-                } else if (error.includes('greater than or equal to 0')) {
-                    friendlyMessage = `${field} cannot be negative`;
-                }
-                messages.push(friendlyMessage);
-            });
-        } else {
-            messages.push(fieldErrors);
-        }
-    });
-
-    return messages.join('\n');
-};
-
-// Parse rest time: if contains ".", treat as minutes (X.YY), else as seconds
-const parseRestTime = (input: string): number => {
-    if (!input || input.trim() === '') return 0;
-    
-    if (input.includes('.')) {
-        // Treat as minutes: X.YY -> convert to seconds
-        const minutes = parseFloat(input);
-        if (isNaN(minutes)) return 0;
-        return Math.round(minutes * 60);
-    } else {
-        // Treat as seconds
-        const seconds = parseInt(input);
-        return isNaN(seconds) ? 0 : seconds;
-    }
-};
-
-// Format rest time for display
-const formatRestTimeForDisplay = (seconds: number): string => {
-    if (!seconds) return '';
-    if (seconds < 60) return `${seconds}`;
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return s > 0 ? `${m}.${s.toString().padStart(2, '0')}` : `${m}`;
-};
-
-// Format rest time for input (shows as X.YY for minutes or just number for seconds)
-const formatRestTimeForInput = (seconds: number): string => {
-    if (!seconds) return '';
-    if (seconds < 60) return `${seconds}`;
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return s > 0 ? `${m}.${s.toString().padStart(2, '0')}` : `${m}`;
-};
 
 // SetRow Component
 const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onUpdate, onInputFocus, onShowStatistics, exerciseId }: any) => {
@@ -229,7 +135,6 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
             dragX={dragX}
             onPress={() => onDelete(set.id)}
             iconName="trash-outline"
-            side="right"
         />
     );
 
@@ -241,7 +146,6 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                     dragX={dragX}
                     onPress={() => setShowInsights(true)}
                     iconName="bulb-outline"
-                    side="left"
                 />
             );
         }
@@ -252,20 +156,12 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                     dragX={dragX}
                     onPress={() => onShowStatistics(exerciseId)}
                     iconName="stats-chart-outline"
-                    side="left"
                 />
             );
         }
         return null;
     };
 
-    const formatWeight = (weight: number) => {
-        if (!weight && weight !== 0) return '-';
-        const w = Number(weight);
-        if (isNaN(w)) return '-';
-        if (Math.abs(w % 1) < 0.0000001) return Math.round(w).toString();
-        return parseFloat(w.toFixed(2)).toString();
-    };
 
     return (
         <>
@@ -389,104 +285,17 @@ const SetRow = ({ set, index, onDelete, isLocked, swipeRef, onOpen, onClose, onU
                 </View>
             </ReanimatedSwipeable>
             
-            <Modal
+            <InsightsModal
                 visible={showInsights}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowInsights(false)}
-            >
-                <TouchableWithoutFeedback onPress={() => setShowInsights(false)}>
-                    <View style={styles.insightsModalOverlay}>
-                        <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-                            <View style={styles.insightsModalContent}>
-                                <View style={styles.insightsModalHeader}>
-                                    <Text style={styles.insightsModalTitle}>Set {set.set_number} Insights</Text>
-                                    <TouchableOpacity onPress={() => setShowInsights(false)}>
-                                        <Ionicons name="close" size={24} color={theme.colors.text.primary} />
-                                    </TouchableOpacity>
-                                </View>
-                                
-                                <ScrollView style={styles.insightsModalBody}>
-                                    {set.insights?.good && Object.keys(set.insights.good).length > 0 && (
-                                        <View style={styles.insightsSection}>
-                                            <View style={styles.insightsSectionHeader}>
-                                                <Ionicons name="checkmark-circle" size={20} color={theme.colors.status.success} />
-                                                <Text style={styles.insightsSectionTitle}>Good</Text>
-                                            </View>
-                                            {Object.entries(set.insights.good).map(([key, insight]: [string, any]) => (
-                                                <View key={key} style={styles.insightItem}>
-                                                    <Text style={styles.insightReason}>{insight.reason}</Text>
-                                                </View>
-                                            ))}
-                                        </View>
-                                    )}
-                                    
-                                    {set.insights?.bad && Object.keys(set.insights.bad).length > 0 && (
-                                        <View style={styles.insightsSection}>
-                                            <View style={styles.insightsSectionHeader}>
-                                                <Ionicons name="alert-circle" size={20} color={theme.colors.status.error} />
-                                                <Text style={styles.insightsSectionTitle}>Areas to Improve</Text>
-                                            </View>
-                                            {Object.entries(set.insights.bad).map(([key, insight]: [string, any]) => (
-                                                <View key={key} style={styles.insightItem}>
-                                                    <Text style={styles.insightReason}>{insight.reason}</Text>
-                                                    {insight.current_reps && (
-                                                        <Text style={styles.insightDetail}>
-                                                            Current: {insight.current_reps} reps
-                                                        </Text>
-                                                    )}
-                                                    {insight.optimal_range && (
-                                                        <Text style={styles.insightDetail}>
-                                                            Optimal: {insight.optimal_range}
-                                                        </Text>
-                                                    )}
-                                                    {insight.current_tut && (
-                                                        <Text style={styles.insightDetail}>
-                                                            Current TUT: {insight.current_tut}s
-                                                        </Text>
-                                                    )}
-                                                    {insight.seconds_per_rep && (
-                                                        <Text style={styles.insightDetail}>
-                                                            {insight.seconds_per_rep}s per rep
-                                                        </Text>
-                                                    )}
-                                                    {insight.set_position && (
-                                                        <Text style={styles.insightDetail}>
-                                                            Set Position: {insight.set_position}
-                                                        </Text>
-                                                    )}
-                                                    {insight.total_sets && (
-                                                        <Text style={styles.insightDetail}>
-                                                            Total Sets: {insight.total_sets}
-                                                        </Text>
-                                                    )}
-                                                    {insight.optimal_sets && (
-                                                        <Text style={styles.insightDetail}>
-                                                            Optimal: {insight.optimal_sets}
-                                                        </Text>
-                                                    )}
-                                                </View>
-                                            ))}
-                                        </View>
-                                    )}
-                                    
-                                    {(!set.insights || (Object.keys(set.insights.good || {}).length === 0 && Object.keys(set.insights.bad || {}).length === 0)) && (
-                                        <View style={styles.insightsSection}>
-                                            <Text style={styles.noInsightsText}>No insights available for this set.</Text>
-                                        </View>
-                                    )}
-                                </ScrollView>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    </View>
-                </TouchableWithoutFeedback>
-            </Modal>
+                onClose={() => setShowInsights(false)}
+                set={set}
+            />
         </>
     );
 };
 
 // AddSetRow Component with TUT tracking
-const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExerciseId, hasSets, onFocus }: any) => {
+const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExerciseId, hasSets, onFocus, exerciseIndex }: any) => {
     const [inputs, setInputs] = useState({ weight: '', reps: '', rir: '', restTime: '', isWarmup: false });
     const [isTrackingTUT, setIsTrackingTUT] = useState(false);
     const [tutStartTime, setTutStartTime] = useState<number | null>(null);
@@ -543,7 +352,9 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
 
     const handleStartSet = async () => {
         try {
-            const finalRest = inputs.restTime ? parseRestTime(inputs.restTime) : elapsedSeconds;
+            // For first exercise's first set, rest time should be 0
+            const isFirstExerciseFirstSet = exerciseIndex === 0 && nextSetNumber === 1;
+            const finalRest = isFirstExerciseFirstSet ? 0 : (inputs.restTime ? parseRestTime(inputs.restTime) : elapsedSeconds);
             setCapturedRestTime(finalRest);
             
             await stopRestTimer();
@@ -566,12 +377,14 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
     };
 
     const handleAdd = async () => {
+        // For first exercise's first set, rest time should be 0
+        const isFirstExerciseFirstSet = exerciseIndex === 0 && nextSetNumber === 1;
         const setData = {
             weight: parseFloat(inputs.weight) || (lastSet?.weight ? Number(lastSet.weight) : 0),
             reps: inputs.reps ? parseInt(inputs.reps) : 0,
             reps_in_reserve: inputs.rir ? parseInt(inputs.rir) : 0,
             is_warmup: inputs.isWarmup,
-            rest_time_before_set: capturedRestTime ?? 0,
+            rest_time_before_set: isFirstExerciseFirstSet ? 0 : (capturedRestTime ?? 0),
             total_tut: currentTUT > 0 ? currentTUT : undefined
         };
 
@@ -611,22 +424,27 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
                     </Text>
                 </TouchableOpacity>
 
-                <TextInput
-                    style={[styles.setInput, styles.addSetInput, (isTracking || isStopped) && styles.disabledInput]}
-                    value={isInitial ? (inputs.restTime || timerText) : formatRestTimeForDisplay(capturedRestTime ?? 0)}
-                    onChangeText={(value) => {
-                        if (isTracking || isStopped) return;
-                        const numericRegex = /^[0-9]*\.?[0-9]*$/;
-                        if (value === '' || numericRegex.test(value)) {
-                            setInputs(p => ({ ...p, restTime: value }));
-                        }
-                    }}
-                    keyboardType="numbers-and-punctuation"
-                    placeholder="Rest"
-                    placeholderTextColor={theme.colors.text.tertiary}
-                    onFocus={onFocus}
-                    editable={isInitial}
-                />
+                {!(exerciseIndex === 0 && nextSetNumber === 1) && (
+                    <TextInput
+                        style={[styles.setInput, styles.addSetInput, (isTracking || isStopped) && styles.disabledInput]}
+                        value={isInitial ? (inputs.restTime || timerText) : formatRestTimeForDisplay(capturedRestTime ?? 0)}
+                        onChangeText={(value) => {
+                            if (isTracking || isStopped) return;
+                            const numericRegex = /^[0-9]*\.?[0-9]*$/;
+                            if (value === '' || numericRegex.test(value)) {
+                                setInputs(p => ({ ...p, restTime: value }));
+                            }
+                        }}
+                        keyboardType="numbers-and-punctuation"
+                        placeholder="Rest"
+                        placeholderTextColor={theme.colors.text.tertiary}
+                        onFocus={onFocus}
+                        editable={isInitial}
+                    />
+                )}
+                {exerciseIndex === 0 && nextSetNumber === 1 && (
+                    <View style={[styles.setInput, styles.addSetInput]} />
+                )}
 
                 <TextInput
                     style={[styles.setInput, styles.addSetInput, isTracking && styles.disabledInput]}
@@ -758,7 +576,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, workoutExer
 };
 
 // Main Component
-export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleLock, onRemove, onAddSet, onDeleteSet, swipeControl, onInputFocus, onShowInfo, onShowStatistics, drag }: any) => {
+export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleLock, onRemove, onAddSet, onDeleteSet, swipeControl, onInputFocus, onShowInfo, onShowStatistics, drag, exerciseIndex }: any) => {
     const exercise = workoutExercise.exercise || (workoutExercise.name ? workoutExercise : null);
     if (!exercise) return null;
 
@@ -827,7 +645,6 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
             dragX={dragX}
             onPress={() => onToggleLock(idToLock)}
             iconName={isLocked ? "lock-open-outline" : "lock-closed"}
-            side="left"
         />
     );
 
@@ -837,7 +654,6 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
             dragX={dragX}
             onPress={() => onRemove(idToLock)}
             iconName="trash-outline"
-            side="right"
         />
     );
 
@@ -858,52 +674,20 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
             rightThreshold={40}
         >
             <View style={styles.card}>
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        onLongPress={drag}
-                        delayLongPress={Platform.OS === 'android' ? 300 : 200}
-                        activeOpacity={0.7}
-                        style={{ flex: 1 }}
-                    >
-                        <View style={styles.exerciseInfo}>
-                            <View style={styles.exerciseNameRow}>
-                                <Text style={styles.exerciseName}>
-                                    {(exercise.name || '').toUpperCase()}
-                                    {isLocked && (
-                                        <>
-                                            {' '}
-                                            <Ionicons name="lock-closed" size={14} color={theme.colors.text.tertiary} />
-                                        </>
-                                    )}
-                                </Text>
-                                <TouchableOpacity 
-                                    onPress={() => setShowMenu(true)}
-                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                    style={styles.exerciseMenuButton}
-                                >
-                                    <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.text.tertiary} />
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={styles.exerciseInfoRow}>
-                                <View style={styles.exerciseMusclesContainer}>
-                                    {exercise.primary_muscle && typeof exercise.primary_muscle === 'string' && (
-                                        <View style={[styles.exerciseTag, styles.primaryMuscleTag]}>
-                                            <Text style={styles.exerciseTagText}>{exercise.primary_muscle}</Text>
-                                        </View>
-                                    )}
-                                </View>
-                                <TouchableOpacity 
-                                    onPress={() => setShowHistory(!showHistory)}
-                                    style={[styles.historyToggleButton, showHistory && styles.historyToggleButtonActive]}
-                                >
-                                    <Ionicons name="time-outline" size={14} color={showHistory ? theme.colors.text.brand : theme.colors.text.tertiary} />
-                                    <Text style={[styles.historyToggleText, showHistory && styles.historyToggleTextActive]}>HISTORY</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                    onLongPress={drag}
+                    delayLongPress={Platform.OS === 'android' ? 300 : 200}
+                    activeOpacity={0.7}
+                    style={{ flex: 1 }}
+                >
+                    <ExerciseHeader
+                        exercise={exercise}
+                        isLocked={isLocked}
+                        onMenuPress={() => setShowMenu(true)}
+                        showHistory={showHistory}
+                        onHistoryToggle={() => setShowHistory(!showHistory)}
+                    />
+                </TouchableOpacity>
 
                 {showHistory && (
                     <View style={styles.quickHistoryContainer}>
@@ -929,13 +713,7 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
 
                 {(sets.length > 0 || !isLocked) && (
                     <View style={styles.setsContainer}>
-                        <View style={styles.setsHeader}>
-                            <Text style={[styles.setHeaderText, {maxWidth: 30}]}>SET</Text>
-                            <Text style={styles.setHeaderText}>REST</Text>
-                            <Text style={styles.setHeaderText}>WEIGHT</Text>
-                            <Text style={styles.setHeaderText}>REPS</Text>
-                            <Text style={styles.setHeaderText}>RIR</Text>
-                        </View>
+                        <SetsHeader columns={['SET', 'REST', 'WEIGHT', 'REPS', 'RIR']} />
                         
                         {sets.map((set: any, index: number) => {
                             const setKey = `set-${set.id || index}`;
@@ -972,119 +750,31 @@ export const ActiveWorkoutExerciseCard = ({ workoutExercise, isLocked, onToggleL
                                 swipeControl.closeAll();
                                 onInputFocus?.();
                             }}
+                            exerciseIndex={exerciseIndex ?? 0}
                         />
                     </View>
                 )}
             </View>
             
-            <Modal
+            <ExerciseMenuModal
                 visible={showMenu}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setShowMenu(false)}
-            >
-                <TouchableWithoutFeedback onPress={() => setShowMenu(false)}>
-                    <View style={styles.menuModalOverlay}>
-                        <View style={styles.menuModalContent}>
-                            <TouchableOpacity
-                                style={styles.menuItem}
-                                onPress={() => {
-                                    setShowMenu(false);
-                                    onShowInfo?.(exercise);
-                                }}
-                            >
-                                <Ionicons name="information-circle-outline" size={22} color={theme.colors.text.primary} style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
-                                <Text style={styles.menuItemText}>Info</Text>
-                            </TouchableOpacity>
-                            
-                            <TouchableOpacity
-                                style={styles.menuItem}
-                                onPress={() => {
-                                    setShowMenu(false);
-                                    onShowStatistics?.(exercise.id);
-                                }}
-                            >
-                                <Ionicons name="stats-chart-outline" size={22} color={theme.colors.text.primary} style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
-                                <Text style={styles.menuItemText}>Statistics</Text>
-                            </TouchableOpacity>
-                            
-                            {onToggleLock && (
-                                <TouchableOpacity
-                                    style={styles.menuItem}
-                                    onPress={() => {
-                                        setShowMenu(false);
-                                        onToggleLock(idToLock);
-                                    }}
-                                >
-                                    <Ionicons 
-                                        name={isLocked ? "lock-open-outline" : "lock-closed-outline"} 
-                                        size={22} 
-                                        color={isLocked ? theme.colors.status.warning : theme.colors.text.primary}
-                                        style={Platform.OS === 'web' ? { marginRight: 12 } : {}}
-                                    />
-                                    <Text style={styles.menuItemText}>
-                                        {isLocked ? "Unlock" : "Lock"}
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
-                            
-                            {sets.length > 0 && onDeleteSet && (
-                                <TouchableOpacity
-                                    style={[styles.menuItem, styles.menuItemDelete]}
-                                    onPress={() => {
-                                        setShowMenu(false);
-                                        Alert.alert(
-                                            "Delete All Sets",
-                                            `Are you sure you want to delete all ${sets.length} set${sets.length > 1 ? 's' : ''}?`,
-                                            [
-                                                { text: "Cancel", style: "cancel" },
-                                                {
-                                                    text: "Delete All",
-                                                    style: "destructive",
-                                                    onPress: async () => {
-                                                        for (const set of sets) {
-                                                            if (set.id) {
-                                                                await onDeleteSet(set.id);
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        );
-                                    }}
-                                >
-                                    <Ionicons name="trash-outline" size={22} color={theme.colors.status.error} style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
-                                    <Text style={[styles.menuItemText, styles.menuItemTextDelete]}>Delete All Sets</Text>
-                                </TouchableOpacity>
-                            )}
-                            
-                            {onRemove && (
-                                <TouchableOpacity
-                                    style={[styles.menuItem, styles.menuItemDelete]}
-                                    onPress={() => {
-                                        setShowMenu(false);
-                                        Alert.alert(
-                                            "Delete Exercise",
-                                            "Are you sure you want to remove this exercise?",
-                                            [
-                                                { text: "Cancel", style: "cancel" },
-                                                {
-                                                    text: "Delete",
-                                                    style: "destructive",
-                                                    onPress: () => onRemove(idToLock)
-                                                }
-                                            ]
-                                        );
-                                    }}
-                                >
-                                    <Ionicons name="trash-outline" size={22} color={theme.colors.status.error} style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
-                                    <Text style={[styles.menuItemText, styles.menuItemTextDelete]}>Delete Exercise</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-                </TouchableWithoutFeedback>
-            </Modal>
+                onClose={() => setShowMenu(false)}
+                exercise={exercise}
+                isLocked={isLocked}
+                setsCount={sets.length}
+                onShowInfo={onShowInfo}
+                onShowStatistics={onShowStatistics}
+                onToggleLock={onToggleLock}
+                onDeleteAllSets={async () => {
+                    for (const set of sets) {
+                        if (set.id) {
+                            await onDeleteSet(set.id);
+                        }
+                    }
+                }}
+                onRemove={onRemove}
+                exerciseId={idToLock}
+            />
         </ReanimatedSwipeable>
     );
 };
@@ -1104,82 +794,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: theme.spacing.m,
     },
-    exerciseInfo: { 
-        flex: 1 
-    },
-    exerciseNameRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 6,
-    },
-    exerciseName: {
-        fontSize: theme.typography.sizes.xl,
-        fontWeight: '900',
-        fontStyle: 'italic',
-        textTransform: 'uppercase',
-        color: theme.colors.text.primary,
-        flex: 1,
-    },
-    exerciseMenuButton: {
-        padding: 8,
-        marginLeft: 8,
-    },
-    exerciseInfoRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    exerciseMusclesContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        flex: 1,
-        gap: 8,
-    },
-    exerciseTag: {
-        backgroundColor: theme.colors.ui.glassStrong,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: theme.colors.ui.border,
-    },
-    primaryMuscleTag: {
-        backgroundColor: theme.colors.ui.glassStrong,
-        borderColor: theme.colors.status.active,
-    },
-    exerciseTagText: {
-        color: theme.colors.text.primary,
-        fontSize: 12,
-        fontWeight: '500',
-        letterSpacing: 0.2,
-    },
-    secondaryMuscleTagText: {
-        color: theme.colors.text.secondary,
-        fontSize: 11,
-        fontWeight: '400',
-        letterSpacing: 0.1,
-    },
     setsContainer: {
         marginTop: 12,
         paddingTop: 12,
         borderTopWidth: 1,
         borderTopColor: theme.colors.ui.border,
-    },
-    setsHeader: {
-        flexDirection: 'row',
-        marginBottom: 6,
-        paddingLeft: 4,
-    },
-    setHeaderText: {
-        flex: 1,
-        color: theme.colors.text.secondary,
-        fontSize: 11,
-        fontWeight: '600',
-        textAlign: 'center',
-        letterSpacing: 0.3,
-        textTransform: 'uppercase',
     },
     setRow: {
         flexDirection: 'row',
@@ -1367,123 +986,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '800',
         marginLeft: 4,
-    },
-    menuModalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    menuModalContent: {
-        backgroundColor: theme.colors.ui.glassStrong,
-        borderRadius: 24,
-        padding: 8,
-        minWidth: 220,
-        borderWidth: 1,
-        borderColor: theme.colors.ui.border,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.2,
-        shadowRadius: 32,
-        elevation: 8,
-    },
-    menuItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        borderRadius: 12,
-        marginHorizontal: 4,
-        marginVertical: 2,
-    },
-    menuItemDelete: {
-        borderTopWidth: 1,
-        borderTopColor: theme.colors.ui.border,
-        marginTop: 8,
-    },
-    menuItemText: {
-        color: theme.colors.text.primary,
-        fontSize: 17,
-        fontWeight: '500',
-        letterSpacing: -0.2,
-    },
-    menuItemTextDelete: {
-        color: theme.colors.status.error,
-    },
-    insightsModalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    insightsModalContent: {
-        backgroundColor: theme.colors.ui.glassStrong,
-        borderRadius: 24,
-        width: '90%',
-        maxHeight: '80%',
-        borderWidth: 1.5,
-        borderColor: theme.colors.ui.border,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 32,
-        elevation: 12,
-    },
-    insightsModalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.ui.border,
-    },
-    insightsModalTitle: {
-        color: theme.colors.text.primary,
-        fontSize: 20,
-        fontWeight: '700',
-    },
-    insightsModalBody: {
-        padding: 20,
-        maxHeight: 500,
-    },
-    insightsSection: {
-        marginBottom: 24,
-    },
-    insightsSectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 12,
-        gap: 8,
-    },
-    insightsSectionTitle: {
-        color: theme.colors.text.primary,
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    insightItem: {
-        backgroundColor: theme.colors.ui.glass,
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: theme.colors.ui.border,
-    },
-    insightReason: {
-        color: theme.colors.text.primary,
-        fontSize: 15,
-        lineHeight: 22,
-        marginBottom: 8,
-    },
-    insightDetail: {
-        color: theme.colors.text.secondary,
-        fontSize: 13,
-        marginTop: 4,
-    },
-    noInsightsText: {
-        color: theme.colors.text.secondary,
-        fontSize: 15,
-        textAlign: 'center',
-        fontStyle: 'italic',
     },
     historyToggleButton: {
         flexDirection: 'row',

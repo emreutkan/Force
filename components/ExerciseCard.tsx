@@ -1,108 +1,23 @@
 import { updateSet } from '@/api/Exercises';
 import { getRestTimerState, stopRestTimer } from '@/api/Workout';
 import { SwipeAction } from '@/components/SwipeAction';
-import { theme } from '@/constants/theme';
 import { useActiveWorkoutStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { useRestTimer } from './RestTimerBar';
-import { ViewOnlyExerciseCard } from './ViewOnlyExerciseCard';
 import { ActiveWorkoutExerciseCard } from './ActiveWorkoutExerciseCard';
 import { EditWorkoutExerciseCard } from './EditWorkoutExerciseCard';
+import { useRestTimer } from './RestTimerBar';
+import { ViewOnlyExerciseCard } from './ViewOnlyExerciseCard';
+import { formatValidationErrors, formatWeight, validateSetData } from './shared/ExerciseCardUtils';
+import { ExerciseMenuModal } from './shared/ExerciseMenuModal';
+import { InsightsModal } from './shared/InsightsModal';
+import { SetsHeader } from './shared/SetsHeader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IS_WEB_SMALL = Platform.OS === 'web' && SCREEN_WIDTH <= 750;
-
-// ============================================================================
-// 1. HELPERS
-// ============================================================================
-const validateSetData = (data: any): { isValid: boolean, errors: string[] } => {
-    const errors: string[] = [];
-
-    // Validate reps (0-100, required)
-    if (data.reps !== undefined && data.reps !== null) {
-        const reps = typeof data.reps === 'string' ? parseInt(data.reps) : data.reps;
-        if (isNaN(reps) || reps < 0 || reps > 100) {
-            errors.push('Reps must be between 0 and 100');
-        }
-    }
-
-    // Validate reps_in_reserve (0-100, required)
-    if (data.reps_in_reserve !== undefined && data.reps_in_reserve !== null) {
-        const rir = typeof data.reps_in_reserve === 'string' ? parseInt(data.reps_in_reserve) : data.reps_in_reserve;
-        if (isNaN(rir) || rir < 0 || rir > 100) {
-            errors.push('RIR must be between 0 and 100');
-        }
-    }
-
-    // Validate rest_time_before_set (0-10800 seconds = 3 hours, required)
-    if (data.rest_time_before_set !== undefined && data.rest_time_before_set !== null) {
-        const restTime = typeof data.rest_time_before_set === 'string' ? parseInt(data.rest_time_before_set) : data.rest_time_before_set;
-        if (isNaN(restTime) || restTime < 0 || restTime > 10800) {
-            errors.push('Rest time cannot exceed 3 hours');
-        }
-    }
-
-    // Validate total_tut (0-600 seconds = 10 minutes, optional)
-    if (data.total_tut !== undefined && data.total_tut !== null) {
-        const tut = typeof data.total_tut === 'string' ? parseInt(data.total_tut) : data.total_tut;
-        if (isNaN(tut) || tut < 0 || tut > 600) {
-            errors.push('Time under tension cannot exceed 10 minutes');
-        }
-    }
-
-    // Validate eccentric_time (0-600 seconds, optional)
-    if (data.eccentric_time !== undefined && data.eccentric_time !== null) {
-        const ecc = typeof data.eccentric_time === 'string' ? parseInt(data.eccentric_time) : data.eccentric_time;
-        if (isNaN(ecc) || ecc < 0 || ecc > 600) {
-            errors.push('Eccentric time cannot exceed 10 minutes');
-        }
-    }
-
-    // Validate concentric_time (0-600 seconds, optional)
-    if (data.concentric_time !== undefined && data.concentric_time !== null) {
-        const conc = typeof data.concentric_time === 'string' ? parseInt(data.concentric_time) : data.concentric_time;
-        if (isNaN(conc) || conc < 0 || conc > 600) {
-            errors.push('Concentric time cannot exceed 10 minutes');
-        }
-    }
-
-    return { isValid: errors.length === 0, errors };
-};
-
-const formatValidationErrors = (validationErrors: any): string => {
-    if (!validationErrors || typeof validationErrors !== 'object') {
-        return 'Validation failed';
-    }
-
-    const messages: string[] = [];
-    Object.keys(validationErrors).forEach(field => {
-        const fieldErrors = validationErrors[field];
-        if (Array.isArray(fieldErrors)) {
-            fieldErrors.forEach((error: string) => {
-                // Convert backend messages to user-friendly ones
-                let friendlyMessage = error;
-                if (error.includes('less than or equal to 100')) {
-                    friendlyMessage = field === 'reps' ? 'Reps must be between 0 and 100' : 'RIR must be between 0 and 100';
-                } else if (error.includes('less than or equal to 10800')) {
-                    friendlyMessage = 'Rest time cannot exceed 3 hours';
-                } else if (error.includes('less than or equal to 600')) {
-                    friendlyMessage = 'Time under tension cannot exceed 10 minutes';
-                } else if (error.includes('greater than or equal to 0')) {
-                    friendlyMessage = `${field} cannot be negative`;
-                }
-                messages.push(friendlyMessage);
-            });
-        } else {
-            messages.push(fieldErrors);
-        }
-    });
-
-    return messages.join('\n');
-};
 
 // ============================================================================
 // 2. COMPONENTS
@@ -279,7 +194,6 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
             dragX={dragX}
             onPress={() => onDelete(set.id)}
             iconName="trash-outline"
-            side="right"
         />
     );
 
@@ -292,7 +206,6 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
                     dragX={dragX}
                     onPress={() => setShowInsights(true)}
                     iconName="bulb-outline"
-                    side="left"
                 />
             );
         }
@@ -304,7 +217,6 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
                     dragX={dragX}
                     onPress={() => onShowStatistics(exerciseId)}
                     iconName="stats-chart-outline"
-                    side="left"
                 />
             );
         }
@@ -319,13 +231,6 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
         return `${m}m ${s > 0 ? s + 's' : ''}`;
     };
 
-    const formatWeight = (weight: number) => {
-        if (!weight && weight !== 0) return '-';
-        const w = Number(weight);
-        if (isNaN(w)) return '-';
-        if (Math.abs(w % 1) < 0.0000001) return Math.round(w).toString();
-        return parseFloat(w.toFixed(2)).toString();
-    };
 
     return (
         <ReanimatedSwipeable
@@ -449,98 +354,11 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
                 )}
             </View>
             
-            <Modal
+            <InsightsModal
                 visible={showInsights}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowInsights(false)}
-            >
-                <TouchableWithoutFeedback onPress={() => setShowInsights(false)}>
-                    <View style={styles.insightsModalOverlay}>
-                        <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-                            <View style={styles.insightsModalContent}>
-                                <View style={styles.insightsModalHeader}>
-                                    <Text style={styles.insightsModalTitle}>Set {set.set_number} Insights</Text>
-                                    <TouchableOpacity onPress={() => setShowInsights(false)}>
-                                        <Ionicons name="close" size={24} color="#FFFFFF" />
-                                    </TouchableOpacity>
-                                </View>
-                                
-                                <ScrollView style={styles.insightsModalBody}>
-                                    {set.insights?.good && Object.keys(set.insights.good).length > 0 && (
-                                        <View style={styles.insightsSection}>
-                                            <View style={styles.insightsSectionHeader}>
-                                                <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-                                                <Text style={styles.insightsSectionTitle}>Good</Text>
-                                            </View>
-                                            {Object.entries(set.insights.good).map(([key, insight]: [string, any]) => (
-                                                <View key={key} style={styles.insightItem}>
-                                                    <Text style={styles.insightReason}>{insight.reason}</Text>
-                                                </View>
-                                            ))}
-                                        </View>
-                                    )}
-                                    
-                                    {set.insights?.bad && Object.keys(set.insights.bad).length > 0 && (
-                                        <View style={styles.insightsSection}>
-                                            <View style={styles.insightsSectionHeader}>
-                                                <Ionicons name="alert-circle" size={20} color="#FF3B30" />
-                                                <Text style={styles.insightsSectionTitle}>Areas to Improve</Text>
-                                            </View>
-                                            {Object.entries(set.insights.bad).map(([key, insight]: [string, any]) => (
-                                                <View key={key} style={styles.insightItem}>
-                                                    <Text style={styles.insightReason}>{insight.reason}</Text>
-                                                    {insight.current_reps && (
-                                                        <Text style={styles.insightDetail}>
-                                                            Current: {insight.current_reps} reps
-                                                        </Text>
-                                                    )}
-                                                    {insight.optimal_range && (
-                                                        <Text style={styles.insightDetail}>
-                                                            Optimal: {insight.optimal_range}
-                                                        </Text>
-                                                    )}
-                                                    {insight.current_tut && (
-                                                        <Text style={styles.insightDetail}>
-                                                            Current TUT: {insight.current_tut}s
-                                                        </Text>
-                                                    )}
-                                                    {insight.seconds_per_rep && (
-                                                        <Text style={styles.insightDetail}>
-                                                            {insight.seconds_per_rep}s per rep
-                                                        </Text>
-                                                    )}
-                                                    {insight.set_position && (
-                                                        <Text style={styles.insightDetail}>
-                                                            Set Position: {insight.set_position}
-                                                        </Text>
-                                                    )}
-                                                    {insight.total_sets && (
-                                                        <Text style={styles.insightDetail}>
-                                                            Total Sets: {insight.total_sets}
-                                                        </Text>
-                                                    )}
-                                                    {insight.optimal_sets && (
-                                                        <Text style={styles.insightDetail}>
-                                                            Optimal: {insight.optimal_sets}
-                                                        </Text>
-                                                    )}
-                                                </View>
-                                            ))}
-                                        </View>
-                                    )}
-                                    
-                                    {(!set.insights || (Object.keys(set.insights.good || {}).length === 0 && Object.keys(set.insights.bad || {}).length === 0)) && (
-                                        <View style={styles.insightsSection}>
-                                            <Text style={styles.noInsightsText}>No insights available for this set.</Text>
-                                        </View>
-                                    )}
-                                </ScrollView>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    </View>
-                </TouchableWithoutFeedback>
-            </Modal>
+                onClose={() => setShowInsights(false)}
+                set={set}
+            />
         </ReanimatedSwipeable>
     );
 };
@@ -1098,7 +916,7 @@ const AddSetRow = ({ lastSet, nextSetNumber, index, onAdd, isLocked, isEditMode,
 };
 
 // ExerciseCard Component
-export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly, onToggleLock, onRemove, onAddSet, onDeleteSet, swipeControl, onInputFocus, onShowInfo, onShowStatistics, isActive, drag, onUpdateSet }: any) => {
+export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly, onToggleLock, onRemove, onAddSet, onDeleteSet, swipeControl, onInputFocus, onShowInfo, onShowStatistics, isActive, drag, onUpdateSet, exerciseIndex }: any) => {
     const exercise = workoutExercise.exercise || (workoutExercise.name ? workoutExercise : null);
     if (!exercise) return null;
 
@@ -1122,6 +940,7 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
                 onShowInfo={onShowInfo}
                 onShowStatistics={onShowStatistics}
                 drag={drag}
+                exerciseIndex={exerciseIndex}
             />
         );
     }
@@ -1210,7 +1029,6 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
             dragX={dragX}
             onPress={() => onToggleLock(idToLock)}
             iconName={isLocked ? "lock-open-outline" : "lock-closed"}
-            side="left"
         />
     );
 
@@ -1220,7 +1038,6 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
             dragX={dragX}
             onPress={() => onRemove(idToLock)}
             iconName="trash-outline"
-            side="right"
         />
     );
 
@@ -1315,13 +1132,7 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
                             // Stop drag from activating when touching sets area
                         }}
                     >
-                        <View style={styles.setsHeader}>
-                            <Text style={[styles.setHeaderText, {maxWidth: 30}]}>Set</Text>
-                            <Text style={[styles.setHeaderText, {}]}>Rest</Text>
-                            <Text style={[styles.setHeaderText, {}]}>Weight</Text>
-                            <Text style={[styles.setHeaderText, {}]}>Reps</Text>
-                            <Text style={[styles.setHeaderText, {}]}>RIR</Text>
-                        </View>
+                        <SetsHeader columns={['SET', 'REST', 'WEIGHT', 'REPS', 'RIR']} />
                         
                         {sets.map((set: any, index: number) => {
                             const setKey = `set-${set.id || index}`;
@@ -1369,115 +1180,25 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
                 )}
             </View>
             
-            <Modal
+            <ExerciseMenuModal
                 visible={showMenu}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setShowMenu(false)}
-            >
-                <TouchableWithoutFeedback onPress={() => setShowMenu(false)}>
-                    <View style={styles.menuModalOverlay}>
-                        <View style={styles.menuModalContent}>
-                            <TouchableOpacity
-                                style={styles.menuItem}
-                                onPress={() => {
-                                    setShowMenu(false);
-                                    onShowInfo?.(exercise);
-                                }}
-                            >
-                                <Ionicons name="information-circle-outline" size={22} color="#FFFFFF" style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
-                                <Text style={styles.menuItemText}>Info</Text>
-                            </TouchableOpacity>
-                            
-                            <TouchableOpacity
-                                style={styles.menuItem}
-                                onPress={() => {
-                                    setShowMenu(false);
-                                    onShowStatistics?.(exercise.id);
-                                }}
-                            >
-                                <Ionicons name="stats-chart-outline" size={22} color="#FFFFFF" style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
-                                <Text style={styles.menuItemText}>Statistics</Text>
-                            </TouchableOpacity>
-                            
-                            {!isViewOnly && onToggleLock && (
-                                <TouchableOpacity
-                                    style={styles.menuItem}
-                                    onPress={() => {
-                                        setShowMenu(false);
-                                        onToggleLock(idToLock);
-                                    }}
-                                >
-                                    <Ionicons 
-                                        name={isLocked ? "lock-open-outline" : "lock-closed-outline"} 
-                                        size={22} 
-                                        color={isLocked ? "#FF9F0A" : "#FFFFFF"}
-                                        style={Platform.OS === 'web' ? { marginRight: 12 } : {}}
-                                    />
-                                    <Text style={styles.menuItemText}>
-                                        {isLocked ? "Unlock" : "Lock"}
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
-                            
-                            {!isViewOnly && sets.length > 0 && onDeleteSet && (
-                                <TouchableOpacity
-                                    style={[styles.menuItem, styles.menuItemDelete]}
-                                    onPress={() => {
-                                        setShowMenu(false);
-                                        Alert.alert(
-                                            "Delete All Sets",
-                                            `Are you sure you want to delete all ${sets.length} set${sets.length > 1 ? 's' : ''}?`,
-                                            [
-                                                { text: "Cancel", style: "cancel" },
-                                                {
-                                                    text: "Delete All",
-                                                    style: "destructive",
-                                                    onPress: async () => {
-                                                        // Delete all sets
-                                                        for (const set of sets) {
-                                                            if (set.id) {
-                                                                await onDeleteSet(set.id);
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        );
-                                    }}
-                                >
-                                    <Ionicons name="trash-outline" size={22} color="#FF3B30" style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
-                                    <Text style={[styles.menuItemText, styles.menuItemTextDelete]}>Delete All Sets</Text>
-                                </TouchableOpacity>
-                            )}
-                            
-                            {(isActive || isEditMode) && onRemove && (
-                                <TouchableOpacity
-                                    style={[styles.menuItem, styles.menuItemDelete]}
-                                    onPress={() => {
-                                        setShowMenu(false);
-                                        Alert.alert(
-                                            "Delete Exercise",
-                                            "Are you sure you want to remove this exercise?",
-                                            [
-                                                { text: "Cancel", style: "cancel" },
-                                                {
-                                                    text: "Delete",
-                                                    style: "destructive",
-                                                    onPress: () => onRemove(idToLock)
-                                                }
-                                            ]
-                                        );
-                                    }}
-                                >
-                                    <Ionicons name="trash-outline" size={22} color="#FF3B30" style={Platform.OS === 'web' ? { marginRight: 12 } : {}} />
-                                    <Text style={[styles.menuItemText, styles.menuItemTextDelete]}>Delete Exercise</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-                </TouchableWithoutFeedback>
-            </Modal>
+                onClose={() => setShowMenu(false)}
+                exercise={exercise}
+                isLocked={isLocked}
+                setsCount={sets.length}
+                onShowInfo={onShowInfo}
+                onShowStatistics={onShowStatistics}
+                onToggleLock={!isViewOnly ? onToggleLock : undefined}
+                onDeleteAllSets={!isViewOnly && sets.length > 0 && onDeleteSet ? async () => {
+                    for (const set of sets) {
+                        if (set.id) {
+                            await onDeleteSet(set.id);
+                        }
+                    }
+                } : undefined}
+                onRemove={(isActive || isEditMode) ? onRemove : undefined}
+                exerciseId={idToLock}
+            />
         </ReanimatedSwipeable>
     );
 };
@@ -1525,48 +1246,6 @@ const styles = StyleSheet.create({
     exerciseMenuButton: {
         padding: 8,
         marginLeft: 8,
-    },
-    menuModalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    menuModalContent: {
-        backgroundColor: '#1A1A1C',
-        borderRadius: 24,
-        padding: 8,
-        minWidth: 220,
-        borderWidth: 1,
-        borderColor: '#2A2A2E',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.2,
-        shadowRadius: 32,
-        elevation: 8,
-    },
-    menuItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        borderRadius: 12,
-        marginHorizontal: 4,
-        marginVertical: 2,
-    },
-    menuItemDelete: {
-        borderTopWidth: 1,
-        borderTopColor: '#2C2C2E',
-        marginTop: 8,
-    },
-    menuItemText: {
-        color: '#FFFFFF',
-        fontSize: 17,
-        fontWeight: '500',
-        letterSpacing: -0.2,
-    },
-    menuItemTextDelete: {
-        color: '#FF3B30',
     },
     exerciseInfoRow: {
         flexDirection: 'row',
@@ -1616,38 +1295,6 @@ const styles = StyleSheet.create({
         paddingTop: 12,
         borderTopWidth: 1,
         borderTopColor: '#2A2A2E',
-    },
-    setsHeader: {
-        flex: 1,
-        flexDirection: 'row',
-        marginBottom: 6,
-        paddingLeft: 4,
-        ...Platform.select({
-            web: {
-                display: 'flex',
-                width: '100%',
-            },
-        }),
-    },
-    setHeaderText: {
-        flex: 1,
-        color: '#8E8E93',
-        fontSize: 11,
-        fontWeight: '600',
-        textAlign: 'center',
-        letterSpacing: 0.3,
-        textTransform: 'uppercase',
-        ...Platform.select({
-            web: {
-                ...(IS_WEB_SMALL && {
-                    fontSize: 10,
-                    paddingHorizontal: 2,
-                    maxWidth: 70,
-                    flex: 0,
-                    minWidth: 60,
-                }),
-            },
-        }),
     },
     setRow: {
         flexDirection: 'row',
@@ -1960,81 +1607,6 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 17,
         fontWeight: '400',
-    },
-    insightsModalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    insightsModalContent: {
-        backgroundColor: '#1A1A1C',
-        borderRadius: 24,
-        width: '90%',
-        maxHeight: '80%',
-        borderWidth: 1.5,
-        borderColor: '#2A2A2E',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 32,
-        elevation: 12,
-    },
-    insightsModalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#2C2C2E',
-    },
-    insightsModalTitle: {
-        color: '#FFFFFF',
-        fontSize: 20,
-        fontWeight: '700',
-    },
-    insightsModalBody: {
-        padding: 20,
-        maxHeight: 500,
-    },
-    insightsSection: {
-        marginBottom: 24,
-    },
-    insightsSectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 12,
-        gap: 8,
-    },
-    insightsSectionTitle: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    insightItem: {
-        backgroundColor: '#252528',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: '#323236',
-    },
-    insightReason: {
-        color: '#FFFFFF',
-        fontSize: 15,
-        lineHeight: 22,
-        marginBottom: 8,
-    },
-    insightDetail: {
-        color: '#8E8E93',
-        fontSize: 13,
-        marginTop: 4,
-    },
-    noInsightsText: {
-        color: '#8E8E93',
-        fontSize: 15,
-        textAlign: 'center',
-        fontStyle: 'italic',
     },
 });
 

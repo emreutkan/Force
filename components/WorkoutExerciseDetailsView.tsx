@@ -114,6 +114,7 @@ export default function WorkoutExerciseDetailsView({
     const hasSets = exercises.some((ex: any) => ex.sets && ex.sets.length > 0);
 
     const renderItems = ({item, drag, isActive: isDragging, getIndex}: {item: any, drag: () => void, isActive: boolean, getIndex: () => number | undefined}) => {
+        const exerciseIndex = getIndex() ?? 0;
         const exerciseCard = (
             <ExerciseCard
                 key={item.order}
@@ -128,12 +129,13 @@ export default function WorkoutExerciseDetailsView({
                 onUpdateSet={handleUpdateSet}
                 swipeControl={swipeControl}
                 onInputFocus={() => {
-                    onInputFocus?.(getIndex() ?? 0);
+                    onInputFocus?.(exerciseIndex);
                 }}
                 onShowInfo={(exercise: any) => setSelectedExerciseInfo(exercise)}
                 onShowStatistics={onShowStatistics}
                 isActive={isActive}
                 drag={drag}
+                exerciseIndex={exerciseIndex}
             />
         );
 
