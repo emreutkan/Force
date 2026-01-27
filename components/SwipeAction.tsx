@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
+import { StyleSheet, Pressable, ViewStyle, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { 
     useAnimatedStyle, 
@@ -58,19 +58,21 @@ export const SwipeAction = ({
     };
 
     return (
-        <TouchableOpacity 
-            onPress={handlePress} 
-            activeOpacity={0.8} 
-            style={[
+        <Pressable 
+            onPress={handlePress}
+            style={({ pressed }) => [
                 styles.container, 
                 { backgroundColor },
-                style
+                style,
+                pressed && styles.pressed
             ]}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            android_ripple={{ color: 'rgba(255, 255, 255, 0.2)', borderless: false }}
         >
             <Animated.View style={[styles.iconContainer, animatedIconStyle]}>
                 <Ionicons name={iconName} size={iconSize} color={color} />
             </Animated.View>
-        </TouchableOpacity>
+        </Pressable>
     );
 };
 
@@ -85,6 +87,9 @@ const styles = StyleSheet.create({
     iconContainer: {
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    pressed: {
+        opacity: 0.7,
     },
 });
 

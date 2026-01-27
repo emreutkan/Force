@@ -192,7 +192,10 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
         <SwipeAction
             progress={progress}
             dragX={dragX}
-            onPress={() => onDelete(set.id)}
+            onPress={() => {
+                swipeRef.current?.close();
+                onDelete(set.id);
+            }}
             iconName="trash-outline"
         />
     );
@@ -204,7 +207,10 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
                 <SwipeAction
                     progress={progress}
                     dragX={dragX}
-                    onPress={() => setShowInsights(true)}
+                    onPress={() => {
+                        swipeRef.current?.close();
+                        setShowInsights(true);
+                    }}
                     iconName="bulb-outline"
                 />
             );
@@ -215,7 +221,10 @@ const SetRow = ({ set, index, onDelete, isLocked, isViewOnly, isActive, isEditMo
                 <SwipeAction
                     progress={progress}
                     dragX={dragX}
-                    onPress={() => onShowStatistics(exerciseId)}
+                    onPress={() => {
+                        swipeRef.current?.close();
+                        onShowStatistics(exerciseId);
+                    }}
                     iconName="stats-chart-outline"
                 />
             );
@@ -1027,7 +1036,10 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
         <SwipeAction
             progress={progress}
             dragX={dragX}
-            onPress={() => onToggleLock(idToLock)}
+            onPress={() => {
+                swipeControl.closeAll();
+                onToggleLock(idToLock);
+            }}
             iconName={isLocked ? "lock-open-outline" : "lock-closed"}
         />
     );
@@ -1036,7 +1048,10 @@ export const ExerciseCard = ({ workoutExercise, isLocked, isEditMode, isViewOnly
         <SwipeAction
             progress={progress}
             dragX={dragX}
-            onPress={() => onRemove(idToLock)}
+            onPress={() => {
+                swipeControl.closeAll();
+                onRemove(idToLock);
+            }}
             iconName="trash-outline"
         />
     );
