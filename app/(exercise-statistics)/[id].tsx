@@ -1,13 +1,13 @@
 import { getExerciseRanking } from '@/api/Achievements';
 import { getExercise1RMHistory, getExerciseSetHistory } from '@/api/Exercises';
-import { Exercise1RMHistory, ExerciseRanking } from '@/api/types';
+import { Exercise1RMHistory, ExerciseRanking } from '@/api/types/index';
 import UpgradeModal from '@/components/UpgradeModal';
 import { commonStyles, theme, typographyStyles } from '@/constants/theme';
 import { useUserStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Dimensions,
@@ -22,173 +22,156 @@ import Svg, { Defs, Path, Stop, LinearGradient as SvgLinearGradient } from 'reac
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_HEIGHT = 220;
-const CHART_PADDING = 20;
 const MIN_POINT_SPACING = 80; // Minimum space between data points for readability
 
 // ============================================================================
 // HELPER COMPONENTS
 // ============================================================================
 
-const NeuralBarChart = ({ data, valueKey, secondaryKey, showPercentage = false, mode = 'timeline' }: { 
-    data: any[], 
-    valueKey: string, 
+const NeuralBarChart = ({ data, valueKey, secondaryKey, showPercentage = false, mode = 'timeline' }: {
+    data: any[],
+    valueKey: string,
     secondaryKey?: string,
     showPercentage?: boolean,
     mode?: 'timeline' | 'reps'
 }) => {
-    if (!data || data.length === 0) return null;
-
     const scrollViewRef = useRef<ScrollView>(null);
-
-    // Calculate dynamic width based on number of data points
-    const chartWidth = Math.max(SCREEN_WIDTH - 48, data.length * MIN_POINT_SPACING);
+    const dataLength = data?.length ?? 0;
+    const chartWidth = Math.max(SCREEN_WIDTH - 48, dataLength * MIN_POINT_SPACING);
     const shouldScroll = chartWidth > SCREEN_WIDTH - 48;
+    const hasData = data && data.length > 0;
 
-    // Scroll to the end (most recent data) when chart mounts
     useEffect(() => {
         if (shouldScroll && scrollViewRef.current) {
             setTimeout(() => {
                 scrollViewRef.current?.scrollToEnd({ animated: false });
             }, 100);
         }
-    }, [shouldScroll, data.length]);
+    }, [shouldScroll, dataLength]);
 
-    const values = data.map(entry => entry[valueKey]);
-    const minVal = Math.min(...values);
-    const maxVal = Math.max(...values);
-    const range = maxVal - minVal || 1;
-    
-    // Add padding to range for better visualization
-    const padding = range * 0.15;
-    const effectiveMin = Math.max(0, minVal - padding);
-    const effectiveMax = maxVal + padding;
-    const effectiveRange = effectiveMax - effectiveMin;
+    const chartContent = useMemo(() => {
+        if (!hasData) return null;
+        const values = data.map(entry => entry[valueKey]);
+        const minVal = Math.min(...values);
+        const maxVal = Math.max(...values);
+        const range = maxVal - minVal || 1;
+        const padding = range * 0.15;
+        const effectiveMin = Math.max(0, minVal - padding);
+        const effectiveMax = maxVal + padding;
+        const effectiveRange = effectiveMax - effectiveMin;
 
-    const getCoordinates = (index: number, value: number) => {
-        const x = (index / (data.length - 1 || 1)) * (chartWidth - 40) + 20;
-        const y = CHART_HEIGHT - ((value - effectiveMin) / effectiveRange) * (CHART_HEIGHT - 60) - 30;
-        return { x, y };
-    };
+        const getCoordinates = (index: number, value: number) => {
+            const x = (index / (data.length - 1 || 1)) * (chartWidth - 40) + 20;
+            const y = CHART_HEIGHT - ((value - effectiveMin) / effectiveRange) * (CHART_HEIGHT - 60) - 30;
+            return { x, y };
+        };
 
-    // Generate path for the primary line
-    let pathD = "";
-    data.forEach((entry, i) => {
-        const { x, y } = getCoordinates(i, entry[valueKey]);
-        if (i === 0) pathD = `M ${x} ${y}`;
-        else {
-            const prev = getCoordinates(i - 1, data[i - 1][valueKey]);
-            const cp1x = prev.x + (x - prev.x) / 2;
-            pathD += ` C ${cp1x} ${prev.y}, ${cp1x} ${y}, ${x} ${y}`;
-        }
-    });
+        let pathD = "";
+        data.forEach((entry, i) => {
+            const { x, y } = getCoordinates(i, entry[valueKey]);
+            if (i === 0) pathD = `M ${x} ${y}`;
+            else {
+                const prev = getCoordinates(i - 1, data[i - 1][valueKey]);
+                const cp1x = prev.x + (x - prev.x) / 2;
+                pathD += ` C ${cp1x} ${prev.y}, ${cp1x} ${y}, ${x} ${y}`;
+            }
+        });
 
-    const fillPathD = data.length > 1 
-        ? `${pathD} L ${getCoordinates(data.length - 1, data[data.length-1][valueKey]).x} ${CHART_HEIGHT} L ${getCoordinates(0, data[0][valueKey]).x} ${CHART_HEIGHT} Z`
-        : "";
+        const fillPathD = data.length > 1
+            ? `${pathD} L ${getCoordinates(data.length - 1, data[data.length - 1][valueKey]).x} ${CHART_HEIGHT} L ${getCoordinates(0, data[0][valueKey]).x} ${CHART_HEIGHT} Z`
+            : "";
 
-    const chartContent = (
-        <View style={[styles.chartContent, { width: chartWidth }]}>
-            <Svg width={chartWidth} height={CHART_HEIGHT}>
-                <Defs>
-                    <SvgLinearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
-                        <Stop offset="0" stopColor={theme.colors.text.brand} stopOpacity="0.3" />
-                        <Stop offset="1" stopColor={theme.colors.text.brand} stopOpacity="0" />
-                    </SvgLinearGradient>
-                </Defs>
+        return (
+            <View style={[styles.chartContent, { width: chartWidth }]}>
+                <Svg width={chartWidth} height={CHART_HEIGHT}>
+                    <Defs>
+                        <SvgLinearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
+                            <Stop offset="0" stopColor={theme.colors.text.brand} stopOpacity="0.3" />
+                            <Stop offset="1" stopColor={theme.colors.text.brand} stopOpacity="0" />
+                        </SvgLinearGradient>
+                    </Defs>
 
-                {/* Grid Lines */}
-                {[0, 0.5, 1].map((ratio, i) => {
-                    const y = CHART_HEIGHT - (ratio * (CHART_HEIGHT - 60)) - 30;
-                    return (
-                        <Path 
-                            key={i}
-                            d={`M 20 ${y} L ${chartWidth - 20} ${y}`}
-                            stroke={theme.colors.ui.border}
-                            strokeWidth="1"
-                            opacity="0.3"
-                        />
-                    );
-                })}
-
-                {/* Fill */}
-                {fillPathD && <Path d={fillPathD} fill="url(#lineGradient)" />}
-
-                {/* Main Line */}
-                <Path 
-                    d={pathD} 
-                    stroke={theme.colors.text.brand} 
-                    strokeWidth="3" 
-                    fill="none" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                />
-
-                {/* Points */}
-                {data.map((entry, i) => {
-                    const { x, y } = getCoordinates(i, entry[valueKey]);
-                    return (
-                        <View key={i}>
-                            <Path 
-                                d={`M ${x-1.5} ${y} a 1.5 1.5 0 1 0 3 0 a 1.5 1.5 0 1 0 -3 0`} 
-                                fill={theme.colors.text.brand}
-                                stroke={theme.colors.background}
-                                strokeWidth="2"
+                    {[0, 0.5, 1].map((ratio, i) => {
+                        const y = CHART_HEIGHT - (ratio * (CHART_HEIGHT - 60)) - 30;
+                        return (
+                            <Path
+                                key={i}
+                                d={`M 20 ${y} L ${chartWidth - 20} ${y}`}
+                                stroke={theme.colors.ui.border}
+                                strokeWidth="1"
+                                opacity="0.3"
                             />
-                        </View>
-                    );
-                })}
-            </Svg>
-            
-            {/* Data Point Labels */}
-            <View style={[styles.dataLabelsContainer, { width: chartWidth }]}>
-                {data.map((entry, i) => {
-                    const { x, y } = getCoordinates(i, entry[valueKey]);
-                    
-                    if (mode === 'timeline') {
-                        const date = new Date(entry.workout_date);
-                        const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
-                        const weight = entry[valueKey].toFixed(1);
-                        
-                        return (
-                            <View key={i} style={[styles.dataLabel, { left: x - 30, top: y - 45 }]}>
-                                <Text style={styles.dataLabelWeight}>{weight}kg</Text>
-                                <Text style={styles.dataLabelDate}>{dateStr}</Text>
-                            </View>
                         );
-                    } else {
-                        // For reps mode, show weight
-                        const weight = entry[valueKey].toFixed(1);
-                        
-                        return (
-                            <View key={i} style={[styles.dataLabel, { left: x - 30, top: y - 45 }]}>
-                                <Text style={styles.dataLabelWeight}>{weight}kg</Text>
-                            </View>
-                        );
-                    }
-                })}
-            </View>
+                    })}
 
-            {/* X Axis Labels - show reps for weight chart */}
-            {mode === 'reps' && (
-                <View style={[styles.xAxis, { width: chartWidth - 40 }]}>
+                    {fillPathD && <Path d={fillPathD} fill="url(#lineGradient)" />}
+
+                    <Path
+                        d={pathD}
+                        stroke={theme.colors.text.brand}
+                        strokeWidth="3"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+
                     {data.map((entry, i) => {
+                        const { x, y } = getCoordinates(i, entry[valueKey]);
                         return (
-                            <Text key={i} style={styles.xAxisLabel}>
-                                {entry.reps} reps
-                            </Text>
+                            <View key={i}>
+                                <Path
+                                    d={`M ${x - 1.5} ${y} a 1.5 1.5 0 1 0 3 0 a 1.5 1.5 0 1 0 -3 0`}
+                                    fill={theme.colors.text.brand}
+                                    stroke={theme.colors.background}
+                                    strokeWidth="2"
+                                />
+                            </View>
+                        );
+                    })}
+                </Svg>
+
+                <View style={[styles.dataLabelsContainer, { width: chartWidth }]}>
+                    {data.map((entry, i) => {
+                        const { x, y } = getCoordinates(i, entry[valueKey]);
+                        if (mode === 'timeline') {
+                            const date = new Date(entry.workout_date);
+                            const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+                            const weight = entry[valueKey].toFixed(1);
+                            return (
+                                <View key={i} style={[styles.dataLabel, { left: x - 30, top: y - 45 }]}>
+                                    <Text style={styles.dataLabelWeight}>{weight}kg</Text>
+                                    <Text style={styles.dataLabelDate}>{dateStr}</Text>
+                                </View>
+                            );
+                        }
+                        const weight = entry[valueKey].toFixed(1);
+                        return (
+                            <View key={i} style={[styles.dataLabel, { left: x - 30, top: y - 45 }]}>
+                                <Text style={styles.dataLabelWeight}>{weight}kg</Text>
+                            </View>
                         );
                     })}
                 </View>
-            )}
-        </View>
-    );
 
-    return (
+                {mode === 'reps' && (
+                    <View style={[styles.xAxis, { width: chartWidth - 40 }]}>
+                        {data.map((entry, i) => (
+                            <Text key={i} style={styles.xAxisLabel}>
+                                {entry.reps} reps
+                            </Text>
+                        ))}
+                    </View>
+                )}
+            </View>
+        );
+    }, [data, valueKey, mode, chartWidth, hasData]);
+
+    return !hasData ? null : (
         <View style={styles.chartWrapper}>
             {shouldScroll ? (
-                <ScrollView 
+                <ScrollView
                     ref={scrollViewRef}
-                    horizontal 
+                    horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.scrollContent}
                 >
@@ -215,42 +198,10 @@ export default function ExerciseStatisticsScreen() {
     const [rmChartMode, setRmChartMode] = useState<'1RM' | 'PROGRESS'>('1RM');
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const insets = useSafeAreaInsets();
-    
+
     // Only check isPro when user is loaded
     const isPro = user !== null ? (user.is_pro || false) : null;
-
-    // Fetch user data on mount if not already loaded
-    useEffect(() => {
-        if (!user && !isLoadingUser) {
-            fetchUser();
-        }
-    }, [user, isLoadingUser, fetchUser]);
-
-    // Check pro status at page level - block access if not pro
-    useEffect(() => {
-        if (!id) return;
-        
-        // Wait for user data to be loaded
-        if (user === null && !isLoadingUser) {
-            fetchUser();
-            return;
-        }
-        
-        // Only check once user data is available
-        if (user !== null && !isLoadingUser) {
-            if (!user.is_pro) {
-                setShowUpgradeModal(true);
-                setIsLoading(false);
-                return;
-            }
-            // User is pro, fetch data
-            if (id) {
-                fetchData();
-            }
-        }
-    }, [id, user, isLoadingUser, fetchUser]);
-
-    const fetchData = async () => {
+  const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
             const [rmData, sData, rData] = await Promise.all([
@@ -258,11 +209,11 @@ export default function ExerciseStatisticsScreen() {
                 getExerciseSetHistory(Number(id)),
                 getExerciseRanking(Number(id))
             ]);
-            
+
             if (rmData && typeof rmData === 'object' && 'history' in rmData) {
                 setHistory(rmData);
             }
-            
+
             if (sData?.results) {
                 setRecentPerformance(sData.results);
             } else if (Array.isArray(sData)) {
@@ -277,16 +228,14 @@ export default function ExerciseStatisticsScreen() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [id]);
+    // Fetch user data on mount if not already loaded
+
+
 
     const best1RM = useMemo(() => {
         if (!history || history.history.length === 0) return 0;
         return Math.max(...history.history.map(h => h.one_rep_max));
-    }, [history]);
-
-    const latest1RM = useMemo(() => {
-        if (!history || history.history.length === 0) return 0;
-        return history.history[0].one_rep_max;
     }, [history]);
 
     const progressionPct = useMemo(() => {
@@ -302,7 +251,7 @@ export default function ExerciseStatisticsScreen() {
         // Reverse to show oldest to newest (left to right)
         const baseHistory = [...history.history].reverse();
         if (rmChartMode === '1RM') return baseHistory;
-        
+
         const firstVal = baseHistory[0]?.one_rep_max || 1;
         return baseHistory.map(entry => ({
             ...entry,
@@ -313,13 +262,13 @@ export default function ExerciseStatisticsScreen() {
     // Data for KG + Reps chart (Highest weight for each rep count)
     const kgRepsData = useMemo(() => {
         if (!recentPerformance || recentPerformance.length === 0) return [];
-        
+
         // Group by rep count and take the highest weight for each rep count
         const repGroups: { [key: number]: any } = {};
         recentPerformance.forEach(set => {
             // Skip warmup sets
             if (set.is_warmup) return;
-            
+
             const reps = set.reps;
             if (!repGroups[reps] || set.weight > repGroups[reps].weight) {
                 repGroups[reps] = set;
@@ -329,6 +278,35 @@ export default function ExerciseStatisticsScreen() {
         // Sort by rep count ascending
         return Object.values(repGroups).sort((a, b) => a.reps - b.reps);
     }, [recentPerformance]);
+ useEffect(() => {
+        if (!user && !isLoadingUser) {
+            fetchUser();
+        }
+    }, [user, isLoadingUser, fetchUser]);
+
+    // Check pro status at page level - block access if not pro
+    useEffect(() => {
+        if (!id) return;
+
+        // Wait for user data to be loaded
+        if (user === null && !isLoadingUser) {
+            fetchUser();
+            return;
+        }
+
+        // Only check once user data is available
+        if (user !== null && !isLoadingUser) {
+            if (!user.is_pro) {
+                setShowUpgradeModal(true);
+                setIsLoading(false);
+                return;
+            }
+            // User is pro, fetch data
+            if (id) {
+                fetchData();
+            }
+        }
+    }, [id, user, isLoadingUser, fetchUser, fetchData]);
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -337,7 +315,7 @@ export default function ExerciseStatisticsScreen() {
                 colors={['rgba(99, 101, 241, 0.15)', 'transparent']}
                 style={styles.gradientBg}
             />
-            
+
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
@@ -362,8 +340,8 @@ export default function ExerciseStatisticsScreen() {
                     <ActivityIndicator size="large" color={theme.colors.status.active} />
                 </View>
             ) : history && history.history.length > 0 ? (
-                <ScrollView 
-                    style={styles.content} 
+                <ScrollView
+                    style={styles.content}
                     contentContainerStyle={[styles.contentContainer, { paddingBottom: insets.bottom + 40 }]}
                     showsVerticalScrollIndicator={false}
                 >
@@ -379,19 +357,19 @@ export default function ExerciseStatisticsScreen() {
                                 <Text style={styles.metricUnit}>KG</Text>
                             </View>
                         </View>
-                        
+
                         <View style={[styles.metricCard, { flex: 1 }]}>
                             <View style={styles.metricHeader}>
-                                <Ionicons 
-                                    name={progressionPct >= 0 ? "trending-up" : "trending-down"} 
-                                    size={14} 
-                                    color={progressionPct >= 0 ? theme.colors.status.success : theme.colors.status.error} 
+                                <Ionicons
+                                    name={progressionPct >= 0 ? "trending-up" : "trending-down"}
+                                    size={14}
+                                    color={progressionPct >= 0 ? theme.colors.status.success : theme.colors.status.error}
                                 />
                                 <Text style={styles.metricLabel}>PROGRESS</Text>
                             </View>
                             <View style={styles.metricValueContainer}>
                                 <Text style={[
-                                    styles.metricValue, 
+                                    styles.metricValue,
                                     { color: progressionPct >= 0 ? theme.colors.status.success : theme.colors.status.error, fontSize: 24 }
                                 ]}>
                                     {progressionPct >= 0 ? '+' : ''}{progressionPct.toFixed(1)}
@@ -440,16 +418,16 @@ export default function ExerciseStatisticsScreen() {
                                             {rmChartMode === '1RM' ? 'ESTIMATED MAX OVER TIME' : 'PERCENTAGE CHANGE FROM START'}
                                         </Text>
                                     </View>
-                                    
+
                                     {/* Toggle Buttons */}
                                     <View style={styles.toggleContainer}>
-                                        <TouchableOpacity 
+                                        <TouchableOpacity
                                             onPress={() => setRmChartMode('1RM')}
                                             style={[styles.toggleButton, rmChartMode === '1RM' && styles.toggleButtonActive]}
                                         >
                                             <Text style={[styles.toggleButtonText, rmChartMode === '1RM' && styles.toggleButtonTextActive]}>1RM</Text>
                                         </TouchableOpacity>
-                                        <TouchableOpacity 
+                                        <TouchableOpacity
                                             onPress={() => setRmChartMode('PROGRESS')}
                                             style={[styles.toggleButton, rmChartMode === 'PROGRESS' && styles.toggleButtonActive]}
                                         >
@@ -457,9 +435,9 @@ export default function ExerciseStatisticsScreen() {
                                         </TouchableOpacity>
                                     </View>
                                 </View>
-                                
-                                <NeuralBarChart 
-                                    data={rmChartData} 
+
+                                <NeuralBarChart
+                                    data={rmChartData}
                                     valueKey={rmChartMode === '1RM' ? 'one_rep_max' : 'progress_pct'}
                                     mode="timeline"
                                 />
@@ -477,9 +455,9 @@ export default function ExerciseStatisticsScreen() {
                                             <Text style={styles.sectionSubtitle}>HIGHEST WEIGHT AT EACH REP COUNT</Text>
                                         </View>
                                     </View>
-                                    
-                                    <NeuralBarChart 
-                                        data={kgRepsData} 
+
+                                    <NeuralBarChart
+                                        data={kgRepsData}
                                         valueKey="weight"
                                         mode="reps"
                                     />
@@ -526,7 +504,7 @@ export default function ExerciseStatisticsScreen() {
                         {history.history.map((entry, idx) => {
                             const date = new Date(entry.workout_date);
                             const isNewBest = entry.one_rep_max >= best1RM && idx < 3;
-                            
+
                             return (
                                 <View key={idx} style={styles.historyItem}>
                                     <View style={styles.historyItemMain}>
@@ -567,7 +545,7 @@ export default function ExerciseStatisticsScreen() {
                     <Text style={styles.emptySubtext}>
                         Complete workouts with this exercise to track your performance.
                     </Text>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.emptyButton}
                         onPress={() => router.replace('/(home)')}
                     >
@@ -576,7 +554,7 @@ export default function ExerciseStatisticsScreen() {
                 </View>
             )}
 
-            <UpgradeModal 
+            <UpgradeModal
                 visible={showUpgradeModal}
                 onClose={() => {
                     setShowUpgradeModal(false);
@@ -647,7 +625,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         paddingTop: 10,
     },
-    
+
     // Metrics Bento
     metricsRow: {
         flexDirection: 'row',
@@ -777,7 +755,7 @@ const styles = StyleSheet.create({
         color: theme.colors.text.tertiary,
         letterSpacing: 1,
     },
-    
+
     // Toggle Buttons
     toggleContainer: {
         flexDirection: 'row',

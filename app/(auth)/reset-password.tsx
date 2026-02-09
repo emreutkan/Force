@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { getErrorMessage } from '@/api/errorHandler';
 
 export default function ResetPasswordScreen() {
     const insets = useSafeAreaInsets();
@@ -80,7 +81,7 @@ export default function ResetPasswordScreen() {
                 );
             }
         } catch (error: any) {
-            Alert.alert("Error", "An unexpected error occurred. Please try again.");
+            Alert.alert("Error", getErrorMessage(error));
         } finally {
             setLoading(false);
         }
@@ -109,7 +110,7 @@ export default function ResetPasswordScreen() {
                 colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
                 style={StyleSheet.absoluteFillObject}
             />
-            
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.content}

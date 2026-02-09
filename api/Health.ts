@@ -3,11 +3,35 @@ import HealthKitModule, {
   HealthKitPermissions,
 } from 'react-native-health';
 import { useState, useEffect } from 'react';
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 
 // react-native-health uses CJS; Metro may expose it as default or as the module
-const AppleHealthKit =
-  (HealthKitModule as any)?.default ?? HealthKitModule;
+const PackageExport = (HealthKitModule as any)?.default ?? HealthKitModule;
+
+function getHealthKitNativeModule(): typeof NativeModules[keyof typeof NativeModules] | null {
+  const names = [
+    'AppleHealthKit',
+    'RCTAppleHealthKit',
+    'RNAppleHealthKit',
+  ];
+  for (const name of names) {
+    const mod = (NativeModules as any)[name];
+    if (mod?.initHealthKit) return mod;
+  }
+  // Fallback: find any native module that has initHealthKit (e.g. different RN/Expo naming)
+  for (const key of Object.keys(NativeModules)) {
+    const mod = (NativeModules as any)[key];
+    if (mod?.initHealthKit) return mod;
+  }
+  return null;
+}
+
+const NativeHealthKit = getHealthKitNativeModule();
+// Use the native module directly (don't spread) so bridge methods like getStepCount are preserved
+const AppleHealthKit = NativeHealthKit ?? PackageExport;
+if (AppleHealthKit && PackageExport?.Constants) {
+  (AppleHealthKit as any).Constants = PackageExport.Constants;
+}
 
 const permissions: HealthKitPermissions = {
   permissions: {
@@ -25,9 +49,17 @@ export const useHealthKit = () => {
       return;
     }
     if (!AppleHealthKit?.initHealthKit) {
-      console.warn(
-        'HealthKit native module not available (e.g. Expo Go). Use a dev build for iOS.'
-      );
+      if (__DEV__) {
+        const keys = Object.keys(NativeModules).filter(
+          (k) =>
+            k.toLowerCase().includes('health') ||
+            k.toLowerCase().includes('apple')
+        );
+        console.warn(
+          'HealthKit native module not available. Expected one of: AppleHealthKit, RCTAppleHealthKit, RNAppleHealthKit. Found related:',
+          keys.length ? keys : 'none. Rebuild iOS (npx expo run:ios or prebuild --clean).'
+        );
+      }
       return;
     }
 

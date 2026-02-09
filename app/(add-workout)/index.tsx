@@ -1,13 +1,9 @@
 import WorkoutDetailView from '@/components/WorkoutDetailView';
 import { theme } from '@/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 export default function AddWorkout() {
-  const [title, setTitle] = useState('');
-  const [is_done, setIsDone] = useState(false);
-  const [duration, setDuration] = useState(0);
 
     return (
     <View style={styles.container}>

@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/api/errorHandler';
 import { theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,8 +29,8 @@ export default function UpgradeScreen() {
                 "Subscription purchase integration coming soon!",
                 [{ text: "OK" }]
             );
-        } catch (error) {
-            Alert.alert("Error", "Failed to process upgrade. Please try again.");
+        } catch (error: any) {
+            Alert.alert("Error", getErrorMessage(error as Error));
         } finally {
             setIsLoading(false);
         }
@@ -69,7 +70,7 @@ export default function UpgradeScreen() {
                 colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
                 style={styles.gradientBg}
             />
-            <ScrollView 
+            <ScrollView
                 contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20, marginTop: 58 }]}
                 showsVerticalScrollIndicator={false}
             >
@@ -105,7 +106,7 @@ export default function UpgradeScreen() {
                     ))}
                 </View>
 
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={[styles.upgradeButton, isLoading && styles.upgradeButtonDisabled]}
                     onPress={handleUpgrade}
                     disabled={isLoading}
@@ -118,7 +119,7 @@ export default function UpgradeScreen() {
                     )}
                 </TouchableOpacity>
 
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.cancelButton}
                     onPress={() => router.back()}
                     activeOpacity={0.8}

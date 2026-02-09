@@ -7,15 +7,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHealthKit } from '@/api/Health';
-
 export default function DebugView() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [backend, setBackend] = useState<BackendType>('local');
-    const { hasPermission, steps } = useHealthKit();
 
     useEffect(() => {
         loadBackendPreference();
@@ -47,7 +44,6 @@ export default function DebugView() {
             Alert.alert("Error", getErrorMessage(e));
         }
     };
-
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <LinearGradient
@@ -118,39 +114,6 @@ export default function DebugView() {
 
 
                 </View>
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Health & Fitness</Text>
-                    <Text style={styles.sectionDescription}>
-                        Platform: {Platform.OS === 'ios' ? 'iOS (HealthKit)' : 'Android (Google Fit)'}
-                    </Text>
-                    <Text style={[styles.sectionDescription, { marginTop: 4 }]}>
-                        Status: {hasPermission ? 'Initialized' : 'Not initialized'}
-                    </Text>
-                    {steps !== null && (
-                        <Text style={[styles.sectionDescription, { marginTop: 4, color: '#0A84FF' }]}>
-                            Today&apos;s Steps: {steps.toLocaleString()}
-                        </Text>
-                    )}
-
-                    <TouchableOpacity
-                        style={styles.button}
-                        onPress={() => {console.log('Initialize HealthKit or Google Fit');}}
-                    >
-                        <Ionicons name={Platform.OS === 'ios' ? 'heart-outline' : 'fitness-outline'} size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                        <Text style={styles.buttonText}>
-                            Initialize {Platform.OS === 'ios' ? 'HealthKit' : 'Google Fit'}
-                        </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.button, { marginTop: 12, backgroundColor: '#32D74B' }]}
-                        onPress={() => {console.log('Get Today&apos;s Steps');}}
-                    >
-                        <Ionicons name="footsteps-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                        <Text style={styles.buttonText}>Get Today&apos;s Steps</Text>
-                    </TouchableOpacity>
-                </View>
-
 
             </ScrollView>
         </View>

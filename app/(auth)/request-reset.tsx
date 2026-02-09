@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { getErrorMessage } from '@/api/errorHandler';
 
 export default function RequestResetScreen() {
     const insets = useSafeAreaInsets();
@@ -54,7 +55,7 @@ export default function RequestResetScreen() {
                 );
             }
         } catch (error: any) {
-            Alert.alert("Error", "An unexpected error occurred. Please try again.");
+            Alert.alert("Error", getErrorMessage(error));
         } finally {
             setLoading(false);
         }
@@ -66,7 +67,7 @@ export default function RequestResetScreen() {
                 colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
                 style={StyleSheet.absoluteFillObject}
             />
-            
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.content}
@@ -82,7 +83,7 @@ export default function RequestResetScreen() {
                 <View style={styles.formContainer}>
                     <Text style={styles.title}>Reset Password</Text>
                     <Text style={styles.subtitle}>
-                        Enter your email address and we'll send you a link to reset your password.
+                        Enter your email address and we&apos;ll send you a link to reset your password.
                     </Text>
 
                     <View style={styles.inputContainer}>

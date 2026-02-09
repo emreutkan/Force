@@ -1,86 +1,35 @@
 import { getWorkout, getWorkoutSummary } from '@/api/Workout';
 import { getUnnotifiedAchievements, markAchievementsSeen } from '@/api/Achievements';
-import { WorkoutSummaryResponse, UnnotifiedAchievement } from '@/api/types';
+import { WorkoutSummaryResponse, UnnotifiedAchievement, Workout } from '@/api/types/index';
+import { theme } from '@/constants/theme';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import AchievementUnlockModal from '@/components/AchievementUnlockModal';
-import { theme, typographyStyles, commonStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
-import { useEffect, useState, useMemo } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View, ScrollView, Dimensions } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View, ScrollView } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { getErrorMessage } from '@/api/errorHandler';
+import { StatsCard } from './components/StatsCard';
+import { AnalysisRow } from './components/analysisRow';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// ============================================================================
-// HELPER COMPONENTS
-// ============================================================================
 
-const NeuralStatCard = ({ icon, value, label, color, delay, unit }: any) => (
-    <Animated.View 
-        entering={FadeInDown.delay(delay).springify()} 
-        style={styles.neuralStatCard}
-    >
-        <View style={styles.cardHeader}>
-            <View style={styles.cardHeaderLeft}>
-                <Ionicons name={icon} size={16} color={color} />
-                <Text style={styles.cardLabel}>{label.toUpperCase()}</Text>
-            </View>
-            <Ionicons name="pulse" size={18} color={`${color}50`} />
-        </View>
-        <View style={styles.cardValueRow}>
-            <Text style={styles.cardValue}>{value}</Text>
-            {unit && <Text style={styles.cardUnit}>{unit.toUpperCase()}</Text>}
-        </View>
-        <View style={styles.miniGraphWrapper}>
-            <Svg width="100%" height="30">
-                <Path 
-                    d="M 0 15 Q 25 5, 50 20 T 100 15 T 150 25 T 200 10" 
-                    fill="none" 
-                    stroke={color} 
-                    strokeWidth="2" 
-                    opacity="0.3" 
-                />
-            </Svg>
-        </View>
-    </Animated.View>
-);
-
-const AnalysisRow = ({ message, type }: { message: string, type: 'positive' | 'negative' | 'neutral' }) => {
-    const color = type === 'positive' ? theme.colors.status.rest : type === 'negative' ? theme.colors.status.error : theme.colors.text.tertiary;
-    const icon = type === 'positive' ? 'checkmark-circle' : type === 'negative' ? 'alert-circle' : 'information-circle';
-
-    return (
-        <View style={styles.analysisRow}>
-            <View style={[styles.analysisIconContainer, { backgroundColor: `${color}15` }]}>
-                <Ionicons name={icon} size={16} color={color} />
-            </View>
-            <Text style={styles.analysisText}>{message}</Text>
-        </View>
-    );
-};
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
 
 export default function WorkoutSummaryScreen() {
     const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
     const insets = useSafeAreaInsets();
-    const [workout, setWorkout] = useState<any>(null);
+    const [workout, setWorkout] = useState<Workout | null>(null);
     const [summary, setSummary] = useState<WorkoutSummaryResponse | null>(null);
     const [achievements, setAchievements] = useState<UnnotifiedAchievement[]>([]);
     const [showAchievements, setShowAchievements] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        if (workoutId) fetchData();
-    }, [workoutId]);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const [wData, sData, achData] = await Promise.all([
                 getWorkout(parseInt(workoutId)),
@@ -93,12 +42,12 @@ export default function WorkoutSummaryScreen() {
                 setAchievements(achData);
                 setShowAchievements(true);
             }
-        } catch (error) {
-            console.error(error);
+        } catch (error: any) {
+            console.error(getErrorMessage(error as Error));
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [workoutId]);
 
     const handleCloseAchievements = async () => {
         setShowAchievements(false);
@@ -119,6 +68,10 @@ export default function WorkoutSummaryScreen() {
         return theme.colors.status.error;
     };
 
+    useEffect(() => {
+        if (workoutId) fetchData();
+    }, [workoutId, fetchData]);
+
     if (isLoading) {
         return (
             <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -134,7 +87,7 @@ export default function WorkoutSummaryScreen() {
 
     const score = summary?.score ?? 0;
     const scoreColor = getScoreColor(score);
-    const totalVolume = workout.exercises?.reduce((acc: number, ex: any) => 
+    const totalVolume = workout.exercises?.reduce((acc: number, ex: any) =>
         acc + (ex.sets?.reduce((sAcc: number, s: any) => sAcc + (s.weight * s.reps), 0) || 0), 0
     ) || 0;
 
@@ -145,7 +98,7 @@ export default function WorkoutSummaryScreen() {
                 colors={['rgba(99, 101, 241, 0.15)', 'transparent']}
                 style={StyleSheet.absoluteFillObject}
             />
-            
+
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={24} color="#FFF" />
@@ -154,11 +107,10 @@ export default function WorkoutSummaryScreen() {
                 <View style={{ width: 44 }} />
             </View>
 
-            <ScrollView 
+            <ScrollView
                 contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Hero Score Section */}
                 <Animated.View entering={FadeInUp.delay(100).springify()} style={styles.heroSection}>
                     <View style={styles.scoreContainer}>
                         <Svg width="160" height="160" viewBox="0 0 100 100">
@@ -192,54 +144,48 @@ export default function WorkoutSummaryScreen() {
                     <View style={styles.workoutInfo}>
                         <Text style={styles.workoutTitle}>{workout.title?.toUpperCase() || 'UNTITLED SESSION'}</Text>
                         <Text style={styles.workoutDate}>
-                            {new Date(workout.date || workout.created_at).toLocaleDateString(undefined, {
+                            {new Date(workout.created_at).toLocaleDateString(undefined, {
                                 weekday: 'long', month: 'short', day: 'numeric'
                             }).toUpperCase()}
                         </Text>
                     </View>
                 </Animated.View>
 
-                {/* Stats Grid */}
                 <View style={styles.neuralGrid}>
                     <View style={styles.neuralRow}>
-                        <NeuralStatCard 
-                            icon="time" 
-                            value={formatDuration(workout.duration)} 
-                            label="Duration" 
+                        <StatsCard
+                            icon="time"
+                            value={formatDuration(workout.duration)}
+                            label="Duration"
                             unit="MIN"
-                            color={theme.colors.text.brand} 
-                            delay={200}
+                            color={theme.colors.text.brand}
                         />
-                        <NeuralStatCard 
-                            icon="barbell" 
-                            value={(totalVolume / 1000).toFixed(1)} 
-                            label="Volume" 
+                        <StatsCard
+                            icon="barbell"
+                            value={(totalVolume / 1000).toFixed(1)}
+                            label="Volume"
                             unit="TONS"
-                            color={theme.colors.status.warning} 
-                            delay={300}
+                            color={theme.colors.status.warning}
                         />
                     </View>
                     <View style={styles.neuralRow}>
-                        <NeuralStatCard 
-                            icon="layers" 
-                            value={workout.exercises?.reduce((acc: number, ex: any) => acc + (ex.sets?.length || 0), 0)} 
-                            label="Sets" 
+                        <StatsCard
+                            icon="layers"
+                            value={workout.exercises?.reduce((acc: number, ex: any) => acc + (ex.sets?.length || 0), 0)?.toString() || '0'}
+                            label="Sets"
                             unit="TOTAL"
-                            color={theme.colors.status.rest} 
-                            delay={400}
+                            color={theme.colors.status.rest}
                         />
-                        <NeuralStatCard 
-                            icon="flash" 
-                            value={workout.exercises?.length} 
-                            label="Exercises" 
+                        <StatsCard
+                            icon="flash"
+                            value={workout.exercises?.length?.toString() || '0'}
+                            label="Exercises"
                             unit="COUNT"
-                            color={theme.colors.status.error} 
-                            delay={500}
+                            color={theme.colors.status.error}
                         />
                     </View>
                 </View>
 
-                {/* Performance Analysis */}
                 {summary && (
                     <Animated.View entering={FadeInDown.delay(600)} style={styles.analysisSection}>
                         <View style={styles.sectionHeader}>
@@ -251,7 +197,7 @@ export default function WorkoutSummaryScreen() {
                                 <Text style={styles.neuralSubtitle}>PERFORMANCE INSIGHTS</Text>
                             </View>
                         </View>
-                        
+
                         <View style={styles.analysisContainer}>
                             {summary.positives && Object.values(summary.positives).length > 0 && (
                                 <View style={styles.analysisCard}>
@@ -281,7 +227,6 @@ export default function WorkoutSummaryScreen() {
                     </Animated.View>
                 )}
 
-                {/* Exercise Log */}
                 <Animated.View entering={FadeInDown.delay(700)} style={styles.logSection}>
                     <View style={styles.sectionHeader}>
                         <View style={styles.neuralIconContainer}>
@@ -292,7 +237,7 @@ export default function WorkoutSummaryScreen() {
                             <Text style={styles.neuralSubtitle}>SESSION BREAKDOWN</Text>
                         </View>
                     </View>
-                    
+
                     <View style={styles.logContainer}>
                         {workout.exercises?.map((ex: any, i: number) => (
                             <View key={i} style={[styles.logRow, i !== workout.exercises.length - 1 && styles.borderBottom]}>
@@ -320,7 +265,7 @@ export default function WorkoutSummaryScreen() {
                     </TouchableOpacity>
                 </Animated.View>
 
-                <AchievementUnlockModal 
+                <AchievementUnlockModal
                     achievements={achievements}
                     visible={showAchievements}
                     onClose={handleCloseAchievements}
@@ -334,10 +279,10 @@ export default function WorkoutSummaryScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: { 
-        flexDirection: 'row', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingHorizontal: 16,
         height: 56,
     },
@@ -358,46 +303,32 @@ const styles = StyleSheet.create({
     // Neural Grid
     neuralGrid: { gap: 12, marginBottom: 30 },
     neuralRow: { flexDirection: 'row', gap: 12 },
-    neuralStatCard: {
-        flex: 1, 
-        backgroundColor: theme.colors.ui.glass, 
-        padding: 16, 
-        borderRadius: 24,
-        borderWidth: 1, 
-        borderColor: theme.colors.ui.border,
-        overflow: 'hidden'
-    },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-    cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    cardLabel: { fontSize: 10, fontWeight: '800', color: theme.colors.text.secondary, letterSpacing: 0.5 },
-    cardValueRow: { flexDirection: 'row', alignItems: 'baseline' },
-    cardValue: { fontSize: 24, fontWeight: '900', color: '#FFF' },
-    cardUnit: { fontSize: 10, fontWeight: '800', color: theme.colors.text.tertiary, marginLeft: 4 },
-    miniGraphWrapper: { position: 'absolute', bottom: -10, left: 0, right: 0, height: 30, opacity: 0.5 },
+
+
 
     // Sections
     sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
-    neuralIconContainer: { 
-        width: 40, 
-        height: 40, 
-        borderRadius: 12, 
-        backgroundColor: 'rgba(99, 102, 241, 0.1)', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        borderWidth: 1, 
-        borderColor: 'rgba(99, 102, 241, 0.2)' 
+    neuralIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(99, 102, 241, 0.2)'
     },
     neuralTitle: { fontSize: 14, fontWeight: '900', color: '#FFF', letterSpacing: 0.5 },
     neuralSubtitle: { fontSize: 9, fontWeight: '700', color: theme.colors.text.tertiary, letterSpacing: 1 },
 
     analysisSection: { marginBottom: 30 },
     analysisContainer: { gap: 12 },
-    analysisCard: { 
-        backgroundColor: theme.colors.ui.glass, 
-        borderRadius: 24, 
-        padding: 20, 
-        borderWidth: 1, 
-        borderColor: theme.colors.ui.border 
+    analysisCard: {
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: 24,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: theme.colors.ui.border
     },
     analysisHeader: { fontSize: 11, fontWeight: '900', marginBottom: 16, letterSpacing: 1 },
     analysisRow: { flexDirection: 'row', gap: 12, marginBottom: 12, alignItems: 'center' },
@@ -405,10 +336,10 @@ const styles = StyleSheet.create({
     analysisText: { color: theme.colors.text.primary, fontSize: 14, lineHeight: 20, flex: 1, fontWeight: '500' },
 
     logSection: { marginBottom: 30 },
-    logContainer: { 
-        backgroundColor: theme.colors.ui.glass, 
-        borderRadius: 30, 
-        borderWidth: 1, 
+    logContainer: {
+        backgroundColor: theme.colors.ui.glass,
+        borderRadius: 30,
+        borderWidth: 1,
         borderColor: theme.colors.ui.border,
         overflow: 'hidden'
     },
@@ -420,12 +351,12 @@ const styles = StyleSheet.create({
     logRight: { opacity: 0.3 },
 
     footer: { marginTop: 10 },
-    doneButton: { 
-        backgroundColor: theme.colors.text.brand, 
-        height: 64, 
-        borderRadius: 20, 
+    doneButton: {
+        backgroundColor: theme.colors.text.brand,
+        height: 64,
+        borderRadius: 20,
         flexDirection: 'row',
-        alignItems: 'center', 
+        alignItems: 'center',
         justifyContent: 'center',
         gap: 12,
         shadowColor: theme.colors.text.brand,

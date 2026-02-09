@@ -1,5 +1,5 @@
-import { healthService } from '@/api/Health';
-import { CalendarDay, CalendarStats, CheckTodayResponse, CNSRecovery, MuscleRecovery, TemplateWorkout, Workout } from '@/api/types';
+import { useHealthKit } from '@/api/Health';
+import { CalendarDay, CalendarStats, CheckTodayResponse, MuscleRecovery, TemplateWorkout, Workout } from '@/api/types/index';
 import { checkToday, createWorkout, deleteWorkout, getActiveWorkout, getCalendar, getCalendarStats, getRecoveryStatus, getTemplateWorkouts, getWorkouts, getWorkoutSummary } from '@/api/Workout';
 import ActiveSection from '@/components/ActiveSection';
 import CalendarModal from '@/components/CalendarModal';
@@ -9,7 +9,6 @@ import TemplatesSection from '@/components/TemplatesSection';
 import WorkoutModal from '@/components/WorkoutModal';
 import { theme, typographyStyles } from '@/constants/theme';
 import { useDateStore, useHomeLoadingStore } from '@/state/userStore';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -37,7 +36,7 @@ const LoadingSkeleton = ({ type = 'workout' }: { type?: 'workout' | 'recovery' |
             withTiming(0.8, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
             -1, true
         );
-    }, []);
+    }, [ opacity ]);
 
     const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
@@ -67,41 +66,39 @@ const LoadingSkeleton = ({ type = 'workout' }: { type?: 'workout' | 'recovery' |
 
 export default function Home() {
     const insets = useSafeAreaInsets();
-    
+
     // --- Store & State ---
     const today = useDateStore((state) => state.today);
-    const { 
-        isInitialLoadComplete, 
-        todayStatus: cachedTodayStatus, 
+    const {
+        isInitialLoadComplete,
+        todayStatus: cachedTodayStatus,
         recoveryStatus: cachedRecoveryStatus,
         setInitialLoadComplete,
         setTodayStatus: setCachedTodayStatus,
         setRecoveryStatus: setCachedRecoveryStatus
     } = useHomeLoadingStore();
+    const { steps } = useHealthKit();
 
     // Data State
     const [todayStatus, setTodayStatus] = useState<CheckTodayResponse | null>(cachedTodayStatus);
     const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
     const [recoveryStatus, setRecoveryStatus] = useState<Record<string, MuscleRecovery>>(cachedRecoveryStatus || {});
-    const [cnsRecovery, setCnsRecovery] = useState<CNSRecovery | null>(null);
     const [templates, setTemplates] = useState<TemplateWorkout[]>([]);
     const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
     const [calendarStats, setCalendarStats] = useState<CalendarStats | null>(null);
-    const [todaySteps, setTodaySteps] = useState<number | null>(null);
-    const [recentWorkouts, setRecentWorkouts] = useState<Workout[]>([]);
     const [todayWorkoutScore, setTodayWorkoutScore] = useState<number | null>(null);
 
     // UI State
     const [isLoading, setIsLoading] = useState(!isInitialLoadComplete);
     const [refreshing, setRefreshing] = useState(false);
     const [elapsedTime, setElapsedTime] = useState('00:00:00');
-    
+
     // Modals & Inputs
     const [modalVisible, setModalVisible] = useState(false);
     const [showCalendarModal, setShowCalendarModal] = useState(false);
     const [showStartMenu, setShowStartMenu] = useState(false);
     const [modalMode, setModalMode] = useState<'create' | 'log'>('create');
-    
+
     // Layout Refs
     const startButtonRef = useRef<View>(null);
     const [menuLayout, setMenuLayout] = useState({ x: 0, y: 0, width: 0 });
@@ -109,7 +106,13 @@ export default function Home() {
     // Calendar State
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-    const [availableYears, setAvailableYears] = useState<number[]>([]);
+
+    // Health: log steps when home loads and HealthKit returns them
+    useEffect(() => {
+        if (steps !== null) {
+            console.log('Steps:', steps);
+        }
+    }, [steps]);
 
     // ========================================================================
     // 3. DATA FETCHING
@@ -121,41 +124,32 @@ export default function Home() {
             const currentWeek = getCurrentWeekNumber(now);
 
             // Parallel fetching for speed
-            const [status, active, tpls, recovery, steps, cal, calStats, workoutsData] = await Promise.all([
+            const [status, active, tpls, recovery, cal, calStats] = await Promise.all([
                 checkToday(),
                 getActiveWorkout(),
                 getTemplateWorkouts(),
                 getRecoveryStatus(),
-                fetchSteps(),
                 getCalendar(now.getFullYear(), undefined, currentWeek),
                 getCalendarStats(now.getFullYear(), undefined, currentWeek),
-                getWorkouts(1, 50) // Get recent workouts for volume calculation
             ]);
 
             setTodayStatus(status);
             setCachedTodayStatus(status);
-            
+
             if (active && typeof active === 'object' && 'id' in active) setActiveWorkout(active);
             else setActiveWorkout(null);
 
             setTemplates(Array.isArray(tpls) ? tpls : []);
-            
+
             if (recovery?.recovery_status) {
                 setRecoveryStatus(recovery.recovery_status);
                 setCachedRecoveryStatus(recovery.recovery_status);
             }
-            if (recovery?.cns_recovery) {
-                setCnsRecovery(recovery.cns_recovery);
-            }
 
-            setTodaySteps(steps);
             setCalendarData(cal?.calendar || []);
             setCalendarStats(calStats);
 
-            // Set recent workouts for volume calculation
-            if (workoutsData && 'results' in workoutsData && Array.isArray(workoutsData.results)) {
-                setRecentWorkouts(workoutsData.results);
-            }
+
 
             // Fetch workout summary if today's workout exists
             if (status && typeof status === 'object' && 'workout_performed' in status && status.workout_performed && 'workout' in status && status.workout) {
@@ -174,14 +168,7 @@ export default function Home() {
         } catch (e) {
             console.error("Home fetch error:", e);
         }
-    }, []);
-
-    const fetchSteps = async () => {
-        try {
-            const init = await healthService.initialize();
-            return init ? await healthService.getTodaySteps() : null;
-        } catch { return null; }
-    };
+    }, [setCachedTodayStatus, setCachedRecoveryStatus]);
 
     const getCurrentWeekNumber = (d: Date) => {
         const start = new Date(d.getFullYear(), 0, 1);
@@ -231,9 +218,8 @@ export default function Home() {
                 getTemplateWorkouts().then(tpls => {
                     setTemplates(Array.isArray(tpls) ? tpls : []);
                 });
-                fetchSteps().then(setTodaySteps);
             }
-        }, [isInitialLoadComplete])
+        }, [isInitialLoadComplete, fetchAllData, setInitialLoadComplete])
     );
 
     const onRefresh = async () => {
@@ -285,7 +271,7 @@ export default function Home() {
         ]);
     };
 
-    const handleCalendarDayClick = async (dateStr: string, dayData: CalendarDay | undefined) => {
+    const handleCalendarDayClick = async (dateStr: string, dayData: CalendarDay | undefined | null) => {
         if (!dayData) return;
 
         // If it's a rest day, show delete alert
@@ -374,7 +360,7 @@ export default function Home() {
                 colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
                 style={styles.gradientBg}
             />
-            <RNScrollView 
+            <RNScrollView
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.status.active} />}
@@ -389,9 +375,9 @@ export default function Home() {
                                 </View>
                 </View>
 
-           
 
-            
+
+
                 <ActiveSection
                     activeWorkout={activeWorkout}
                     elapsedTime={elapsedTime}
@@ -402,28 +388,18 @@ export default function Home() {
                     onStartWorkoutPress={handleStartWorkoutPress}
                 />
 
-                <CalendarStrip 
+                <CalendarStrip
                     calendarData={calendarData}
                     onPress={() => setShowCalendarModal(true)}
                 />
 
-                <MuscleRecoverySection 
+                <MuscleRecoverySection
                     recoveryStatus={recoveryStatus}
                     onPress={() => router.push('/(recovery-status)')}
                 />
 
-                {todaySteps !== null && (
-                    <View style={styles.stepsCard}>
-                        <View style={styles.metricHeader}>
-                            <Ionicons name="footsteps" size={16} color={theme.colors.status.active} />
-                            <Text style={styles.metricTitle}>Steps</Text>
-                        </View>
-                        <Text style={styles.metricValue}>{todaySteps.toLocaleString()}</Text>
-                    </View>
-                )}
-
                 <TemplatesSection templates={templates} onRefresh={onRefresh} />
-                
+
             </RNScrollView>
 
             {showStartMenu && (
@@ -439,9 +415,9 @@ export default function Home() {
                                 <Text style={styles.popoverText}>Log Previous</Text>
                             </TouchableOpacity>
                             <View style={styles.divider} />
-                            <TouchableOpacity style={styles.popoverItem} onPress={async () => { 
-                                setShowStartMenu(false); 
-                                await createWorkout({ title: 'Rest Day', is_rest_day: true }); 
+                            <TouchableOpacity style={styles.popoverItem} onPress={async () => {
+                                setShowStartMenu(false);
+                                await createWorkout({ title: 'Rest Day', is_rest_day: true });
                                 onRefresh();
                             }}>
                                 <Text style={styles.popoverText}>Rest Day</Text>
@@ -465,7 +441,6 @@ export default function Home() {
                 calendarStats={calendarStats}
                 selectedYear={selectedYear}
                 selectedMonth={selectedMonth}
-                availableYears={availableYears}
                 onYearChange={(year) => {
                     setSelectedYear(year);
                     fetchCalendar(year, selectedMonth);
@@ -493,23 +468,17 @@ const styles = StyleSheet.create({
         bottom: 0,
     },
     scrollContent: { padding: theme.spacing.s },
-    
+
     // FORCE Header
-    forceHeader: { 
-        alignItems: 'flex-start', 
+    forceHeader: {
+        alignItems: 'flex-start',
         marginBottom: theme.spacing.m,
         marginTop: theme.spacing.s,
     },
-    
+
     // Header
     header: { marginBottom: theme.spacing.s },
     headerDate: { fontSize: theme.typography.sizes.xs, fontWeight: '600', color: theme.colors.text.secondary, textTransform: 'uppercase', letterSpacing: theme.typography.tracking.tight },
-
-    stepsCard: { backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.l, padding: theme.spacing.m, borderWidth: 0.5, borderColor: theme.colors.ui.border, marginBottom: theme.spacing.m },
-    metricHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: theme.spacing.m },
-    metricTitle: { fontSize: theme.typography.sizes.m, fontWeight: '600', color: theme.colors.text.primary },
-    metricValue: { fontSize: 22, fontWeight: '700', color: theme.colors.text.primary },
-
 
     // Popover
     backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100 },

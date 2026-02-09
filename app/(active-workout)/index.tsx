@@ -31,7 +31,7 @@ export default function ActiveWorkoutScreen() {
             if (state && state.last_set_timestamp) {
                 // Convert ISO string to timestamp
                 const timestamp = new Date(state.last_set_timestamp).getTime();
-                
+
                 // Validate timestamp is not in the future (handle timezone/clock skew)
                 const now = Date.now();
                 if (timestamp > now) {
@@ -61,7 +61,7 @@ export default function ActiveWorkoutScreen() {
 
     const handleAddExercise = async (exerciseId: number) => {
         if (!activeWorkout?.id) return;
-        
+
         try {
             await addExerciseToWorkout(activeWorkout.id, exerciseId);
             setIsModalVisible(false);
@@ -121,7 +121,7 @@ export default function ActiveWorkoutScreen() {
     const handleAddSet = async (workoutExerciseId: number, set: { weight: number, reps: number, reps_in_reserve?: number }) => {
         try {
             const result = await addSetToExercise(workoutExerciseId, set);
-            
+
             // Check if result has validation errors
             if (result && typeof result === 'object' && result.error) {
                 if (result.validationErrors) {
@@ -134,7 +134,7 @@ export default function ActiveWorkoutScreen() {
                 }
                 return;
             }
-            
+
             // Success - refresh workout
             if (result?.id || (typeof result === 'object' && !result.error)) {
                 const updatedWorkout = await getActiveWorkout();
@@ -193,8 +193,8 @@ export default function ActiveWorkoutScreen() {
                             const now = new Date().getTime();
                             const startTime = new Date(activeWorkout.created_at).getTime();
                             const durationSeconds = Math.floor(Math.max(0, now - startTime) / 1000);
-                            
-                            const completedWorkout = await completeWorkout(activeWorkout.id, { duration: durationSeconds.toString() });
+
+                            await completeWorkout(activeWorkout.id, { duration: durationSeconds.toString() });
                             // Clear rest timer state when workout is completed
                             setLastSetTimestamp(null);
                             setLastExerciseCategory('isolation');
@@ -213,19 +213,19 @@ export default function ActiveWorkoutScreen() {
 
     useEffect(() => {
         let interval: any;
-        
+
         // Explicitly check if activeWorkout exists and has created_at
         if (activeWorkout && activeWorkout.created_at) {
             const startTime = new Date(activeWorkout.created_at).getTime();
-            
+
             const updateTimer = () => {
                 const now = new Date().getTime();
                 const diff = Math.max(0, now - startTime);
-                
+
                 const seconds = Math.floor((diff / 1000) % 60);
                 const minutes = Math.floor((diff / (1000 * 60)) % 60);
                 const hours = Math.floor((diff / (1000 * 60 * 60)));
-                
+
                 const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 setElapsedTime(formattedTime);
             };
@@ -250,11 +250,11 @@ export default function ActiveWorkoutScreen() {
                 colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
                 style={styles.gradientBg}
             />
-            <WorkoutDetailView 
-                workout={activeWorkout} 
-                elapsedTime={elapsedTime} 
-                isActive={true} 
-                onAddExercise={() => setIsModalVisible(true)} 
+            <WorkoutDetailView
+                workout={activeWorkout}
+                elapsedTime={elapsedTime}
+                isActive={true}
+                onAddExercise={() => setIsModalVisible(true)}
                 onRemoveExercise={handleRemoveExercise}
                 onAddSet={handleAddSet}
                 onDeleteSet={handleDeleteSet}
@@ -270,7 +270,7 @@ export default function ActiveWorkoutScreen() {
             />
             <View style={[styles.WorkoutFooter, { paddingBottom: insets.bottom + 16 }]}>
                 <View style={styles.footerContent}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.completeWorkoutButton}
                         onPress={handleFinishWorkout}
                         activeOpacity={0.8}

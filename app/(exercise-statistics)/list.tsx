@@ -1,17 +1,17 @@
 import { getExercises } from '@/api/Exercises';
-import { theme, typographyStyles, commonStyles } from '@/constants/theme';
+import { theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
-import { useEffect, useState, useCallback } from 'react';
-import { 
-    ActivityIndicator, 
-    FlatList, 
-    StyleSheet, 
-    Text, 
-    TextInput, 
-    TouchableOpacity, 
-    View 
+import { useCallback, useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -33,7 +33,7 @@ export default function ExerciseListScreen() {
         try {
             const pageToFetch = reset ? 1 : page + 1;
             const data = await getExercises(searchQuery, pageToFetch);
-            
+
             if (data?.results) {
                 // Paginated response
                 if (reset) {
@@ -68,7 +68,7 @@ export default function ExerciseListScreen() {
             loadExercises(true);
         }, 300);
         return () => clearTimeout(delayDebounceFn);
-    }, [searchQuery]);
+    }, [searchQuery, loadExercises]);
 
     const handleLoadMore = () => {
         if (hasMore && !isLoadingMore && !isLoading) {
@@ -129,7 +129,7 @@ export default function ExerciseListScreen() {
                         data={exercises}
                         keyExtractor={(item) => item.id.toString()}
                         renderItem={({ item }) => (
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={styles.exerciseCard}
                                 onPress={() => router.push(`/(exercise-statistics)/${item.id}`)}
                                 activeOpacity={0.7}
@@ -176,10 +176,10 @@ export default function ExerciseListScreen() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
-    header: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        paddingHorizontal: 20, 
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
         paddingBottom: 15,
         gap: 15
     },
@@ -194,18 +194,18 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     headerTitleContainer: { flex: 1 },
-    headerTitle: { 
-        fontSize: 18, 
-        fontWeight: '900', 
-        color: '#FFF', 
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#FFF',
         fontStyle: 'italic',
-        letterSpacing: 0.5 
+        letterSpacing: 0.5
     },
-    headerSubtitle: { 
-        fontSize: 10, 
-        fontWeight: '800', 
-        color: theme.colors.text.tertiary, 
-        letterSpacing: 1 
+    headerSubtitle: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 1
     },
     searchSection: { padding: 20 },
     searchBar: {

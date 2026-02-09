@@ -1,8 +1,7 @@
 import { changePassword, updateGender, updateHeight, updateWeight } from '@/api/account';
 import { getUserStatistics } from '@/api/Achievements';
 import { clearTokens } from '@/api/Storage';
-import { getWorkouts } from '@/api/Workout';
-import { UserStatistics } from '@/api/types';
+import { UserStatistics } from '@/api/types/index';
 import { theme } from '@/constants/theme';
 import { useUserStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,70 +23,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// ============================================================================
-// 1. REUSABLE COMPONENTS
-// ============================================================================
-
-/**
- * A grouped section container, similar to iOS Settings groups.
- * Renders a title (optional) and a rounded container for rows.
- */
-const SettingsSection = ({ children, title }: { children: React.ReactNode; title?: string }) => (
-    <View style={styles.sectionContainer}>
-        {title && <Text style={styles.sectionTitle}>{title}</Text>}
-        <View style={styles.sectionContent}>
-            {children}
-        </View>
-    </View>
-);
-
-/**
- * A single row inside a SettingsSection.
- * Handles icons, labels, values, and chevron logic automatically.
- */
-interface SettingsRowProps {
-    label: string;
-    value?: string | null;
-    icon?: keyof typeof Ionicons.glyphMap;
-    iconColor?: string;
-    onPress: () => void;
-    isDestructive?: boolean; // If true, styles text red (e.g., Logout)
-    showChevron?: boolean;
-    isLast?: boolean; // Removes the bottom border if it's the last item
-}
-
-const SettingsRow = ({ 
-    label, 
-    value, 
-    icon, 
-    iconColor = theme.colors.status.active, 
-    onPress, 
-    isDestructive = false,
-    showChevron = true,
-    isLast = false
-}: SettingsRowProps) => (
-    <TouchableOpacity 
-        style={[styles.row, isLast && styles.rowLast]} 
-        onPress={onPress}
-        activeOpacity={0.7}
-    >
-        <View style={styles.rowLeft}>
-            {icon && (
-                <View style={[styles.iconContainer, { backgroundColor: isDestructive ? 'rgba(255,59,48,0.15)' : 'rgba(10,132,255,0.15)' }]}>
-                    <Ionicons name={icon} size={18} color={isDestructive ? theme.colors.status.error : iconColor} />
-                </View>
-            )}
-            <Text style={[styles.rowLabel, isDestructive && styles.rowLabelDestructive]}>
-                {label}
-            </Text>
-        </View>
-        
-        <View style={styles.rowRight}>
-            {value && <Text style={styles.rowValue}>{value}</Text>}
-            {showChevron && <Ionicons name="chevron-forward" size={16} color={theme.colors.text.tertiary} style={{ marginLeft: 8 }} />}
-        </View>
-    </TouchableOpacity>
-);
 
 // ============================================================================
 // 2. MAIN SCREEN COMPONENT
@@ -96,11 +31,10 @@ const SettingsRow = ({
 export default function AccountScreen() {
     const insets = useSafeAreaInsets();
     const { user, fetchUser, clearUser } = useUserStore();
-    
+
     // --- State Management ---
     const [stats, setStats] = useState<UserStatistics | null>(null);
-    const [isLoadingStats, setIsLoadingStats] = useState(true);
-    
+
     // Controls visibility of the 3 modals
     const [modals, setModals] = useState({
         height: false,
@@ -108,7 +42,7 @@ export default function AccountScreen() {
         gender: false,
         password: false,
     });
-    
+
     // Loading state for async operations
     const [isSaving, setIsSaving] = useState(false);
 
@@ -126,15 +60,12 @@ export default function AccountScreen() {
     // Fetch user and stats
     const fetchStats = useCallback(async () => {
         try {
-            setIsLoadingStats(true);
             const statsData = await getUserStatistics();
             if (statsData) {
                 setStats(statsData);
             }
         } catch (error) {
             console.error('Failed to fetch stats:', error);
-        } finally {
-            setIsLoadingStats(false);
         }
     }, []);
 
@@ -142,7 +73,7 @@ export default function AccountScreen() {
         useCallback(() => {
             fetchUser();
             fetchStats();
-        }, [fetchStats])
+        }, [fetchUser, fetchStats])
     );
 
     // Sync local form state when the global user object updates
@@ -201,7 +132,7 @@ export default function AccountScreen() {
         setIsSaving(true);
         try {
             let result;
-            
+
             // Execute specific API call based on type
             if (type === 'height') {
                 if (!formData.height) throw new Error("Please enter your height");
@@ -218,11 +149,11 @@ export default function AccountScreen() {
             }
 
             if (result?.error) throw new Error(result.error);
-            
+
             // On success: refresh data and close modal
             await fetchUser();
             toggleModal(type, false);
-            
+
         } catch (error: any) {
             Alert.alert("Action Failed", error.message || "Something went wrong.");
         } finally {
@@ -233,7 +164,7 @@ export default function AccountScreen() {
     // ========================================================================
     // 3. RENDER
     // ========================================================================
-    
+
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <LinearGradient
@@ -241,7 +172,7 @@ export default function AccountScreen() {
                 style={styles.gradientBg}
             />
             <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]} showsVerticalScrollIndicator={false}>
-                
+
                 {/* Profile Header */}
                 <View style={styles.profileHeader}>
                     <View style={styles.avatarContainer}>
@@ -280,7 +211,7 @@ export default function AccountScreen() {
                     <Text style={styles.sectionHeaderText}>ANALYTICS</Text>
                 </View>
                 <View style={styles.settingsContainer}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.settingCard}
                         onPress={() => router.push('/(exercise-statistics)/list')}
                         activeOpacity={0.7}
@@ -295,7 +226,7 @@ export default function AccountScreen() {
                         <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.settingCard}
                         onPress={() => router.push('/(achievements)')}
                         activeOpacity={0.7}
@@ -310,7 +241,7 @@ export default function AccountScreen() {
                         <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.settingCard}
                         onPress={() => router.push('/(prs)')}
                         activeOpacity={0.7}
@@ -331,7 +262,7 @@ export default function AccountScreen() {
                     <Text style={styles.sectionHeaderText}>BIOMETRICS</Text>
                 </View>
                 <View style={styles.settingsContainer}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.settingCard}
                         onPress={() => toggleModal('weight', true)}
                         activeOpacity={0.7}
@@ -346,7 +277,7 @@ export default function AccountScreen() {
                         <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.settingCard}
                         onPress={() => toggleModal('height', true)}
                         activeOpacity={0.7}
@@ -361,7 +292,7 @@ export default function AccountScreen() {
                         <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.settingCard}
                         onPress={() => toggleModal('gender', true)}
                         activeOpacity={0.7}
@@ -382,16 +313,16 @@ export default function AccountScreen() {
                     <Text style={styles.sectionHeaderText}>SUBSCRIPTION</Text>
                 </View>
                 <View style={styles.settingsContainer}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.settingCard}
                         onPress={() => router.push('/(account)/upgrade')}
                         activeOpacity={0.7}
                     >
                         <View style={[styles.iconBox, { backgroundColor: user?.is_pro ? 'rgba(192, 132, 252, 0.1)' : 'rgba(99, 102, 241, 0.1)' }]}>
-                            <Ionicons 
-                                name={user?.is_pro ? "star" : "star-outline"} 
-                                size={20} 
-                                color={user?.is_pro ? theme.colors.status.rest : theme.colors.status.active} 
+                            <Ionicons
+                                name={user?.is_pro ? "star" : "star-outline"}
+                                size={20}
+                                color={user?.is_pro ? theme.colors.status.rest : theme.colors.status.active}
                             />
                         </View>
                         <View style={styles.settingContent}>
@@ -417,7 +348,7 @@ export default function AccountScreen() {
                     <Text style={styles.sectionHeaderText}>ACCOUNT</Text>
                 </View>
                 <View style={styles.settingsContainer}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.settingCard}
                         onPress={() => toggleModal('password', true)}
                         activeOpacity={0.7}
@@ -432,7 +363,7 @@ export default function AccountScreen() {
                         <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.settingCard}
                         onPress={() => router.push('/(permissions)')}
                         activeOpacity={0.7}
@@ -447,7 +378,7 @@ export default function AccountScreen() {
                         <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.settingCard}
                         onPress={() => handleLogout()}
                         activeOpacity={0.7}
@@ -462,7 +393,6 @@ export default function AccountScreen() {
                     </TouchableOpacity>
                 </View>
 
-                <Text style={styles.versionText}>FORCE PERFORMANCE {new Date().getFullYear()}</Text>  
 
             </ScrollView>
 
@@ -473,7 +403,7 @@ export default function AccountScreen() {
                             <Text style={styles.modalTitle}>Update Height</Text>
                             <Text style={styles.modalSubtitle}>This helps us calculate your calorie needs.</Text>
                         </View>
-                        
+
                         <View style={styles.bigInputContainer}>
                             <TextInput
                                 style={styles.bigInput}
@@ -507,7 +437,7 @@ export default function AccountScreen() {
                             <Text style={styles.modalTitle}>Update Weight</Text>
                             <Text style={styles.modalSubtitle}>Tracking your weight helps monitor progress.</Text>
                         </View>
-                        
+
                         <View style={styles.bigInputContainer}>
                             <TextInput
                                 style={styles.bigInput}
@@ -539,28 +469,28 @@ export default function AccountScreen() {
                     <View style={styles.modalCard}>
                         <Text style={styles.modalTitle}>Select Gender</Text>
                         <Text style={styles.modalSubtitle}>For physiological calculations.</Text>
-                        
+
                         <View style={styles.genderRow}>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={[styles.genderCard, formData.gender === 'male' && styles.genderCardActive]}
                                 onPress={() => setFormData({ ...formData, gender: 'male' })}
                             >
-                                <Ionicons 
-                                    name="male" 
-                                    size={32} 
-                                    color={formData.gender === 'male' ? theme.colors.text.primary : theme.colors.text.secondary} 
+                                <Ionicons
+                                    name="male"
+                                    size={32}
+                                    color={formData.gender === 'male' ? theme.colors.text.primary : theme.colors.text.secondary}
                                 />
                                 <Text style={[styles.genderLabel, formData.gender === 'male' && styles.genderLabelActive]}>Male</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={[styles.genderCard, formData.gender === 'female' && styles.genderCardActive]}
                                 onPress={() => setFormData({ ...formData, gender: 'female' })}
                             >
-                                <Ionicons 
-                                    name="female" 
-                                    size={32} 
-                                    color={formData.gender === 'female' ? theme.colors.text.primary : theme.colors.text.secondary} 
+                                <Ionicons
+                                    name="female"
+                                    size={32}
+                                    color={formData.gender === 'female' ? theme.colors.text.primary : theme.colors.text.secondary}
                                 />
                                 <Text style={[styles.genderLabel, formData.gender === 'female' && styles.genderLabelActive]}>Female</Text>
                             </TouchableOpacity>
@@ -583,7 +513,7 @@ export default function AccountScreen() {
                     <View style={styles.modalCard}>
                         <Text style={styles.modalTitle}>Change Password</Text>
                         <Text style={styles.modalSubtitle}>Ensure your new password is secure.</Text>
-                        
+
                         <View style={styles.inputStack}>
                             <TextInput
                                 style={styles.cleanInput}
@@ -639,7 +569,7 @@ const styles = StyleSheet.create({
         padding: theme.spacing.m,
         paddingTop: theme.spacing.xl,
     },
-    
+
     // --- Profile Header ---
     profileHeader: {
         flexDirection: 'row',
@@ -727,7 +657,7 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         letterSpacing: 1.5,
     },
-    
+
     // --- Settings Cards ---
     settingsContainer: {
         gap: theme.spacing.s,

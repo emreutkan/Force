@@ -6,7 +6,7 @@ import { Button, Modal, StyleSheet, Text, View } from "react-native";
 
 export default function AddExerciseScreen() {
     const { workoutID } = useLocalSearchParams();
-    const [workout, setWorkout] = useState<any>(null);
+    const [, setWorkout] = useState<any>(null);
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {

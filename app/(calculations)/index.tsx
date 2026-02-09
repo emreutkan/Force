@@ -1,16 +1,13 @@
-import { calculateBodyFatMen, calculateBodyFatWomen, createMeasurement, getMeasurements } from '@/api/Measurements';
+import { getMeasurements } from '@/api/Measurements';
 import { getAccount, getWeightHistory } from '@/api/account';
-import { BodyMeasurement, WeightHistoryEntry } from '@/api/types';
+import { BodyMeasurement, WeightHistoryEntry } from '@/api/types/index';
 import { extractResults } from '@/api/types/pagination';
-import { SwipeAction } from '@/components/SwipeAction';
 import { theme, typographyStyles, commonStyles } from '@/constants/theme';
-import { useUserStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import {
-    Alert,
     Dimensions,
     KeyboardAvoidingView,
     Modal,
@@ -23,7 +20,6 @@ import {
     View,
     Share
 } from 'react-native';
-import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
@@ -45,9 +41,9 @@ const CHART_WIDTH = SCREEN_WIDTH - 48 - (CHART_PADDING * 2); // Card width minus
  */
 const MiniTrendGraph = ({ data, color, width }: { data: number[]; color: string; width: number }) => {
     if (data.length < 2 || width <= 0) return null;
-    
+
     const MINI_HEIGHT = 50;
-    
+
     const maxVal = Math.max(...data);
     const minVal = Math.min(...data);
     const range = maxVal - minVal || 1;
@@ -177,8 +173,7 @@ const NeuralTrendChart = ({ weightData, bodyFatData }: { weightData: number[]; b
 
 export default function MeasurementsScreen() {
     const insets = useSafeAreaInsets();
-    const { user } = useUserStore();
-    
+
     // UI Navigation
     const [activeTab, setActiveTab] = useState<'biometrics' | 'calculator'>('biometrics');
 
@@ -186,9 +181,8 @@ export default function MeasurementsScreen() {
     const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
     const [weightHistory, setWeightHistory] = useState<WeightHistoryEntry[]>([]);
     const [currentWeight, setCurrentWeight] = useState<number | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isProcessing, setIsProcessing] = useState(false);
-    
+    const [, setIsLoading] = useState(false);
+
     // 1RM Calculator State
     const [calcWeight, setCalcWeight] = useState('');
     const [calcReps, setCalcReps] = useState('');
@@ -197,11 +191,6 @@ export default function MeasurementsScreen() {
     // Modals & Forms
     const [modals, setModals] = useState({ weight: false, bodyFat: false });
     const [tempVal, setTempVal] = useState('');
-    const [bfForm, setBfForm] = useState({ weight: '', waist: '', neck: '', hips: '', notes: '' });
-    const [previewResult, setPreviewResult] = useState<any>(null);
-
-    const isFemale = user?.gender === 'female';
-    const userHeight = user?.height;
 
     // Derived Data for Biometrics
     const latestBodyFat = useMemo(() => {
@@ -226,7 +215,7 @@ export default function MeasurementsScreen() {
         try {
             const [measData, weightData, accountData] = await Promise.all([getMeasurements(), getWeightHistory(), getAccount()]);
             const measurementResults = extractResults(measData);
-            setMeasurements(measurementResults);
+            setMeasurements(measurementResults as BodyMeasurement[]);
             if (weightData?.results) setWeightHistory(weightData.results);
             if (accountData?.weight) setCurrentWeight(accountData.weight);
         } catch (error) {
@@ -259,32 +248,8 @@ export default function MeasurementsScreen() {
 
     const openWeightModal = () => { setTempVal(currentWeight?.toString() || ''); setModals(prev => ({ ...prev, weight: true })); };
     const handleSaveWeight = async () => { /* Logic */ };
-    const handleCalculateBodyFat = async (previewOnly = false) => {
-        if (!userHeight) { Alert.alert("Height Required", "Please set height in account"); return; }
-        const weight = parseFloat(bfForm.weight);
-        const waist = parseFloat(bfForm.waist);
-        const neck = parseFloat(bfForm.neck);
-        const hips = isFemale ? parseFloat(bfForm.hips) : undefined;
-        if (!weight || !waist || !neck || (isFemale && !hips)) { Alert.alert("Missing Fields", "Please fill in all required measurements"); return; }
-        setIsProcessing(true);
-        try {
-            let result = isFemale 
-                ? await calculateBodyFatWomen({ height: userHeight, weight, waist, neck, hips: hips! })
-                : await calculateBodyFatMen({ height: userHeight, weight, waist, neck });
-            if (result.body_fat_percentage) {
-                setPreviewResult(result);
-                if (!previewOnly) {
-                    await createMeasurement({ height: userHeight, weight, waist, neck, hips: isFemale ? hips : undefined, notes: bfForm.notes || undefined });
-                    await loadData();
-                    setModals(prev => ({ ...prev, bodyFat: false }));
-                    setBfForm({ weight: '', waist: '', neck: '', hips: '', notes: '' });
-                    setPreviewResult(null);
-                }
-            } else { Alert.alert("Error", result.message || "Failed to calculate body fat"); }
-        } catch (error: any) { Alert.alert("Error", error.message || "Failed to calculate body fat"); }
-        finally { setIsProcessing(false); }
-    };
-    const openBodyFatModal = () => { if (!userHeight) { Alert.alert("Height Required", "Please set height in account"); return; } setModals(prev => ({ ...prev, bodyFat: true })); if (currentWeight) setBfForm(prev => ({ ...prev, weight: currentWeight.toString() })); };
+
+    const openBodyFatModal = () => { setModals(prev => ({ ...prev, bodyFat: true })); };
 
     const renderBiometrics = () => (
         <>
@@ -422,23 +387,23 @@ export default function MeasurementsScreen() {
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <Stack.Screen options={{ headerShown: false }} />
             <ExpoLinearGradient colors={['rgba(99, 101, 241, 0.13)', 'transparent']} style={styles.gradientBg} />
-            
+
             <View style={styles.tabHeader}>
-                <TouchableOpacity 
-                    style={[styles.tabItem, activeTab === 'biometrics' && styles.tabItemActive]} 
+                <TouchableOpacity
+                    style={[styles.tabItem, activeTab === 'biometrics' && styles.tabItemActive]}
                     onPress={() => setActiveTab('biometrics')}
                 >
                     <Text style={[styles.tabText, activeTab === 'biometrics' && styles.tabTextActive]}>BIOMETRICS</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.tabItem, activeTab === 'calculator' && styles.tabItemActive]} 
+                <TouchableOpacity
+                    style={[styles.tabItem, activeTab === 'calculator' && styles.tabItemActive]}
                     onPress={() => setActiveTab('calculator')}
                 >
                     <Text style={[styles.tabText, activeTab === 'calculator' && styles.tabTextActive]}>1RM CALC</Text>
                 </TouchableOpacity>
             </View>
 
-            <ScrollView 
+            <ScrollView
                 contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
@@ -486,7 +451,7 @@ const styles = StyleSheet.create({
     cardValueRow: { flexDirection: 'row', alignItems: 'baseline', paddingHorizontal: theme.spacing.m, marginBottom: theme.spacing.s },
     cardValue: { ...typographyStyles.h2, color: '#FFFFFF', fontWeight: '900', fontSize: 38 },
     cardUnit: { ...typographyStyles.labelTight, color: theme.colors.text.tertiary, marginLeft: 4, fontWeight: '900', fontSize: 14, opacity: 0.5 },
-    cardGraphWrapper: { marginTop: 'auto', width: '100%', bottom: -5 }, 
+    cardGraphWrapper: { marginTop: 'auto', width: '100%', bottom: -5 },
 
     neuralTrendSection: { marginBottom: theme.spacing.xl },
     neuralTrendHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: theme.spacing.l },
@@ -516,7 +481,7 @@ const styles = StyleSheet.create({
     historyUnit: { fontSize: 12, color: theme.colors.text.tertiary, marginLeft: 4, fontWeight: '900' },
     historyBfValue: { fontSize: 28, color: theme.colors.status.rest, fontWeight: '900', fontStyle: 'italic' },
     historyBfUnit: { fontSize: 12, color: theme.colors.status.rest, marginLeft: 4, fontWeight: '900', opacity: 0.7 },
-    
+
     // Calculator specific
     calcContainer: { marginTop: 10 },
     calcCard: { ...commonStyles.glassPanel, padding: 24, borderRadius: 40 },
@@ -550,7 +515,7 @@ const styles = StyleSheet.create({
 
     emptyState: { alignItems: 'center', justifyContent: 'center', padding: theme.spacing.xl },
     emptyText: { color: theme.colors.text.secondary, marginTop: 8 },
-    
+
     modalOverlay: { flex: 1, backgroundColor: theme.colors.background, justifyContent: 'center', padding: theme.spacing.l },
     modalCard: { backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.xl, padding: theme.spacing.xl, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.ui.border },
     modalTitle: { ...typographyStyles.h4, color: theme.colors.text.primary, marginBottom: theme.spacing.l },

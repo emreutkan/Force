@@ -1,4 +1,4 @@
-import { CalendarDay, CalendarStats } from '@/api/types';
+import { CalendarDay, CalendarStats } from '@/api/types/index';
 import { theme } from '@/constants/theme';
 import { useDateStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,10 +12,9 @@ interface CalendarModalProps {
     calendarStats: CalendarStats | null;
     selectedYear: number;
     selectedMonth: number;
-    availableYears: number[];
     onYearChange: (year: number) => void;
     onMonthChange: (year: number, month: number) => void;
-    onDayClick: (dateStr: string, dayData: CalendarDay | undefined) => void;
+    onDayClick: (dateStr: string, dayData: CalendarDay | undefined | null) => void;
 }
 
 export default function CalendarModal({
@@ -25,7 +24,6 @@ export default function CalendarModal({
     calendarStats,
     selectedYear,
     selectedMonth,
-    availableYears,
     onYearChange,
     onMonthChange,
     onDayClick,
@@ -49,16 +47,9 @@ export default function CalendarModal({
     };
 
     const handleYearSelect = () => {
-        const yearsToShow = availableYears.length > 0 
-            ? availableYears 
-            : [new Date().getFullYear()];
-        
-        if (!yearsToShow.includes(selectedYear)) {
-            yearsToShow.push(selectedYear);
-            yearsToShow.sort((a, b) => b - a);
-        }
-        
-        const yearOptions: Array<{ text: string; onPress?: () => void; style?: "cancel" | "default" | "destructive" }> = yearsToShow.map(year => ({
+        const yearsToShow = [new Date().getFullYear()];
+
+        const yearOptions: { text: string; onPress?: () => void; style?: "cancel" | "default" | "destructive" }[] = yearsToShow.map(year => ({
             text: year.toString(),
             onPress: () => {
                 onYearChange(year);
@@ -106,7 +97,7 @@ export default function CalendarModal({
                         >
                             <Ionicons name="chevron-back" size={20} color={theme.colors.status.active} />
                         </TouchableOpacity>
-                        
+
                         <TouchableOpacity
                             onPress={handleYearSelect}
                             style={styles.calendarMonthYear}
@@ -115,7 +106,7 @@ export default function CalendarModal({
                                 {new Date(selectedYear, selectedMonth - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                             </Text>
                         </TouchableOpacity>
-                        
+
                         <TouchableOpacity
                             onPress={handleNextMonth}
                             style={styles.calendarNavButton}
@@ -137,9 +128,9 @@ export default function CalendarModal({
                                 const firstDay = new Date(selectedYear, selectedMonth - 1, 1);
                                 const startDate = new Date(firstDay);
                                 startDate.setDate(startDate.getDate() - startDate.getDay());
-                                
+
                                 const days: React.ReactElement[] = [];
-                                
+
                                 for (let i = 0; i < 42; i++) {
                                     const date = new Date(startDate);
                                     date.setDate(startDate.getDate() + i);
@@ -147,7 +138,7 @@ export default function CalendarModal({
                                     const dayData = calendarData.find(d => d.date === dateStr);
                                     const isCurrentMonth = date.getMonth() === selectedMonth - 1;
                                     const isToday = date.toDateString() === today.toDateString();
-                                    
+
                                     days.push(
                                         <TouchableOpacity
                                             key={i}

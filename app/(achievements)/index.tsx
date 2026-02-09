@@ -1,25 +1,22 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { 
-    View, 
-    Text, 
-    StyleSheet, 
-    TouchableOpacity, 
-    ScrollView, 
-    ActivityIndicator, 
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    ScrollView,
+    ActivityIndicator,
     FlatList,
-    Dimensions,
-    Image
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { theme, typographyStyles, commonStyles } from '@/constants/theme';
+import { theme } from '@/constants/theme';
 import { getAchievements, getAchievementCategories } from '@/api/Achievements';
-import { UserAchievement, AchievementCategoryStats, AchievementRarity } from '@/api/types';
+import { UserAchievement, AchievementCategoryStats, AchievementRarity } from '@/api/types/index';
 import { extractResults, isPaginatedResponse } from '@/api/types/pagination';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import { getErrorMessage } from '@/api/errorHandler';
 
 const RARITY_COLORS: Record<AchievementRarity, string> = {
     common: '#9CA3AF',
@@ -59,10 +56,10 @@ const AchievementCard = ({ item }: { item: UserAchievement }) => {
     return (
         <View style={[styles.achievementCard, !is_earned && styles.achievementCardLocked]}>
             <View style={[styles.iconBox, { borderColor: is_earned ? rarityColor : theme.colors.ui.border }]}>
-                <Ionicons 
-                    name={getIcon(achievement.icon) as any} 
-                    size={24} 
-                    color={is_earned ? rarityColor : theme.colors.text.tertiary} 
+                <Ionicons
+                    name={getIcon(achievement.icon) as any}
+                    size={24}
+                    color={is_earned ? rarityColor : theme.colors.text.tertiary}
                 />
                 {!is_earned && (
                     <View style={styles.lockOverlay}>
@@ -70,7 +67,7 @@ const AchievementCard = ({ item }: { item: UserAchievement }) => {
                     </View>
                 )}
             </View>
-            
+
             <View style={styles.achievementInfo}>
                 <View style={styles.nameRow}>
                     <Text style={[styles.achievementName, !is_earned && styles.textMuted]}>
@@ -82,7 +79,7 @@ const AchievementCard = ({ item }: { item: UserAchievement }) => {
                         </Text>
                     </View>
                 </View>
-                
+
                 <Text style={styles.achievementDescription} numberOfLines={2}>
                     {achievement.description}
                 </Text>
@@ -90,11 +87,11 @@ const AchievementCard = ({ item }: { item: UserAchievement }) => {
                 {!is_earned ? (
                     <View style={styles.progressSection}>
                         <View style={styles.progressBarBg}>
-                            <View 
+                            <View
                                 style={[
-                                    styles.progressBarFill, 
+                                    styles.progressBarFill,
                                     { width: `${progress_percentage}%`, backgroundColor: rarityColor }
-                                ]} 
+                                ]}
                             />
                         </View>
                         <Text style={styles.progressText}>
@@ -131,10 +128,10 @@ export default function AchievementsScreen() {
                 getAchievements(activeCategory || undefined, page, pageSize),
                 getAchievementCategories()
             ]);
-            
+
             // Extract results from paginated or non-paginated response
             const achievementResults = extractResults(achData);
-            
+
             // Update pagination state if paginated
             if (isPaginatedResponse(achData)) {
                 setHasMore(!!achData.next);
@@ -143,17 +140,17 @@ export default function AchievementsScreen() {
                 setHasMore(false);
                 setCurrentPage(1);
             }
-            
+
             // If page 1, replace; otherwise append
             if (page === 1) {
                 setAchievements(achievementResults);
             } else {
                 setAchievements(prev => [...prev, ...achievementResults]);
             }
-            
+
             setCategories(catData);
-        } catch (error) {
-            console.error('Failed to fetch achievements:', error);
+        } catch (error: any) {
+            console.error('Failed to fetch achievements:', getErrorMessage(error as Error));
         } finally {
             setIsLoading(false);
         }
@@ -169,7 +166,7 @@ export default function AchievementsScreen() {
         setCurrentPage(1);
         setHasMore(false);
         fetchData(1);
-    }, [fetchData]);
+    }, [fetchData, activeCategory]);
 
     const renderHeader = () => (
         <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
@@ -184,12 +181,12 @@ export default function AchievementsScreen() {
     );
 
     const renderCategoryTabs = () => (
-        <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false} 
+        <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoryScroll}
         >
-            <TouchableOpacity 
+            <TouchableOpacity
                 style={[styles.categoryTab, activeCategory === null && styles.categoryTabActive]}
                 onPress={() => setActiveCategory(null)}
             >
@@ -198,15 +195,15 @@ export default function AchievementsScreen() {
                 </Text>
             </TouchableOpacity>
             {categories.map((cat) => (
-                <TouchableOpacity 
+                <TouchableOpacity
                     key={cat.code}
                     style={[styles.categoryTab, activeCategory === cat.code && styles.categoryTabActive]}
                     onPress={() => setActiveCategory(cat.code)}
                 >
-                    <Ionicons 
-                        name={CATEGORY_ICONS[cat.code] || 'trophy-outline'} 
-                        size={14} 
-                        color={activeCategory === cat.code ? theme.colors.text.brand : theme.colors.text.tertiary} 
+                    <Ionicons
+                        name={CATEGORY_ICONS[cat.code] || 'trophy-outline'}
+                        size={14}
+                        color={activeCategory === cat.code ? theme.colors.text.brand : theme.colors.text.tertiary}
                         style={{ marginRight: 6 }}
                     />
                     <Text style={[styles.categoryTabText, activeCategory === cat.code && styles.categoryTabTextActive]}>
@@ -230,7 +227,7 @@ export default function AchievementsScreen() {
                 style={StyleSheet.absoluteFillObject}
             />
             {renderHeader()}
-            
+
             <View style={{ flex: 1 }}>
                 <View style={styles.categoryContainer}>
                     {renderCategoryTabs()}
@@ -277,10 +274,10 @@ export default function AchievementsScreen() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
-    header: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        paddingHorizontal: 20, 
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
         paddingBottom: 15,
         gap: 15
     },
@@ -295,18 +292,18 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     headerTitleContainer: { flex: 1 },
-    headerTitle: { 
-        fontSize: 18, 
-        fontWeight: '900', 
-        color: '#FFF', 
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#FFF',
         fontStyle: 'italic',
-        letterSpacing: 0.5 
+        letterSpacing: 0.5
     },
-    headerSubtitle: { 
-        fontSize: 10, 
-        fontWeight: '800', 
-        color: theme.colors.text.tertiary, 
-        letterSpacing: 1 
+    headerSubtitle: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: theme.colors.text.tertiary,
+        letterSpacing: 1
     },
     categoryContainer: {
         paddingVertical: 15,

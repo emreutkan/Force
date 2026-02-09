@@ -1,19 +1,19 @@
-import { getExercises } from '@/api/Exercises';
+
 import { createTemplateWorkout } from '@/api/Workout';
 import ExerciseSearchModal from '@/components/ExerciseSearchModal';
-import { commonStyles, theme, typographyStyles } from '@/constants/theme';
+import { theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring,  } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CreateTemplateScreen() {
     const [title, setTitle] = useState('');
     const [selectedExerciseIds, setSelectedExerciseIds] = useState<number[]>([]);
-    const [exercisesData, setExercisesData] = useState<any[]>([]);
+    const [, setExercisesData] = useState<any[]>([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const insets = useSafeAreaInsets();
@@ -26,7 +26,7 @@ export default function CreateTemplateScreen() {
                 return;
             }
             // In a real app, we might have these cached or fetch them
-            // For now, we'll try to get them from the API if needed, 
+            // For now, we'll try to get them from the API if needed,
             // but the ExerciseSearchModal might already provide them if we refactor it.
             // Let's assume we just have IDs for now but make the UI look good.
         };
@@ -68,7 +68,7 @@ export default function CreateTemplateScreen() {
         } else {
             createButtonScale.value = withSpring(0);
         }
-    }, [title, selectedExerciseIds.length]);
+    }, [title, selectedExerciseIds.length, createButtonScale]);
 
     const handleExercisesButtonPress = () => {
         exercisesButtonScale.value = withSpring(0.95, { damping: 10 }, () => {
@@ -101,6 +101,7 @@ export default function CreateTemplateScreen() {
                 Alert.alert("Error", "Failed to create template.");
             }
         } catch (error) {
+            console.error("Failed to create template:", error);
             Alert.alert("Error", "Failed to create template.");
         } finally {
             setIsCreating(false);
@@ -112,9 +113,6 @@ export default function CreateTemplateScreen() {
         opacity: createButtonScale.value,
     }));
 
-    const exercisesButtonStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: exercisesButtonScale.value }],
-    }));
 
     return (
         <View style={styles.container}>
@@ -135,11 +133,11 @@ export default function CreateTemplateScreen() {
                 <View style={{ width: 40 }} />
             </View>
 
-            <KeyboardAvoidingView 
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
             >
-                <ScrollView 
+                <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 120 }]}
                     showsVerticalScrollIndicator={false}
@@ -161,7 +159,7 @@ export default function CreateTemplateScreen() {
 
                     <View style={styles.exercisesHeader}>
                         <Text style={styles.sectionLabel}>EXERCISES ({selectedExerciseIds.length})</Text>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             onPress={handleExercisesButtonPress}
                             style={styles.addInlineButton}
                         >
@@ -207,7 +205,7 @@ export default function CreateTemplateScreen() {
                             ))}
                         </View>
                     ) : (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.emptyState}
                             onPress={handleExercisesButtonPress}
                             activeOpacity={0.7}
