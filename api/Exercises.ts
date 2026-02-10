@@ -2,41 +2,28 @@ import apiClient from './APIClient';
 import { getErrorMessage, getValidationErrors } from './errorHandler';
 
 export const getExercises = async (query: string = '', page?: number, pageSize?: number) => {
-    try {
-        const params: any = {};
-        if (query) params.search = query;
-        if (page !== undefined) params.page = page;
-        if (pageSize !== undefined) params.page_size = pageSize;
-        const response = await apiClient.get(`/exercise/list/`, { params });
-        return response.data;
-    } catch (error: any) {
-        return error.message || 'An unknown error occurred';
-    }
+    const params: any = {};
+    if (query) params.search = query;
+    if (page !== undefined) params.page = page;
+    if (pageSize !== undefined) params.page_size = pageSize;
+    const response = await apiClient.get(`/exercise/list/`, { params });
+    return response.data;
 }
 
 export const addExerciseToWorkout = async (workoutId: number, exerciseId: number) => {
-    try {
-        const response = await apiClient.post(`/exercise/add/${workoutId}/`, {
-            exercise_id: exerciseId
-        });
-        return response.data;
-    } catch (error: any) {
-        return error.message || 'An unknown error occurred';
-    }
+    const response = await apiClient.post(`/exercise/add/${workoutId}/`, {
+        exercise_id: exerciseId
+    });
+    return response.data;
 }
 
 export const removeExerciseFromWorkout = async (workoutId: number, exerciseId: number) => {
-    try {
-        // Warning: This endpoint expects workout_exercise_id, but here we are passing exerciseId. 
-        // If the frontend is passing the raw exercise ID (e.g. "Bench Press" ID), this will fail.
-        // It needs the ID of the row in the workout_exercises table.
-        // Assuming the UI passes the correct ID (idToLock in the UI seems to be workoutExercise.id).
-        const response = await apiClient.delete(`/workout/exercise/${exerciseId}/delete/`);
-        return response.status === 204;
-    } catch (error: any) {
-        return false;
-    }
-
+    // Warning: This endpoint expects workout_exercise_id, but here we are passing exerciseId.
+    // If the frontend is passing the raw exercise ID (e.g. "Bench Press" ID), this will fail.
+    // It needs the ID of the row in the workout_exercises table.
+    // Assuming the UI passes the correct ID (idToLock in the UI seems to be workoutExercise.id).
+    const response = await apiClient.delete(`/workout/exercise/${exerciseId}/delete/`);
+    return response.status === 204;
 }
 
 export interface AddSetRequest {
@@ -51,23 +38,13 @@ export interface AddSetRequest {
 }
 
 export const addSetToExercise = async (workoutExerciseId: number, data: AddSetRequest) => {
-    try {
-        const response = await apiClient.post(`/workout/exercise/${workoutExerciseId}/add_set/`, data);
-        return response.data;
-    } catch (error: any) {
-        const errorMessage = getErrorMessage(error);
-        const validationErrors = getValidationErrors(error);
-        return { error: true, message: errorMessage, validationErrors };
-    }
+    const response = await apiClient.post(`/workout/exercise/${workoutExerciseId}/add_set/`, data);
+    return response.data;
 }
 
 export const deleteSet = async (setId: number) => {
-    try {
-        const response = await apiClient.delete(`/workout/set/${setId}/delete/`);
-        return response.status === 204;
-    } catch (error: any) {
-        return false;
-    }
+    const response = await apiClient.delete(`/workout/set/${setId}/delete/`);
+    return response.status === 204;
 }
 
 export interface UpdateSetRequest {
@@ -82,47 +59,23 @@ export interface UpdateSetRequest {
 }
 
 export const updateSet = async (setId: number, data: UpdateSetRequest) => {
-    try {
-        const response = await apiClient.patch(`/workout/set/${setId}/update/`, data);
-        return response.data;
-    } catch (error: any) {
-        const errorMessage = getErrorMessage(error);
-        const validationErrors = getValidationErrors(error);
-        return { error: true, message: errorMessage, validationErrors };
-    }
+    const response = await apiClient.patch(`/workout/set/${setId}/update/`, data);
+    return response.data;
 }
 
 export const updateExerciseOrder = async (workoutId: number, exercise_orders: { id: number, order: number }[]) => {
-    try {
-        const response = await apiClient.post(`/workout/${workoutId}/update_order/`, { exercise_orders: exercise_orders });
-        return response.status === 200;
-    } catch (error: any) {
-        return false;
-    }
+    const response = await apiClient.post(`/workout/${workoutId}/update_order/`, { exercise_orders: exercise_orders });
+    return response.status === 200;
 }
 
 export const getExercise1RMHistory = async (exerciseId: number): Promise<any> => {
-    try {
-        const response = await apiClient.get(`/workout/exercise/${exerciseId}/1rm-history/`);
-        return response.data;
-    } catch (error: any) {
-        if (error.response) {
-            return error.response.data;
-        }
-        return error.message || 'An unknown error occurred';
-    }
+    const response = await apiClient.get(`/workout/exercise/${exerciseId}/1rm-history/`);
+    return response.data;
 }
 
 export const getExerciseSetHistory = async (exerciseId: number, page: number = 1): Promise<any> => {
-    try {
-        const response = await apiClient.get(`/workout/exercise/${exerciseId}/set-history/`, {
-            params: { page }
-        });
-        return response.data;
-    } catch (error: any) {
-        if (error.response) {
-            return error.response.data;
-        }
-        return error.message || 'An unknown error occurred';
-    }
+    const response = await apiClient.get(`/workout/exercise/${exerciseId}/set-history/`, {
+        params: { page }
+    });
+    return response.data;
 }

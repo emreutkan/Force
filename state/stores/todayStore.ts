@@ -1,72 +1,28 @@
-import { checkToday, getActiveWorkout, getWorkout } from '@/api/Workout';
-import { CheckTodayResponse, Workout } from '@/api/types';
 import { create } from 'zustand';
 
-interface getTodayStatusResponse {
-  workout_status: 'performed' | 'not_performed' | 'rest_day' | 'performing';
-  workout?: Workout | null;
-}
-
+/**
+ * Today store - manages client-side UI state for today's workout view
+ * API calls have been moved to TanStack Query hooks in @/hooks/useWorkout
+ *
+ * Use useTodayStatus() from @/hooks/useWorkout for fetching today's status
+ *
+ * This store now only manages:
+ * - UI-specific state for the today view
+ * - Temporary flags and selections
+ */
 interface TodayStoreState {
-  isLoading: boolean;
-  fetchTodayStatus: () => void;
-  todayStatus: getTodayStatusResponse | null;
-  getTodayStatus: () => Promise<getTodayStatusResponse | null>;
-  clearTodayStatus: () => void;
+  // UI state - whether user has manually refreshed today view
+  lastManualRefresh: number | null;
+  triggerManualRefresh: () => void;
+
+  // Clear state
+  clearState: () => void;
 }
 
-export const useTodayStore = create<TodayStoreState>((set, get) => ({
-  isLoading: false,
-  todayStatus: null,
-  getTodayStatus: async (): Promise<getTodayStatusResponse | null> => {
-    if (get().todayStatus === null) {
-      await get().fetchTodayStatus();
+export const useTodayStore = create<TodayStoreState>((set) => ({
+  lastManualRefresh: null,
 
-      return get().todayStatus;
-    } else {
-      return get().todayStatus;
-    }
-  },
-  clearTodayStatus: () => {},
-  fetchTodayStatus: async (): Promise<void> => {
-    set({ isLoading: true });
-    try {
-      const status: CheckTodayResponse = await checkToday();
+  triggerManualRefresh: () => set({ lastManualRefresh: Date.now() }),
 
-      if (!status.workout_performed && !status.active_workout) {
-        set({
-          todayStatus: {
-            workout_status: 'not_performed',
-          },
-        });
-      } else if (status.is_rest && status.workout_performed) {
-        set({
-          todayStatus: {
-            workout_status: 'rest_day',
-          },
-        });
-      } else if (status.workout_performed && !status.is_rest) {
-        set({
-          todayStatus: {
-            workout_status: 'performed',
-            workout: status.workout,
-          },
-        });
-      } else if (status.active_workout) {
-        const activeWorkout = await getActiveWorkout();
-        let workout: Workout | null = null;
-        if (activeWorkout) {
-          workout = await getWorkout(activeWorkout.id);
-        }
-        set({
-          todayStatus: {
-            workout_status: 'performing',
-            workout: workout,
-          },
-        });
-      }
-    } catch (error) {
-      console.error('Failed to fetch today status:', error);
-    }
-  },
+  clearState: () => set({ lastManualRefresh: null }),
 }));

@@ -4,7 +4,8 @@
       "Bash(grep:*)",
       "Bash(npm test:*)",
       "Bash(npx tsc:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(test:*)"
     ]
   }
 }

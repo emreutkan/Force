@@ -1,38 +1,40 @@
 import { create } from 'zustand';
 
+/**
+ * Home loading store - manages client-side UI state for the home screen
+ * Data caching has been moved to TanStack Query hooks
+ *
+ * Use useTodayStatus() and useRecoveryStatus() from @/hooks/useWorkout for data fetching
+ *
+ * This store now only manages:
+ * - UI-specific loading/display states
+ * - User preferences for home screen
+ */
 export interface HomeLoadingState {
-    /** Whether the initial data load is complete */
-    isInitialLoadComplete: boolean;
-    /** Cached today status data */
-    todayStatus: any | null;
-    /** Cached recovery status data */
-    recoveryStatus: Record<string, any> | null;
+  // UI state - whether user has completed the initial onboarding tour
+  hasSeenOnboarding: boolean;
+  setHasSeenOnboarding: (seen: boolean) => void;
 
-    setInitialLoadComplete: (complete: boolean) => void;
-    setTodayStatus: (status: any) => void;
-    setRecoveryStatus: (status: Record<string, any>) => void;
-    clearHomeData: () => void;
+  // UI state - selected tab/view on home screen (if applicable)
+  selectedView: 'summary' | 'recovery' | 'stats';
+  setSelectedView: (view: HomeLoadingState['selectedView']) => void;
+
+  // Clear state
+  clearState: () => void;
 }
 
-/**
- * Home loading store - caches home screen data to avoid flickering on navigation
- * Stores today's status and recovery status between screen visits
- */
 export const useHomeLoadingStore = create<HomeLoadingState>((set) => ({
-    isInitialLoadComplete: false,
-    todayStatus: null,
-    recoveryStatus: null,
+  hasSeenOnboarding: false,
+  selectedView: 'summary',
 
-    setInitialLoadComplete: (complete) => set({ isInitialLoadComplete: complete }),
+  setHasSeenOnboarding: (seen) => set({ hasSeenOnboarding: seen }),
 
-    setTodayStatus: (status) => set({ todayStatus: status }),
+  setSelectedView: (view) => set({ selectedView: view }),
 
-    setRecoveryStatus: (status) => set({ recoveryStatus: status }),
-
-    clearHomeData: () => set({
-        isInitialLoadComplete: false,
-        todayStatus: null,
-        recoveryStatus: null
+  clearState: () =>
+    set({
+      hasSeenOnboarding: false,
+      selectedView: 'summary',
     }),
 }));
 

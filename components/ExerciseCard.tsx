@@ -17,7 +17,7 @@ import { InsightsModal } from './shared/InsightsModal';
 import { SetsHeader } from './shared/SetsHeader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const IS_WEB_SMALL = Platform.OS === 'web' && SCREEN_WIDTH <= 750;
+const IS_WEB_SMALL = SCREEN_WIDTH <= 750;
 
 // ============================================================================
 // 2. COMPONENTS

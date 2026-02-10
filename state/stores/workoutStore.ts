@@ -1,82 +1,39 @@
-import { Workout } from '@/api/types';
-import { getWorkouts } from '@/api/Workout';
 import { create } from 'zustand';
 
+/**
+ * Workout store - manages client-side workout UI state only
+ * API calls have been moved to TanStack Query hooks in @/hooks/useWorkout
+ *
+ * This store now only manages:
+ * - UI-specific state (filters, selections, etc.)
+ * - Temporary client state that doesn't belong in React Query cache
+ */
 export interface WorkoutState {
-    workouts: Workout[];
-    isLoading: boolean;
-    isLoadingMore: boolean;
-    hasMore: boolean;
-    currentPage: number;
-    fetchWorkouts: (reset?: boolean) => Promise<void>;
-    loadMoreWorkouts: () => Promise<void>;
-    setWorkouts: (workouts: Workout[]) => void;
-    appendWorkouts: (workouts: Workout[]) => void;
-    clearWorkouts: () => void;
+  // UI state - selected workout for viewing/editing
+  selectedWorkoutId: number | null;
+  setSelectedWorkoutId: (id: number | null) => void;
+
+  // Filter state for workout list (if needed in the future)
+  filters: {
+    year?: number;
+    month?: number;
+  };
+  setFilters: (filters: Partial<WorkoutState['filters']>) => void;
+  clearFilters: () => void;
 }
 
-/**
- * Workout store - manages workout list with pagination
- * Handles fetching and caching of workout history
- */
-export const useWorkoutStore = create<WorkoutState>((set, get) => ({
-    workouts: [],
-    isLoading: false,
-    isLoadingMore: false,
-    hasMore: false,
-    currentPage: 1,
+export const useWorkoutStore = create<WorkoutState>((set) => ({
+  selectedWorkoutId: null,
+  filters: {},
 
-    fetchWorkouts: async (reset = true) => {
-        if (reset) {
-            set({ isLoading: true, currentPage: 1 });
-        }
-        try {
-            const workoutsData = await getWorkouts(1);
-            const workoutsArray = workoutsData?.results || [];
-            set({
-                workouts: workoutsArray,
-                hasMore: !!workoutsData?.next,
-                currentPage: 1,
-                isLoading: false
-            });
-        } catch (error) {
-            console.error('Failed to fetch workouts:', error);
-            set({ workouts: [], hasMore: false, isLoading: false });
-        }
-    },
+  setSelectedWorkoutId: (id) => set({ selectedWorkoutId: id }),
 
-    loadMoreWorkouts: async () => {
-        const { currentPage, hasMore, isLoadingMore } = get();
-        if (!hasMore || isLoadingMore) return;
-
-        set({ isLoadingMore: true });
-        try {
-            const nextPage = currentPage + 1;
-            const workoutsData = await getWorkouts(nextPage);
-            const newWorkouts = workoutsData?.results || [];
-            set((state) => ({
-                workouts: [...state.workouts, ...newWorkouts],
-                hasMore: !!workoutsData?.next,
-                currentPage: nextPage,
-                isLoadingMore: false
-            }));
-        } catch (error) {
-            console.error('Failed to load more workouts:', error);
-            set({ isLoadingMore: false });
-        }
-    },
-
-    setWorkouts: (workouts) => set({ workouts }),
-
-    appendWorkouts: (workouts) => set((state) => ({
-        workouts: [...state.workouts, ...workouts]
+  setFilters: (newFilters) =>
+    set((state) => ({
+      filters: { ...state.filters, ...newFilters },
     })),
 
-    clearWorkouts: () => set({
-        workouts: [],
-        currentPage: 1,
-        hasMore: false
-    }),
+  clearFilters: () => set({ filters: {} }),
 }));
 
 export default useWorkoutStore;
