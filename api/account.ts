@@ -1,28 +1,14 @@
 import apiClient from './APIClient';
 import { getAccountResponse, WeightHistoryResponse } from './types';
-import { getErrorMessage, getValidationErrors } from './errorHandler';
-
-// export const getAccount = async (): Promise<getAccountResponse> => {
-//   try {
-//     const response = await apiClient.get('/user/me/'); // Added trailing slash
-//     if (response.status === 200) {
-//       return response.data;
-//     } else {
-//       throw new Error('Failed to get account information /me endpoint');
-//     }
-//   } catch (error: any) {
-//     return (
-//       error.message || 'An unknown error occurred while getting account information /me endpoint'
-//     );
-//   }
-// };
 
 export const getAccount = async (): Promise<getAccountResponse | any> => {
   const response = await apiClient.get('/user/me/');
   return response.data;
 };
 
-export const updateHeight = async (height: number): Promise<{ height: string; message: string }> => {
+export const updateHeight = async (
+  height: number
+): Promise<{ height: string; message: string }> => {
   const response = await apiClient.post('/user/height/', { height });
   return response.data;
 };

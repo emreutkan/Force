@@ -1,6 +1,4 @@
 // Stores barrel export
-export { useUserStore } from './userStore';
-export type { UserState } from './userStore';
 
 export { useWorkoutStore } from './workoutStore';
 export type { WorkoutState } from './workoutStore';

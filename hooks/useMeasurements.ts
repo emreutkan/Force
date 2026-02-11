@@ -6,7 +6,7 @@ export const useMeasurements = (page?: number, pageSize?: number) => {
   return useQuery({
     queryKey: ['measurements', page, pageSize],
     queryFn: () => getMeasurements(page, pageSize),
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 10, // 10 minutes
   });
 };
 

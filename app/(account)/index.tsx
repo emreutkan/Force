@@ -1,7 +1,7 @@
 import { changePassword, updateGender, updateHeight, updateWeight } from '@/api/account';
 import { clearTokens } from '@/api/Storage';
 import { theme } from '@/constants/theme';
-import { useInvalidateUser, useUser, useClearUser, useUserStatistics } from '@/hooks/useUser';
+import { useInvalidateUser, useUser, useClearUser, useChangePassword } from '@/hooks/useUser';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -20,7 +20,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { useUserStatistics } from '@/hooks/useAchievements';
 // ============================================================================
 // 2. MAIN SCREEN COMPONENT
 // ============================================================================
@@ -29,6 +29,7 @@ export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const { data: user, isLoading, error } = useUser();
   const clearUser = useClearUser();
+  const changePassword = useChangePassword();
   const { data: stats, isLoading: isLoadingStats, error: errorStats } = useUserStatistics();
   const invalidateUser = useInvalidateUser();
   // Controls visibility of the 3 modals
@@ -115,10 +116,12 @@ export default function AccountScreen() {
         if (!formData.oldPassword || !formData.newPassword) throw new Error('Missing fields');
         if (formData.newPassword.length < 8)
           throw new Error('New password must be at least 8 characters');
-        result = await changePassword(formData.oldPassword, formData.newPassword);
+        const result = await changePassword.mutateAsync({
+          oldPassword: formData.oldPassword,
+          newPassword: formData.newPassword,
+        });
+        if (result?.message) throw new Error(result.message);
       }
-
-      if (result?.error) throw new Error(result.error);
 
       invalidateUser();
       toggleModal(type, false);
