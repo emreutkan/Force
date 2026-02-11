@@ -85,7 +85,7 @@ export const useDeleteWeightEntry = () => {
   });
 };
 
-// Change password mutation
+// P password mutation
 export const useChangePassword = () => {
   return useMutation({
     mutationFn: ({ oldPassword, newPassword }: { oldPassword: string; newPassword: string }) =>
