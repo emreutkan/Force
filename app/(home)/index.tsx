@@ -39,32 +39,24 @@ import {
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LoadingSkeleton from './components/homeLoadingSkeleton';
-import { useTodayStore } from '@/state/stores/todayStore';
 
 export default function Home() {
   const insets = useSafeAreaInsets();
 
   // --- Store & State ---
   const today = useDateStore((state) => state.today);
-  const {
-    isInitialLoadComplete,
-    recoveryStatus: cachedRecoveryStatus,
-    setInitialLoadComplete,
-    setRecoveryStatus: setCachedRecoveryStatus,
-  } = useHomeLoadingStore();
+  const { hasSeenOnboarding, setHasSeenOnboarding } = useHomeLoadingStore();
 
   // Data State
   const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
-  const [recoveryStatus, setRecoveryStatus] = useState<Record<string, MuscleRecovery>>(
-    cachedRecoveryStatus || {}
-  );
+  const [recoveryStatus, setRecoveryStatus] = useState<Record<string, MuscleRecovery>>({});
   const [templates, setTemplates] = useState<TemplateWorkout[]>([]);
   const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
   const [calendarStats, setCalendarStats] = useState<CalendarStats | null>(null);
   const [todayWorkoutScore, setTodayWorkoutScore] = useState<number | null>(null);
 
   // UI State
-  const [isLoading, setIsLoading] = useState(!isInitialLoadComplete);
+  const [isLoading, setIsLoading] = useState(!hasSeenOnboarding);
   const [refreshing, setRefreshing] = useState(false);
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
 
@@ -103,7 +95,6 @@ export default function Home() {
 
       if (recovery?.recovery_status) {
         setRecoveryStatus(recovery.recovery_status);
-        setCachedRecoveryStatus(recovery.recovery_status);
       }
 
       setCalendarData(cal?.calendar || []);
@@ -136,7 +127,7 @@ export default function Home() {
     } catch (e) {
       console.error('Home fetch error:', e);
     }
-  }, [setCachedRecoveryStatus]);
+  }, []);
 
   const getCurrentWeekNumber = (d: Date) => {
     const start = new Date(d.getFullYear(), 0, 1);
@@ -170,10 +161,10 @@ export default function Home() {
   // Initial Load
   useFocusEffect(
     useCallback(() => {
-      if (!isInitialLoadComplete) {
+      if (!hasSeenOnboarding) {
         fetchAllData().then(() => {
           setIsLoading(false);
-          setInitialLoadComplete(true);
+          setHasSeenOnboarding(true);
         });
       } else {
         // Background refresh on focus - refresh templates too to prevent disappearing
@@ -185,7 +176,7 @@ export default function Home() {
           setTemplates(Array.isArray(tpls) ? tpls : []);
         });
       }
-    }, [isInitialLoadComplete, fetchAllData, setInitialLoadComplete])
+    }, [hasSeenOnboarding, fetchAllData, setHasSeenOnboarding])
   );
 
   const onRefresh = async () => {
@@ -315,7 +306,7 @@ export default function Home() {
     });
   };
 
-  if (isLoading && !isInitialLoadComplete) {
+  if (isLoading && !hasSeenOnboarding) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <LinearGradient
