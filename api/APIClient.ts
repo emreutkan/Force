@@ -2,42 +2,51 @@ import ky from 'ky';
 import {
   getAccessToken,
   getRefreshToken,
+  clearTokens,
   storeAccessToken,
-  getBackendPreference,
+  storeRefreshToken,
 } from '../hooks/Storage';
-
+import { REFRESH_TOKEN_URL, BACKEND_URL } from './types';
+import { RefreshTokenResponse } from './types/auth';
 // Backend configurations
-const LOCAL_IP = '192.168.1.2';
-const EC2_DOMAIN = 'api.utrack.irfanemreutkan.com';
-let SELECTED_BACKEND = `http://${LOCAL_IP}:8000/api`;
+// const BACKEND_URL = 'api.utrack.irfanemreutkan.com';
 
-// Get API URLs based on backend preference
-export const getAPI_URL = async (): Promise<string> => {
-  const backend = await getBackendPreference();
-  if (backend === 'local') {
-    SELECTED_BACKEND = `http://${LOCAL_IP}:8000/api`;
-  } else {
-    SELECTED_BACKEND = `http://${EC2_DOMAIN}/api`;
-  }
-  return SELECTED_BACKEND;
-};
 const apiClient = ky.create({
-  prefixUrl: await getAPI_URL(),
+  prefixUrl: BACKEND_URL,
   hooks: {
     beforeRequest: [
-      (request) => {
+      async (request) => {
         request.headers.set('Content-Type', 'application/json');
-        request.headers.set('Authorization', `Bearer ${getAccessToken()}`);
+        request.headers.set('Authorization', `Bearer ${await getAccessToken()}`);
       },
     ],
     afterResponse: [
       async (request, options, response) => {
-        if (response.status === 401) {
+        if (response.status === 401 && response.headers.get('error') !== 'TOKEN_NOT_VALID') {
           console.log('Unauthorized, refreshing token');
           const refreshToken = await getRefreshToken();
-          if (refreshToken) {
-            await storeAccessToken(refreshToken);
+          if (!refreshToken) {
+            console.log('Refresh token not found, clearing tokens');
           }
+          try {
+            const res: Response = await ky.post(REFRESH_TOKEN_URL, {
+              json: { refresh: refreshToken },
+            });
+            const data: RefreshTokenResponse = await res.json();
+            await storeAccessToken(data.access);
+            await storeRefreshToken(data.refresh);
+            console.log('access token refreshed', data.access);
+            console.log('refresh token refreshed', data.refresh);
+            request.headers.set('Authorization', `Bearer ${data.access}`); // update request headers
+            return ky(request.url, options); // retry request with new token
+          } catch (error) {
+            console.error('Error refreshing token:', error);
+            await clearTokens();
+          }
+        } else if (response.status === 401 && response.headers.get('error') === 'TOKEN_NOT_VALID') {
+          console.log('Token not valid, clearing tokens');
+          await clearTokens();
+          throw new Error('Token not valid');
         }
       },
     ],

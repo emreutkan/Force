@@ -1,10 +1,5 @@
-import {
-  CalendarDay,
-  CalendarStats,
-  MuscleRecovery,
-  TemplateWorkout,
-  Workout,
-} from '@/api/types/index';
+import { CalendarDay, CalendarStats, TemplateWorkout, Workout } from '@/api/types/index';
+import { PaginatedResponse } from '@/api/types/pagination';
 import {
   createWorkout,
   deleteWorkout,
@@ -49,11 +44,26 @@ export default function Home() {
 
   // Data State
   const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
-  const [recoveryStatus, setRecoveryStatus] = useState<Record<string, MuscleRecovery>>({});
-  const [templates, setTemplates] = useState<TemplateWorkout[]>([]);
-  const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
-  const [calendarStats, setCalendarStats] = useState<CalendarStats | null>(null);
-  const [todayWorkoutScore, setTodayWorkoutScore] = useState<number | null>(null);
+  const [recoveryStatus, setRecoveryStatus] = useState < Record<string>({});
+  const [templates, setTemplates] = useState<PaginatedResponse<TemplateWorkout>>({
+    count: 0,
+    next: null,
+    previous: null,
+    results: [],
+  });
+  const [calendarData, setCalendarData] = useState<PaginatedResponse<CalendarDay>>({
+    count: 0,
+    next: null,
+    previous: null,
+    results: [],
+  });
+  const [calendarStats, setCalendarStats] = useState<PaginatedResponse<CalendarStats>>({
+    count: 0,
+    next: null,
+    previous: null,
+    results: [],
+  });
+  const [todayWorkoutScore, setTodayWorkoutScore] = useState<WorkoutSummary | null>(null);
 
   // UI State
   const [isLoading, setIsLoading] = useState(!hasSeenOnboarding);

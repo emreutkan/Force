@@ -32,7 +32,3 @@ export type CalendarStats = {
 export type AvailableYearsResponse = {
   years: number[];
 };
-
-export const CREATE_CALENDAR_URL = `/workout/calendar/create/`;
-export const GET_CALENDAR_URL = `/workout/calendar/`;
-export const GET_CALENDAR_STATS_URL = `/workout/calendar/stats/`;

@@ -1,12 +1,3 @@
-export const ME_URL = '/user/me/';
-export const HEIGHT_URL = '/user/height/';
-export const CHANGE_PASSWORD_URL = '/user/change-password/';
-export const GENDER_URL = '/user/gender/';
-export const WEIGHT_URL = '/user/weight/';
-export const WEIGHT_HISTORY_URL = '/user/weight/history/';
-export const DELETE_WEIGHT_URL = '/user/weight/';
-export const EXPORT_DATA_URL = '/user/export-data/';
-
 export type GetAccountResponse = {
   id: string;
   email: string;

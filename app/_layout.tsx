@@ -7,39 +7,65 @@ import 'react-native-reanimated';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useUser } from '@/hooks/useUser';
 
+const queryClient = new QueryClient(); // query client must be outside component otherwise it gets recreated every render and u lose cached data
+
+// useUser must be called inside QueryClientProivder if we did it like
+/*
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const queryClient = new QueryClient();
+  const isAuthenticated = useUser();
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack
             screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: 'black' },
-            }}
-          >
-            <Stack.Screen name="hero" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(home)" />
-            <Stack.Screen name="(account)" />
-            <Stack.Screen name="(add-exercise)" />
-            <Stack.Screen name="(active-workout)" />
-            <Stack.Screen name="(add-workout)" />
-            <Stack.Screen name="(workouts)" />
-            <Stack.Screen name="(supplements)" />
-            <Stack.Screen name="(recovery-status)" />
-            <Stack.Screen name="(calculations)" />
-            <Stack.Screen name="(exercise-statistics)" />
-            <Stack.Screen name="(templates)" />
-            <Stack.Screen name="(volume-analysis)" />
-          </Stack>
+*/
+
+// then isAuthenticated woudl be called outside QueryClientProvider thats why we need to split it into 2
+
+export default function RootLayout() {
+  const colorScheme = useColorScheme();
+  return (
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <AppNavigator />
           <BottomNavigator />
           <StatusBar style="light" />
         </ThemeProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>
+  );
+}
+
+export function AppNavigator() {
+  const { data: user } = useUser(); // now we are calling it under QueryClientProvider
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: 'black' },
+      }}
+    >
+      <Stack.Protected guard={!!user}>
+        <Stack.Screen name="(home)" />
+        <Stack.Screen name="(account)" />
+        <Stack.Screen name="(add-exercise)" />
+        <Stack.Screen name="(active-workout)" />
+        <Stack.Screen name="(add-workout)" />
+        <Stack.Screen name="(workouts)" />
+        <Stack.Screen name="(supplements)" />
+        <Stack.Screen name="(recovery-status)" />
+        <Stack.Screen name="(calculations)" />
+        <Stack.Screen name="(exercise-statistics)" />
+        <Stack.Screen name="(templates)" />
+        <Stack.Screen name="(volume-analysis)" />
+      </Stack.Protected>
+      <Stack.Screen name="hero" />
+      <Stack.Screen name="(auth)" />
+    </Stack>
   );
 }

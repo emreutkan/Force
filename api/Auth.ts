@@ -21,7 +21,10 @@ import {
   RESET_PASSWORD_URL,
   LOGIN_URL,
   REGISTER_URL,
-} from './types/auth';
+  RefreshTokenRequest,
+  RefreshTokenResponse,
+  REFRESH_TOKEN_URL,
+} from './types';
 
 export const login = async (request: LoginRequest): Promise<LoginResponse> => {
   const response = await apiClient.post(LOGIN_URL, { json: request });
@@ -61,5 +64,10 @@ export const resetPassword = async (
   request: ResetPasswordRequest
 ): Promise<ResetPasswordResponse> => {
   const response = await apiClient.post(RESET_PASSWORD_URL, { json: request });
+  return response.json();
+};
+
+export const refreshToken = async (request: RefreshTokenRequest): Promise<RefreshTokenResponse> => {
+  const response = await apiClient.post(REFRESH_TOKEN_URL, { json: request });
   return response.json();
 };

@@ -22,7 +22,7 @@ export type CheckNameResponse = {
 
 // Login
 export type LoginRequest = {
-  username: string;
+  email: string;
   password: string;
 };
 
@@ -116,10 +116,11 @@ export type CheckNameRequest = {
   name: string;
 };
 
-export const LOGIN_URL = `/user/login/`;
-export const REGISTER_URL = `/user/register/`;
-export const CHECK_EMAIL_URL = `/user/check-email/`;
-export const CHECK_PASSWORD_URL = `/user/check-password/`;
-export const CHECK_NAME_URL = `/user/check-name/`;
-export const REQUEST_PASSWORD_RESET_URL = `/user/request-password-reset/`;
-export const RESET_PASSWORD_URL = `/user/reset-password/`;
+export type RefreshTokenRequest = {
+  refresh: string;
+};
+
+export type RefreshTokenResponse = {
+  access: string;
+  refresh: string;
+};

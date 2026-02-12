@@ -288,36 +288,3 @@ export type RecoveryStatusResponse = {
   is_pro: boolean;
   timestamp: string;
 };
-
-// Workout API paths (relative to /api/workout/ or your base)
-export const CREATE_WORKOUT_URL = '/workout/create/';
-export const GET_ACTIVE_WORKOUT_URL = '/workout/active/';
-export const GET_WORKOUTS_URL = '/workout/list/';
-export const GET_WORKOUT_URL = '/workout/list/:id/';
-export const ADD_EXERCISE_TO_WORKOUT_URL = '/workout/:id/add_exercise/';
-export const COMPLETE_WORKOUT_URL = '/workout/:id/complete/';
-export const UPDATE_WORKOUT_URL = '/workout/:id/update/';
-export const DELETE_WORKOUT_URL = '/workout/:id/delete/';
-export const WORKOUT_SUMMARY_URL = '/workout/:id/summary/';
-export const UPDATE_EXERCISE_ORDER_URL = '/workout/:id/update_order/';
-
-export const ADD_SET_URL = '/workout/exercise/:workout_exercise_id/add_set/';
-export const UPDATE_SET_URL = '/workout/set/:set_id/update/';
-export const DELETE_SET_URL = '/workout/set/:set_id/delete/';
-export const DELETE_WORKOUT_EXERCISE_URL = '/workout/exercise/:workout_exercise_id/delete/';
-
-export const REST_TIMER_URL = '/workout/active/rest-timer/';
-export const REST_TIMER_STOP_URL = '/workout/active/rest-timer/stop/';
-export const REST_TIMER_RESUME_URL = '/workout/active/rest-timer/resume/';
-
-export const CALENDAR_URL = '/workout/calendar/';
-export const CALENDAR_STATS_URL = '/workout/calendar/stats/';
-export const AVAILABLE_YEARS_URL = '/workout/years/';
-
-export const CHECK_TODAY_URL = '/workout/check-today/';
-export const RECOVERY_STATUS_URL = '/workout/recovery/status/';
-
-export const TEMPLATE_CREATE_URL = '/workout/template/create/';
-export const TEMPLATE_LIST_URL = '/workout/template/list/';
-export const TEMPLATE_DELETE_URL = '/workout/template/delete/:id/';
-export const TEMPLATE_START_URL = '/workout/template/start/';

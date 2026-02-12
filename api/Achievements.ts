@@ -16,7 +16,7 @@ import {
   RANKING_URL,
   RANKINGS_URL,
   LEADERBOARD_URL,
-} from './types/achievements';
+} from './types/';
 import { PaginatedResponse } from './types/pagination';
 import { UserStatistics } from './types/account';
 import { ExerciseRanking, ExerciseLeaderboard } from './types/exercise';

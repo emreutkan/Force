@@ -1,13 +1,5 @@
 import { create } from 'zustand';
 
-/**
- * Workout store - manages client-side workout UI state only
- * API calls have been moved to TanStack Query hooks in @/hooks/useWorkout
- *
- * This store now only manages:
- * - UI-specific state (filters, selections, etc.)
- * - Temporary client state that doesn't belong in React Query cache
- */
 export interface WorkoutState {
   // UI state - selected workout for viewing/editing
   selectedWorkoutId: number | null;
