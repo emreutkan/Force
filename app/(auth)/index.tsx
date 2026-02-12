@@ -1,13 +1,13 @@
-import {
-  checkEmail,
-  CheckEmailResponse,
-  checkName,
-  checkPassword,
-  googleLogin,
-  login,
-  register,
-} from '@/api/Auth';
+import { checkEmail, checkName, checkPassword, login, register } from '@/api/Auth';
 import { getErrorMessage } from '@/api/errorHandler';
+import {
+  CheckPasswordRequest,
+  LoginRequest,
+  RegisterRequest,
+  CheckEmailRequest,
+  CheckNameRequest,
+  CheckEmailResponse,
+} from '@/api/types';
 import { theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as Google from 'expo-auth-session/providers/google';
@@ -207,7 +207,10 @@ export default function AuthScreen() {
 
     // Validate email before proceeding
     setValidating(true);
-    const result = await checkEmail(email);
+    const checkEmailRequest: CheckEmailRequest = {
+      email,
+    };
+    const result = await checkEmail(checkEmailRequest);
     setEmailValidation(result);
     setValidating(false);
 
@@ -233,7 +236,10 @@ export default function AuthScreen() {
 
     // Validate email before proceeding
     setValidating(true);
-    const result = await checkEmail(email);
+    const checkEmailRequest: CheckEmailRequest = {
+      email,
+    };
+    const result = await checkEmail(checkEmailRequest);
     setEmailValidation(result);
     setValidating(false);
 
@@ -261,7 +267,10 @@ export default function AuthScreen() {
 
     // Validate name before proceeding
     setValidating(true);
-    const result = await checkName(name);
+    const checkNameRequest: CheckNameRequest = {
+      name,
+    };
+    const result = await checkName(checkNameRequest);
     setValidating(false);
 
     if (!result.is_valid) {
@@ -280,34 +289,6 @@ export default function AuthScreen() {
     androidClientId: '344903572266-1kfttptioqaffsf58e5rq5uo2n9s2ho5.apps.googleusercontent.com',
     scopes: ['profile', 'email'],
   });
-
-  useEffect(() => {
-    const handleGoogleLoginEffect = async (token: string) => {
-      setLoading(true);
-      try {
-        const result = await googleLogin(token);
-        // Allow login if we get an object with an access token, even if refresh is empty string
-        if (typeof result === 'object' && result.access) {
-          router.replace('/(home)');
-        } else {
-          showAlert(
-            'Google Login Failed',
-            typeof result === 'string' ? result : 'An unknown error occurred'
-          );
-        }
-      } catch (e: any) {
-        showAlert('Error', getErrorMessage(e));
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (response?.type === 'success') {
-      const { authentication } = response;
-      if (authentication?.accessToken) {
-        handleGoogleLoginEffect(authentication.accessToken);
-      }
-    }
-  }, [response, router]);
 
   useEffect(() => {
     return () => {
@@ -345,7 +326,11 @@ export default function AuthScreen() {
 
     setLoading(true);
     try {
-      const result = await login(email, password);
+      const loginRequest: LoginRequest = {
+        email,
+        password,
+      };
+      const result = await login(loginRequest);
       if (typeof result === 'object' && result.access && result.refresh) {
         router.replace('/(home)');
       } else {
@@ -370,7 +355,10 @@ export default function AuthScreen() {
 
     // Validate password before registering
     setValidating(true);
-    const passwordResult = await checkPassword(password);
+    const passwordRequest: CheckPasswordRequest = {
+      password,
+    };
+    const passwordResult = await checkPassword(passwordRequest);
     setValidating(false);
 
     if (!passwordResult.is_valid) {
@@ -383,7 +371,13 @@ export default function AuthScreen() {
 
     setLoading(true);
     try {
-      const result = await register(email, password, 'male', undefined, name);
+      const registerRequest: RegisterRequest = {
+        email,
+        password,
+        gender: 'male',
+        height: undefined,
+      };
+      const result = await register(registerRequest);
       if (typeof result === 'object' && result.access && result.refresh) {
         router.replace('/(home)');
       } else {

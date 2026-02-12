@@ -5,7 +5,8 @@
       "Bash(npm test:*)",
       "Bash(npx tsc:*)",
       "Bash(ls:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(wc:*)"
     ]
   }
 }

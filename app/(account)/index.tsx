@@ -1,4 +1,4 @@
-import { changePassword, updateGender, updateHeight, updateWeight } from '@/api/account';
+import { updateGender, updateHeight, updateWeight } from '@/api/account';
 import { clearTokens } from '@/hooks/Storage';
 import { theme } from '@/constants/theme';
 import { useInvalidateUser, useUser, useClearUser, useChangePassword } from '@/hooks/useUser';
@@ -21,16 +21,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUserStatistics } from '@/hooks/useAchievements';
-// ============================================================================
-// 2. MAIN SCREEN COMPONENT
-// ============================================================================
 
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
-  const { data: user, isLoading, error } = useUser();
+  const { data: user } = useUser();
   const clearUser = useClearUser();
   const changePassword = useChangePassword();
-  const { data: stats, isLoading: isLoadingStats, error: errorStats } = useUserStatistics();
+  const { data: stats } = useUserStatistics();
   const invalidateUser = useInvalidateUser();
   // Controls visibility of the 3 modals
   const [modals, setModals] = useState({
