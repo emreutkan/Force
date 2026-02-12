@@ -5,7 +5,6 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useUser } from '@/hooks/useUser';
 
@@ -42,7 +41,32 @@ export default function RootLayout() {
 }
 
 export function AppNavigator() {
-  const { data: user } = useUser(); // now we are calling it under QueryClientProvider
+  const { data, isLoading } = useUser();
+  if (isLoading)
+    return (
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: 'black' },
+        }}
+      >
+        <Stack.Screen name="(loading)" />
+      </Stack>
+    );
+  if (!data) {
+    return (
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: 'black' },
+        }}
+      >
+        <Stack.Screen name="(hero)" />
+        <Stack.Screen name="(auth)" />
+      </Stack>
+    );
+  }
+
   return (
     <Stack
       screenOptions={{
@@ -50,7 +74,7 @@ export function AppNavigator() {
         contentStyle: { backgroundColor: 'black' },
       }}
     >
-      <Stack.Protected guard={!!user}>
+      <Stack.Protected guard={!!data}>
         <Stack.Screen name="(home)" />
         <Stack.Screen name="(account)" />
         <Stack.Screen name="(add-exercise)" />
@@ -64,8 +88,6 @@ export function AppNavigator() {
         <Stack.Screen name="(templates)" />
         <Stack.Screen name="(volume-analysis)" />
       </Stack.Protected>
-      <Stack.Screen name="hero" />
-      <Stack.Screen name="(auth)" />
     </Stack>
   );
 }

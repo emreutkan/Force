@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const LOADING_DURATION = 2000; // 2 seconds
 
-export default function LoadingHome() {
+export default function LoadingScreen() {
   const insets = useSafeAreaInsets();
   const progress = useSharedValue(0);
   const { fromDebug } = useLocalSearchParams<{ fromDebug?: string }>();
