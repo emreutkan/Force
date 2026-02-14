@@ -98,12 +98,12 @@ export type UpdateExerciseOrderRequest = {
   exercise_orders: { id: number; order: number }[];
 };
 
-// Exercise API URL constants (relative to api base)
-export const EXERCISE_LIST_URL = '/exercise/list/';
-export const EXERCISE_ADD_TO_WORKOUT_URL = '/exercise/add/:workout_id/';
-export const EXERCISE_1RM_HISTORY_URL = '/workout/exercise/:exercise_id/1rm-history/';
-export const EXERCISE_SET_HISTORY_URL = '/workout/exercise/:exercise_id/set-history/';
-export const EXERCISE_LAST_WORKOUT_URL = '/workout/exercise/:exercise_id/last-workout/';
+// Exercise API URL constants (relative to api base; no leading slash when using ky prefixUrl)
+export const EXERCISE_LIST_URL = 'exercise/list/';
+export const EXERCISE_ADD_TO_WORKOUT_URL = 'exercise/add/:workout_id/';
+export const EXERCISE_1RM_HISTORY_URL = 'workout/exercise/:exercise_id/1rm-history/';
+export const EXERCISE_SET_HISTORY_URL = 'workout/exercise/:exercise_id/set-history/';
+export const EXERCISE_LAST_WORKOUT_URL = 'workout/exercise/:exercise_id/last-workout/';
 
 // Exercise 1RM History Types
 export type Exercise1RMHistoryEntry = {

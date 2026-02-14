@@ -53,7 +53,12 @@ export const createWorkout = async (
 export const getActiveWorkout = async (): Promise<CreateWorkoutResponse | null> => {
   const response = await apiClient.get(GET_ACTIVE_WORKOUT_URL, { throwHttpErrors: false });
   if (response.status === 404) return null;
-  return response.json();
+  const data = await response.json() as any;
+  // API may return { active_workout: { ... } } wrapper — unwrap it
+  if (data && data.active_workout) {
+    return data.active_workout;
+  }
+  return data;
 };
 
 export const getWorkouts = async (
@@ -152,7 +157,7 @@ export const getRestTimerState = async (): Promise<
 };
 
 export const stopRestTimer = async (): Promise<RestTimerStopResponse> => {
-  const response = await apiClient.post(REST_TIMER_STOP_URL);
+  const response = await apiClient.get(REST_TIMER_STOP_URL);
   return response.json();
 };
 

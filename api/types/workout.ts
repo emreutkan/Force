@@ -132,13 +132,10 @@ export type UpdateExerciseOrderRequest = {
 
 // ============== Check today ==============
 export type CheckTodayResponse = {
-  workout_performed: boolean;
-  active_workout?: boolean;
-  is_rest?: boolean;
-  is_rest_day?: boolean;
-  date?: string;
-  message?: string;
-  workout?: Workout;
+  date: string;
+  status: 'none' | 'active' | 'rest_day' | 'completed';
+  active_workout: Workout | null;
+  completed_workout: (Workout & { is_rest_day?: boolean }) | null;
 };
 
 // ============== Rest timer ==============

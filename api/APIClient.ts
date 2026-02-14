@@ -55,6 +55,15 @@ const apiClient = ky.create({
       async (request, options, response) => {
         console.log('[API] afterResponse - Status:', response.status, 'URL:', request.url);
 
+        // Log 4xx body so we can see validation/error reason
+        if (response.status >= 400 && response.status < 500) {
+          const clone = response.clone();
+          try {
+            const body = await clone.text();
+            console.warn('[API] error response body:', body);
+          } catch (_) {}
+        }
+
         // GET 304 Not Modified → use cached body and return as 200 so callers get data
         if (request.method === 'GET' && response.status === 304) {
           const key = getCacheKey(request);
@@ -97,7 +106,7 @@ const apiClient = ky.create({
           console.log('[API] Calling refresh endpoint');
           const res = await ky.post(REFRESH_TOKEN_URL, {
             json: { refresh: refreshToken },
-            prefixUrl: undefined,
+            prefixUrl: BACKEND_URL,
           });
 
           const data: RefreshTokenResponse = await res.json();
@@ -107,12 +116,15 @@ const apiClient = ky.create({
           await storeRefreshToken(data.refresh);
 
           console.log('[API] Retrying original request with new token');
+          // request.url is already fully resolved, so strip prefixUrl and hooks to avoid duplication
+          const { prefixUrl, hooks, ...retryOptions } = options as any;
           return ky(request.url, {
-            ...options,
+            ...retryOptions,
             headers: {
-              ...options.headers,
+              ...retryOptions.headers,
               Authorization: `Bearer ${data.access}`,
             },
+            retry: { limit: 0, methods: [] },
           });
         } catch (error) {
           console.error('[API] Token refresh failed:', error);
