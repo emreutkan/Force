@@ -16,7 +16,7 @@ import MuscleRecoverySection from './components/MuscleRecoverySection';
 import StartWorkoutMenu from './components/StartWorkoutMenu';
 import TemplatesSection from './components/TemplatesSection';
 import { getCalendar, getCalendarStats } from '@/api/Workout';
-import { useDeleteWorkout, useSetSelectedDate, useWorkouts, useCreateWorkout } from '@/hooks/useWorkout';
+import { useDeleteWorkout, useSetSelectedDate, useWorkouts, useCreateWorkout, useTodayStatus } from '@/hooks/useWorkout';
 
 export default function Home() {
   const insets = useSafeAreaInsets();
@@ -44,6 +44,8 @@ export default function Home() {
   const deleteWorkoutMutation = useDeleteWorkout();
   const createWorkoutMutation = useCreateWorkout();
   const { data: workoutsData, refetch: refetchWorkouts } = useWorkouts(1, 100);
+  const { data: todayStatus } = useTodayStatus(today);
+  const hasActiveWorkout = todayStatus?.status === 'active';
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -79,6 +81,14 @@ export default function Home() {
   };
 
   const handleNewWorkout = () => {
+    if (hasActiveWorkout) {
+      setShowStartMenu(false);
+      Alert.alert(
+        'Active Workout Exists',
+        'Cannot create a new active workout. Complete or delete the existing active workout first.'
+      );
+      return;
+    }
     setModalMode('create');
     setModalVisible(true);
   };
@@ -197,8 +207,6 @@ export default function Home() {
 
         <ActiveSection
           onDeleteWorkout={handleDeleteWorkout}
-          startButtonRef={startButtonRef}
-          onStartWorkoutPress={handleStartWorkoutPress}
           onNewWorkout={handleNewWorkout}
           onLogPrevious={handleLogPrevious}
           onRestDay={handleRestDay}
@@ -215,14 +223,8 @@ export default function Home() {
         visible={showStartMenu}
         menuLayout={menuLayout}
         onClose={() => setShowStartMenu(false)}
-        onNewWorkout={() => {
-          setModalMode('create');
-          setModalVisible(true);
-        }}
-        onLogPrevious={() => {
-          setModalMode('log');
-          setModalVisible(true);
-        }}
+        onNewWorkout={handleNewWorkout}
+        onLogPrevious={handleLogPrevious}
         onRefresh={onRefresh}
       />
 

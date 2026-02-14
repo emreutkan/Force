@@ -172,8 +172,18 @@ export default function WorkoutModal({ visible, onClose, mode, onSuccess }: Work
                     }
                 }, 100);
             }
-        } catch (error) {
-            Alert.alert("Error", mode === 'log' ? "Failed to log workout." : "Failed to start workout.");
+        } catch (error: unknown) {
+            let title = "Error";
+            let message = mode === 'log' ? "Failed to log workout." : "Failed to start workout.";
+            const err = error as { response?: { status: number; json: () => Promise<{ error?: string; message?: string }> } };
+            if (err?.response?.status === 400) {
+                try {
+                    const body = await err.response.json();
+                    if (body.message) message = body.message;
+                    if (body.error === "ACTIVE_WORKOUT_EXISTS") title = "Active Workout Exists";
+                } catch {}
+            }
+            Alert.alert(title, message);
             console.error(error);
         }
     };
