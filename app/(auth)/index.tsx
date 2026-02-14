@@ -84,7 +84,7 @@ export default function AuthScreen() {
   useEffect(() => {
     if (currentStep === 'email') {
       if (email.length > 0) {
-        emailButtonHeight.value = withTiming(70, { duration: 500 });
+        emailButtonHeight.value = withTiming(57, { duration: 500 });
         emailButtonOpacity.value = withTiming(1, { duration: 500 });
       } else {
         emailButtonHeight.value = withTiming(0, { duration: 500 });
@@ -97,7 +97,7 @@ export default function AuthScreen() {
   useEffect(() => {
     if (currentStep === 'name') {
       if (name.length > 0) {
-        nameButtonHeight.value = withTiming(70, { duration: 500 });
+        nameButtonHeight.value = withTiming(57, { duration: 500 });
         nameButtonOpacity.value = withTiming(1, { duration: 500 });
         // Hide back button
         backButtonWidth.value = withTiming(0, { duration: 500 });
@@ -132,7 +132,7 @@ export default function AuthScreen() {
     if (currentStep === 'password') {
       if (password.length > 0) {
         // Show button
-        passwordButtonHeight.value = withTiming(70, { duration: 500 });
+        passwordButtonHeight.value = withTiming(57, { duration: 500 });
         passwordButtonOpacity.value = withTiming(1, { duration: 500 });
         // Hide back button
         backButtonWidth.value = withTiming(0, { duration: 500 });

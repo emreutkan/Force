@@ -25,7 +25,7 @@ export const ExerciseHeader = ({ exercise, isLocked, onMenuPress, showHistory, o
                             </>
                         )}
                     </Text>
-                    <Pressable 
+                    <Pressable
                         onPress={onMenuPress}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         style={styles.menuButton}
@@ -43,7 +43,7 @@ export const ExerciseHeader = ({ exercise, isLocked, onMenuPress, showHistory, o
                         )}
                     </View>
                     {onHistoryToggle && (
-                        <Pressable 
+                        <Pressable
                             onPress={onHistoryToggle}
                             style={[styles.historyToggleButton, showHistory && styles.historyToggleButtonActive]}
                         >
@@ -64,8 +64,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: theme.spacing.m,
     },
-    exerciseInfo: { 
-        flex: 1 
+    exerciseInfo: {
+        flex: 1
     },
     exerciseNameRow: {
         flexDirection: 'row',
