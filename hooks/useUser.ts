@@ -11,11 +11,13 @@ import {
 } from '@/api/account';
 
 // User profile queries
-export const useUser = () => {
+export const useUser = (options?: { enabled: boolean }) => {
   return useQuery({
     queryKey: ['user'],
     queryFn: getAccount,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: options?.enabled ?? true, // ✅ Respect the enabled option
+    retry: false, // Avoid 3 retries on 401 → each retry would hit 401 again and clearTokens again
   });
 };
 

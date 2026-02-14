@@ -22,20 +22,20 @@ const apiClient = ky.create({
         if (token) {
           request.headers.set('Authorization', `Bearer ${token}`);
         }
+        console.log('request', request);
       },
     ],
     afterResponse: [
       async (request, options, response) => {
         console.log('[API] afterResponse - Status:', response.status, 'URL:', request.url);
 
-        // Only handle 401s, let other responses through
         if (response.status !== 401) {
           return response;
         }
 
-        console.log('[API] 401 Unauthorized - Attempting token refresh');
-
+        console.log('response is 401', response.status, response);
         const refreshToken = await getRefreshToken();
+
         if (!refreshToken) {
           console.error('[API] No refresh token found, clearing tokens');
           await clearTokens();
@@ -46,8 +46,7 @@ const apiClient = ky.create({
           console.log('[API] Calling refresh endpoint');
           const res = await ky.post(REFRESH_TOKEN_URL, {
             json: { refresh: refreshToken },
-            // Important: don't use the same apiClient to avoid circular hooks
-            prefixUrl: undefined, // Use absolute URL
+            prefixUrl: undefined,
           });
 
           const data: RefreshTokenResponse = await res.json();
@@ -56,12 +55,14 @@ const apiClient = ky.create({
           await storeAccessToken(data.access);
           await storeRefreshToken(data.refresh);
 
-          // Update the original request with new token
-          request.headers.set('Authorization', `Bearer ${data.access}`);
-
-          // Retry the original request
           console.log('[API] Retrying original request with new token');
-          return ky(request);
+          return ky(request.url, {
+            ...options,
+            headers: {
+              ...options.headers,
+              Authorization: `Bearer ${data.access}`,
+            },
+          });
         } catch (error) {
           console.error('[API] Token refresh failed:', error);
           await clearTokens();

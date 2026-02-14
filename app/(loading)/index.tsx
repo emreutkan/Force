@@ -2,7 +2,7 @@ import { theme, typographyStyles } from '@/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { ScrollView as RNScrollView, StyleSheet, Text, View } from 'react-native';
-import LoadingSkeleton from '../(home)/components/homeLoadingSkeleton';
+import LoadingSkeleton from '@/app/(tabs)/(home)/components/homeLoadingSkeleton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function LoadingScreen() {

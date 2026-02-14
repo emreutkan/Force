@@ -1,4 +1,5 @@
-import BottomNavigator from '@/components/BottomNavigator';
+import React, { useEffect, useState } from 'react';
+import { getAccessToken, getRefreshToken } from '@/hooks/Storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -7,11 +8,8 @@ import 'react-native-reanimated';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useUser } from '@/hooks/useUser';
-import LoadingScreen from './(loading)/LoadingView';
-
 const queryClient = new QueryClient();
 
-// So authenticated users land on index → (home) instead of (account)
 export const unstable_settings = {
   initialRouteName: 'index',
 };
@@ -23,7 +21,6 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <AppNavigator />
-          <BottomNavigator />
           <StatusBar style="light" />
         </ThemeProvider>
       </GestureHandlerRootView>
@@ -32,44 +29,61 @@ export default function RootLayout() {
 }
 
 function AppNavigator() {
-  const { data, isLoading } = useUser();
+  const [hasTokens, setHasTokens] = useState<boolean | null>(null); // null = checking
+  const [loadAuth, setLoadAuth] = useState(false);
 
-  // Show loading screen while checking auth
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+  // First, check if tokens exist
+  useEffect(() => {
+    checkTokens();
+  }, []);
 
-  if (!!data) {
-    return (
+  const checkTokens = async () => {
+    try {
+      const accessToken = await getAccessToken();
+      const refreshToken = await getRefreshToken();
+      setHasTokens(!!(accessToken || refreshToken));
+    } catch (error) {
+      console.error('[AUTH] Error checking tokens:', error);
+      setHasTokens(false);
+    }
+  };
+
+  const { data, isLoading } = useUser({
+    enabled: hasTokens === true,
+  });
+  useEffect(() => {
+    if (isLoading === false) {
+      setLoadAuth(true);
+    }
+    if (!hasTokens) {
+      setLoadAuth(true);
+    }
+    console.log('loadAuth', loadAuth);
+  }, [isLoading, hasTokens]);
+
+  return (
+    <React.Fragment>
       <Stack
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: 'black' },
         }}
-      >
-        <Stack>
-          <Stack.Screen name="(hero)" />
-          <Stack.Screen name="(auth)" />
-        </Stack>
-      </Stack>
-    );
-  }
-  return (
-    <>
-      <Stack.Protected guard={!!data}>
-        <Stack.Screen name="(home)" />
-        <Stack.Screen name="(account)" />
+      ></Stack>
+      <Stack.Protected guard={loadAuth}>
+        <Stack.Screen name="(hero)" />
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+      <Stack.Protected guard={data !== undefined}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(account)" options={{ headerShown: false }} />
         <Stack.Screen name="(add-exercise)" />
         <Stack.Screen name="(active-workout)" />
         <Stack.Screen name="(add-workout)" />
-        <Stack.Screen name="(workouts)" />
-        <Stack.Screen name="(supplements)" />
-        <Stack.Screen name="(recovery-status)" />
-        <Stack.Screen name="(calculations)" />
         <Stack.Screen name="(exercise-statistics)" />
         <Stack.Screen name="(templates)" />
         <Stack.Screen name="(volume-analysis)" />
+        <Stack.Screen name="(recovery-status)" />
       </Stack.Protected>
-    </>
+    </React.Fragment>
   );
 }

@@ -70,8 +70,17 @@ export default function UpgradeScreen() {
                 colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
                 style={styles.gradientBg}
             />
+            <View style={styles.backHeader}>
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    style={styles.backButton}
+                >
+                    <Ionicons name="arrow-back" size={24} color={theme.colors.text.primary} />
+                </TouchableOpacity>
+            </View>
             <ScrollView
-                contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20, marginTop: 58 }]}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20, marginTop: 16 }]}
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.heroSection}>
@@ -135,6 +144,16 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000000',
+    },
+    backHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        marginBottom: 8,
+    },
+    backButton: {
+        padding: 4,
     },
     gradientBg: {
         position: 'absolute',

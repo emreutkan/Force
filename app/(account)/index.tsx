@@ -135,6 +135,19 @@ export default function AccountScreen() {
         colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
         style={styles.gradientBg}
       />
+      <View style={styles.backHeader}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={styles.backButton}
+        >
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={theme.colors.text.primary}
+          />
+        </TouchableOpacity>
+      </View>
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
@@ -275,7 +288,7 @@ export default function AccountScreen() {
         <View style={styles.settingsContainer}>
           <TouchableOpacity
             style={styles.settingCard}
-            onPress={() => router.push('/(account)/upgrade')}
+            // onPress={() => router.push('/(account)/upgrade')}
             activeOpacity={0.7}
           >
             <View
@@ -620,6 +633,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  backHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.m,
+    paddingVertical: theme.spacing.s,
+    marginBottom: theme.spacing.xs,
+  },
+  backButton: {
+    padding: theme.spacing.xs,
   },
   gradientBg: {
     position: 'absolute',
