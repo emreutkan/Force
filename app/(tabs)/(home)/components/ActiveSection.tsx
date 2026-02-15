@@ -7,13 +7,7 @@ import { ActiveSectionSkeleton } from './homeLoadingSkeleton';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  Pressable,
-  View,
-  LayoutAnimation,
-} from 'react-native';
+import { StyleSheet, Text, Pressable, View, LayoutAnimation } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SwipeAction } from '@/components/shared/SwipeAction';
 import Animated, {
@@ -46,7 +40,8 @@ export default function ActiveSection({
   const completedWorkout = todayStatus?.completed_workout ?? null;
 
   // Get workout summary for completed workouts
-  const completedWorkoutId = status === 'completed' && completedWorkout ? completedWorkout.id : null;
+  const completedWorkoutId =
+    status === 'completed' && completedWorkout ? completedWorkout.id : null;
   const { data: workoutSummary } = useWorkoutSummary(completedWorkoutId);
 
   const todayWorkoutScore =
@@ -171,7 +166,10 @@ export default function ActiveSection({
   if (status === 'active' && activeWorkout) {
     const exercisesCount = activeWorkout.exercises?.length || 0;
     const setsCount =
-      activeWorkout.exercises?.reduce((total, ex) => total + (ex.sets?.length || 0), 0) || 0;
+      activeWorkout.exercises?.reduce(
+        (total: number, ex: WorkoutExercise) => total + (ex.sets?.length || 0),
+        0
+      ) || 0;
 
     return (
       <ReanimatedSwipeable
@@ -377,10 +375,7 @@ export default function ActiveSection({
             >
               <Animated.View style={option1Style}>
                 <Pressable
-                  style={({ pressed }) => [
-                    styles.optionRow,
-                    pressed && styles.optionRowPressed,
-                  ]}
+                  style={({ pressed }) => [styles.optionRow, pressed && styles.optionRowPressed]}
                   onPress={() => {
                     setIsExpanded(false);
                     onNewWorkout();
@@ -399,10 +394,7 @@ export default function ActiveSection({
 
               <Animated.View style={option2Style}>
                 <Pressable
-                  style={({ pressed }) => [
-                    styles.optionRow,
-                    pressed && styles.optionRowPressed,
-                  ]}
+                  style={({ pressed }) => [styles.optionRow, pressed && styles.optionRowPressed]}
                   onPress={() => {
                     setIsExpanded(false);
                     onLogPrevious();
@@ -421,10 +413,7 @@ export default function ActiveSection({
 
               <Animated.View style={option3Style}>
                 <Pressable
-                  style={({ pressed }) => [
-                    styles.optionRow,
-                    pressed && styles.optionRowPressed,
-                  ]}
+                  style={({ pressed }) => [styles.optionRow, pressed && styles.optionRowPressed]}
                   onPress={() => {
                     setIsExpanded(false);
                     onRestDay();
