@@ -80,8 +80,7 @@ NOTES.md
 README.md
 REVENUECAT.md
 
-# RevenueCat service (contains API keys)
-services/revenueCat.ts
+# RevenueCat service is tracked in prod (uses env vars, no hardcoded keys)
 NOTES.txt
 NOTES.docx
 NOTES.doc

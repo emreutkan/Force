@@ -21,20 +21,12 @@ export default function RevenueCatSync() {
   useEffect(() => {
     // 1. Check current status on mount
     getCustomerInfo().then((info) => {
-      if (info) {
-        const active = info.entitlements.active;
-        const isPro = !!active[ENTITLEMENT_ID];
-        console.log('[RC] entitlements on mount:', Object.keys(active), '→ isPro:', isPro);
-        setIsPro(isPro);
-      }
+      if (info) setIsPro(!!info.entitlements.active[ENTITLEMENT_ID]);
     });
 
     // 2. Real-time: fires immediately after purchase/restore/expiry
     const listener = addCustomerInfoUpdateListener((info) => {
-      const active = info.entitlements.active;
-      const isPro = !!active[ENTITLEMENT_ID];
-      console.log('[RC] entitlements updated:', Object.keys(active), '→ isPro:', isPro);
-      setIsPro(isPro);
+      setIsPro(!!info.entitlements.active[ENTITLEMENT_ID]);
     });
 
     return () => listener.remove();

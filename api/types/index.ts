@@ -75,5 +75,4 @@ export const TEMPLATE_START_URL = `workout/template/start/`;
 // export const DELETE_USER_SUPPLEMENT_LOG_URL = `supplements/user/log/delete/:id/`;
 // export const GET_USER_SUPPLEMENT_LOGS_TODAY_URL = `supplements/user/log/today/`;
 
-export const BACKEND_URL = 'http://192.168.1.2:8000/api';
-// export const BACKEND_URL = 'http://api.utrack.irfanemreutkan.com/api';
+export const BACKEND_URL = 'https://api.utrack.irfanemreutkan.com/api';

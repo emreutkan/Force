@@ -1,6 +1,5 @@
 const appJson = require('./app.json');
 
-// Load .env so RC_TEST_API (and others) are available
 require('dotenv').config();
 
 module.exports = {
@@ -8,7 +7,7 @@ module.exports = {
     ...appJson.expo,
     extra: {
       ...appJson.expo.extra,
-      RC_TEST_API: process.env.RC_TEST_API,
+      RC_API_KEY: process.env.RC_API_KEY,
     },
   },
 };
