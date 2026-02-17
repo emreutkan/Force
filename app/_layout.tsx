@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -7,14 +7,16 @@ import 'react-native-reanimated';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { theme } from '@/constants/theme';
+import { initializeRevenueCat } from '@/services/revenueCat';
+import RevenueCatSync from '@/components/RevenueCatSync';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 2, // 2 min: use cache, no refetch until stale
-      gcTime: 1000 * 60 * 10,   // 10 min: keep unused cache
+      gcTime: 1000 * 60 * 10, // 10 min: keep unused cache
       refetchOnWindowFocus: false,
-      refetchOnMount: true,     // refetch when mounting only if data is stale
+      refetchOnMount: true, // refetch when mounting only if data is stale
     },
   },
 });
@@ -32,8 +34,14 @@ const CustomDarkTheme = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    initializeRevenueCat();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
+      <RevenueCatSync />
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <ThemeProvider value={colorScheme === 'dark' ? CustomDarkTheme : DefaultTheme}>
           <Stack

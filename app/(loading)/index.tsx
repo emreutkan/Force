@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { getAccessToken, getRefreshToken } from '@/hooks/Storage';
 import { useUser } from '@/hooks/useUser';
 import { theme } from '@/constants/theme';
+import { isNetworkTimeoutError } from '@/api/errorHandler';
 
 export default function LoadingScreen() {
   const [hasTokens, setHasTokens] = React.useState<boolean | null>(null);
@@ -37,9 +38,11 @@ export default function LoadingScreen() {
   }, []);
 
   // Fetch user data if tokens exist
-  const { data: user, isLoading } = useUser({
+  const { data: user, isLoading, error: userError, refetch: refetchUser } = useUser({
     enabled: hasTokens === true,
   });
+
+  const isTimeoutOrNetwork = userError != null && isNetworkTimeoutError(userError);
 
   // Navigate based on auth state (only after minimum time elapsed)
   useEffect(() => {
@@ -66,12 +69,17 @@ export default function LoadingScreen() {
       return;
     }
 
-    // Has tokens but failed to load user → go to auth
+    // Has tokens but failed to load user
     if (!isLoading && user === undefined) {
+      // Timeout/network: show retry instead of redirecting to auth
+      if (isTimeoutOrNetwork) {
+        console.log('[LOADING] Request timed out, showing retry');
+        return;
+      }
       console.log('[LOADING] Failed to load user, redirecting to auth');
       router.replace('/(auth)');
     }
-  }, [hasTokens, user, isLoading, minTimeElapsed]);
+  }, [hasTokens, user, isLoading, minTimeElapsed, isTimeoutOrNetwork]);
 
   return (
     <View style={styles.container}>
@@ -82,13 +90,32 @@ export default function LoadingScreen() {
         style={styles.bgGlow}
       />
 
-      {/* Centered branding */}
+      {/* Centered branding or timeout retry */}
       <View style={styles.content}>
-        <View style={styles.logoContainer}>
-          <Text style={styles.logo}>FORCE</Text>
-          <View style={styles.dot} />
-        </View>
-        <Text style={styles.tagline}>NEURAL TRAINING PLATFORM</Text>
+        {isTimeoutOrNetwork ? (
+          <>
+            <View style={styles.logoContainer}>
+              <Text style={styles.logo}>FORCE</Text>
+              <View style={styles.dot} />
+            </View>
+            <Text style={styles.tagline}>WORKOUT TRACKING</Text>
+            <Text style={styles.timeoutMessage}>Request timed out. Check your connection.</Text>
+            <Pressable
+              style={({ pressed }) => [styles.retryButton, pressed && styles.retryButtonPressed]}
+              onPress={() => refetchUser()}
+            >
+              <Text style={styles.retryButtonText}>RETRY</Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <View style={styles.logoContainer}>
+              <Text style={styles.logo}>FORCE</Text>
+              <View style={styles.dot} />
+            </View>
+            <Text style={styles.tagline}>WORKOUT TRACKING</Text>
+          </>
+        )}
       </View>
     </View>
   );
@@ -137,5 +164,30 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 3.6,
     color: theme.colors.text.tertiary,
+  },
+  timeoutMessage: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text.secondary,
+    marginTop: 24,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 20,
+    backgroundColor: theme.colors.status.active,
+    paddingVertical: theme.spacing.m,
+    paddingHorizontal: theme.spacing.xl,
+    borderRadius: theme.borderRadius.xxl,
+  },
+  retryButtonPressed: {
+    opacity: 0.8,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    fontStyle: 'italic',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    color: theme.colors.text.primary,
   },
 });

@@ -4,7 +4,7 @@ import { commonStyles, theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -47,6 +47,13 @@ export default function WorkoutDetailScreen() {
       refetch();
     }, [refetch])
   );
+
+  // Navigate back when workout was deleted (404) so we don't sit on a missing workout or retry forever
+  useEffect(() => {
+    if (workoutId !== null && !isLoading && workout === null) {
+      router.back();
+    }
+  }, [workoutId, isLoading, workout]);
 
   // --- Helpers ---
   const formatDuration = (seconds: number) => {
@@ -158,10 +165,6 @@ export default function WorkoutDetailScreen() {
         style={StyleSheet.absoluteFillObject}
       />
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={commonStyles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={theme.colors.text.zinc600} />
-        </Pressable>
-        <View style={{ flex: 1 }} />
         {!isEditMode ? (
           <View style={styles.headerActions}>
             <Pressable onPress={() => setIsEditMode(true)} style={commonStyles.iconButton}>
@@ -178,14 +181,14 @@ export default function WorkoutDetailScreen() {
         )}
       </View>
 
-      {isLoading ? (
+      {isLoading || workout === null ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.status.active} />
         </View>
       ) : (
         <View style={{ flex: 1 }}>
           <WorkoutDetailView
-            workout={workout}
+            workout={workout!}
             elapsedTime={formatDuration(workout?.duration || 0)}
             isActive={false}
             isEditMode={isEditMode}
@@ -267,6 +270,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: theme.spacing.s,
     paddingHorizontal: 12,
     paddingTop: theme.spacing.m,

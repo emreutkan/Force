@@ -1,21 +1,26 @@
 import { theme } from '@/constants/theme';
 import { StyleSheet, Text, View } from 'react-native';
+import type { PurchasesPackage } from 'react-native-purchases';
+import { getPackageType, getBreakdownText } from '@/utils/packageHelpers';
 
-export default function PricingDisplay() {
-  const monthlyPrice = 4.99;
-  const dailyPrice = (monthlyPrice / 30).toFixed(2);
+interface PricingDisplayProps {
+  packageInfo?: PurchasesPackage | null;
+}
+
+export default function PricingDisplay({ packageInfo }: PricingDisplayProps) {
+  if (!packageInfo) {
+    return null;
+  }
+
+  const packageType = getPackageType(packageInfo);
+  const price = packageInfo.product.price;
+  const priceString = packageInfo.product.priceString;
+  const breakdownText = getBreakdownText(packageType, priceString, price);
 
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <View style={styles.priceRow}>
-          <Text style={styles.currency}>$</Text>
-          <Text style={styles.price}>{monthlyPrice.toFixed(2)}</Text>
-          <Text style={styles.period}>/mo</Text>
-        </View>
-        <Text style={styles.dailyBreakdown}>
-          ${dailyPrice} per day • Less than a protein shake
-        </Text>
+        <Text style={styles.breakdownText}>{breakdownText}</Text>
         <Text style={styles.features}>
           UNLIMITED 1RM • CNS RECOVERY • GLOBAL RANKINGS
         </Text>
@@ -35,39 +40,14 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.xxl,
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
-    padding: theme.spacing.xl,
+    padding: theme.spacing.l,
     alignItems: 'center',
     marginBottom: theme.spacing.m,
     width: '100%',
   },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: theme.spacing.s,
-  },
-  currency: {
-    fontSize: 32,
-    fontWeight: '900',
-    fontStyle: 'italic',
-    color: theme.colors.status.rest,
-    marginRight: 4,
-  },
-  price: {
-    fontSize: 64,
-    fontWeight: '900',
-    fontStyle: 'italic',
-    color: theme.colors.status.rest,
-    letterSpacing: -2,
-    fontVariant: ['tabular-nums'],
-  },
-  period: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: theme.colors.text.secondary,
-    marginLeft: 4,
-  },
-  dailyBreakdown: {
-    fontSize: theme.typography.sizes.s,
+  breakdownText: {
+    fontSize: theme.typography.sizes.m,
+    fontWeight: '600',
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.s,
     textAlign: 'center',

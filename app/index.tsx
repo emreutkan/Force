@@ -29,7 +29,7 @@ export default function Index() {
           <Text style={styles.logo}>FORCE</Text>
           <View style={styles.dot} />
         </View>
-        <Text style={styles.tagline}>NEURAL TRAINING PLATFORM</Text>
+        <Text style={styles.tagline}>WORKOUT TRACKING</Text>
       </View>
     </View>
   );

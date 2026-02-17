@@ -45,8 +45,14 @@ app-example
 *storybook.log
 storybook-static
 
-# docs
+# docs and markdown folders
 docs/
+markdown/
+md/
+.claude/
+
+# Claude / Cursor project markdown
+CLAUDE.md
 
 # build
 build/
@@ -71,6 +77,11 @@ web-build/
 .prettierignore
 .prettier
 NOTES.md
+README.md
+REVENUECAT.md
+
+# RevenueCat service (contains API keys)
+services/revenueCat.ts
 NOTES.txt
 NOTES.docx
 NOTES.doc

@@ -11,10 +11,10 @@ import {
 } from '@/api/types';
 import { theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import * as Google from 'expo-auth-session/providers/google';
+// import * as Google from 'expo-auth-session/providers/google';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -50,8 +50,6 @@ export default function AuthScreen() {
 
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const tapCount = useRef(0);
-  const tapTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Animation for continue/register button (email step)
   const emailButtonHeight = useSharedValue(0);
@@ -65,9 +63,9 @@ export default function AuthScreen() {
   const passwordButtonHeight = useSharedValue(0);
   const passwordButtonOpacity = useSharedValue(0);
 
-  // Animation for social buttons
-  const socialButtonsHeight = useSharedValue(56); // Height of social button + gap
-  const socialButtonsOpacity = useSharedValue(1);
+  // // Animation for social buttons
+  // const socialButtonsHeight = useSharedValue(56);
+  // const socialButtonsOpacity = useSharedValue(1);
 
   // Animation for back button (hide when typing)
   const backButtonWidth = useSharedValue(40);
@@ -158,17 +156,6 @@ export default function AuthScreen() {
     backButtonMarginRight,
   ]);
 
-  // Hide social buttons when not on email step or when user is typing email
-  useEffect(() => {
-    if (currentStep !== 'email' || email.length > 0) {
-      socialButtonsHeight.value = withTiming(0, { duration: 300 });
-      socialButtonsOpacity.value = withTiming(0, { duration: 300 });
-    } else {
-      socialButtonsHeight.value = withTiming(56, { duration: 300 });
-      socialButtonsOpacity.value = withTiming(1, { duration: 300 });
-    }
-  }, [currentStep, email.length, socialButtonsHeight, socialButtonsOpacity]);
-
   const animatedEmailButtonStyle = useAnimatedStyle(() => ({
     height: emailButtonHeight.value,
     opacity: emailButtonOpacity.value,
@@ -187,11 +174,11 @@ export default function AuthScreen() {
     overflow: 'hidden',
   }));
 
-  const animatedSocialButtonsStyle = useAnimatedStyle(() => ({
-    height: socialButtonsHeight.value,
-    opacity: socialButtonsOpacity.value,
-    marginBottom: 24,
-  }));
+  // const animatedSocialButtonsStyle = useAnimatedStyle(() => ({
+  //   height: socialButtonsHeight.value,
+  //   opacity: socialButtonsOpacity.value,
+  //   marginBottom: 24,
+  // }));
 
   const animatedBackButtonStyle = useAnimatedStyle(() => ({
     width: backButtonWidth.value,
@@ -282,42 +269,13 @@ export default function AuthScreen() {
     setCurrentStep('password');
   };
 
-  // Google Auth Request
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: '344903572266-72t0uji4lhh6htisqb3kq36sslq6jf7j.apps.googleusercontent.com',
-    // You need to generate these in Google Cloud Console for the specific platform to avoid "Compliance" errors
-    iosClientId: '344903572266-314v6q9vh2qooo4hqkqp1ornn8098uh6.apps.googleusercontent.com',
-    androidClientId: '344903572266-1kfttptioqaffsf58e5rq5uo2n9s2ho5.apps.googleusercontent.com',
-    scopes: ['profile', 'email'],
-  });
-
-  useEffect(() => {
-    return () => {
-      if (tapTimeout.current) {
-        clearTimeout(tapTimeout.current);
-      }
-    };
-  }, [tapTimeout]);
-
-  const handleForceTap = () => {
-    tapCount.current += 1;
-
-    // Clear existing timeout
-    if (tapTimeout.current) {
-      clearTimeout(tapTimeout.current);
-    }
-
-    // If 5 taps, navigate to debug
-    if (tapCount.current >= 5) {
-      tapCount.current = 0;
-      router.push('/(auth)/debug');
-    } else {
-      // Reset counter after 2 seconds of no taps
-      tapTimeout.current = setTimeout(() => {
-        tapCount.current = 0;
-      }, 2000) as any;
-    }
-  };
+  // // Google Auth Request
+  // const [request, response, promptAsync] = Google.useAuthRequest({
+  //   webClientId: '344903572266-72t0uji4lhh6htisqb3kq36sslq6jf7j.apps.googleusercontent.com',
+  //   iosClientId: '344903572266-314v6q9vh2qooo4hqkqp1ornn8098uh6.apps.googleusercontent.com',
+  //   androidClientId: '344903572266-1kfttptioqaffsf58e5rq5uo2n9s2ho5.apps.googleusercontent.com',
+  //   scopes: ['profile', 'email'],
+  // });
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -399,13 +357,13 @@ export default function AuthScreen() {
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    if (provider === 'Google') {
-      promptAsync();
-    } else {
-      showAlert(`${provider} Login`, 'This feature is coming soon!');
-    }
-  };
+  // const handleSocialLogin = (provider: string) => {
+  //   if (provider === 'Google') {
+  //     promptAsync();
+  //   } else {
+  //     showAlert(`${provider} Login`, 'This feature is coming soon!');
+  //   }
+  // };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -428,12 +386,12 @@ export default function AuthScreen() {
         </View>
 
         <View style={styles.middleSection}>
-          <Pressable style={styles.titleContainer} onPress={handleForceTap} hitSlop={16}>
+          <View style={styles.titleContainer}>
             <Text style={typographyStyles.hero}>
               FORCE
               <Text style={{ color: theme.colors.status.rest }}>.</Text>
             </Text>
-          </Pressable>
+          </View>
           <Text style={styles.heroSubtitle}>
             {currentStep === 'password' ? 'BUILT FOR YOU' : 'BUILT FOR EXCELLENCE'}
           </Text>
@@ -671,6 +629,7 @@ export default function AuthScreen() {
             )}
           </View>
 
+          {/* Social login buttons - disabled until OAuth is implemented
           <Animated.View style={animatedSocialButtonsStyle}>
             <View style={styles.socialContainer}>
               <Pressable
@@ -699,6 +658,7 @@ export default function AuthScreen() {
               )}
             </View>
           </Animated.View>
+          */}
         </View>
       </KeyboardAvoidingView>
     </View>

@@ -1,7 +1,7 @@
 // Main types index - re-export all types for backward compatibility
 export * from './account';
 export * from './measurements';
-export * from './supplements';
+// export * from './supplements'; // Supplements feature disabled
 export * from './auth';
 
 export * from './workout';
@@ -36,6 +36,8 @@ export const WEIGHT_URL = `user/weight/`;
 export const WEIGHT_HISTORY_URL = `user/weight/history/`;
 export const DELETE_WEIGHT_URL = `user/weight/delete/`;
 export const EXPORT_DATA_URL = `user/export-data/`;
+export const DELETE_ACCOUNT_URL = `user/me/delete/`;
+export const CHANGE_EMAIL_URL = `user/me/`;
 export const CREATE_WORKOUT_URL = `workout/create/`;
 export const GET_ACTIVE_WORKOUT_URL = `workout/active/`;
 export const GET_WORKOUTS_URL = `workout/list/`;
@@ -65,11 +67,13 @@ export const TEMPLATE_LIST_URL = `workout/template/list/`;
 export const TEMPLATE_DELETE_URL = `workout/template/delete/:id/`;
 export const TEMPLATE_START_URL = `workout/template/start/`;
 
-export const GET_USER_SUPPLEMENTS_URL = `supplements/user/list/`;
-export const ADD_USER_SUPPLEMENT_URL = `supplements/user/add/`;
-export const LOG_USER_SUPPLEMENT_URL = `supplements/user/log/add/`;
-export const GET_USER_SUPPLEMENT_LOGS_URL = `supplements/user/log/list/`;
-export const DELETE_USER_SUPPLEMENT_LOG_URL = `supplements/user/log/delete/:id/`;
-export const GET_USER_SUPPLEMENT_LOGS_TODAY_URL = `supplements/user/log/today/`;
+// Supplements API endpoints - disabled
+// export const GET_USER_SUPPLEMENTS_URL = `supplements/user/list/`;
+// export const ADD_USER_SUPPLEMENT_URL = `supplements/user/add/`;
+// export const LOG_USER_SUPPLEMENT_URL = `supplements/user/log/add/`;
+// export const GET_USER_SUPPLEMENT_LOGS_URL = `supplements/user/log/list/`;
+// export const DELETE_USER_SUPPLEMENT_LOG_URL = `supplements/user/log/delete/:id/`;
+// export const GET_USER_SUPPLEMENT_LOGS_TODAY_URL = `supplements/user/log/today/`;
 
 export const BACKEND_URL = 'http://192.168.1.2:8000/api';
+// export const BACKEND_URL = 'http://api.utrack.irfanemreutkan.com/api';

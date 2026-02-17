@@ -152,7 +152,7 @@ export default function MeasurementsScreen() {
                     <View style={styles.neuralTrendHeader}>
                         <View style={styles.neuralTrendHeaderMain}>
                             <View style={styles.neuralTrendIconContainer}><Ionicons name="stats-chart" size={20} color={theme.colors.text.brand} /></View>
-                            <View><Text style={styles.neuralTrendTitle}>NEURAL TREND</Text><Text style={styles.neuralTrendSubtitle}>SOMATIC PROGRESS GRAPH</Text></View>
+                            <View><Text style={styles.neuralTrendTitle}>PROGRESS TREND</Text><Text style={styles.neuralTrendSubtitle}>BODY COMPOSITION</Text></View>
                         </View>
                         <View style={styles.legendContainer}>
                             <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: theme.colors.text.brand }]} /><Text style={styles.legendText}>MASS</Text></View>
@@ -268,7 +268,7 @@ export default function MeasurementsScreen() {
                     style={[styles.tabItem, activeTab === 'biometrics' && styles.tabItemActive]}
                     onPress={() => setActiveTab('biometrics')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'biometrics' && styles.tabTextActive]}>BIOMETRICS</Text>
+                    <Text style={[styles.tabText, activeTab === 'biometrics' && styles.tabTextActive]}>BODY METRICS</Text>
                 </Pressable>
                 <Pressable
                     style={[styles.tabItem, activeTab === 'calculator' && styles.tabItemActive]}
@@ -311,7 +311,7 @@ export default function MeasurementsScreen() {
                                     <View style={styles.neuralTrendHeader}>
                                         <View style={styles.neuralTrendHeaderMain}>
                                             <View style={styles.neuralTrendIconContainer}><Ionicons name="stats-chart" size={20} color={theme.colors.text.brand} /></View>
-                                            <View><Text style={styles.neuralTrendTitle}>NEURAL TREND</Text><Text style={styles.neuralTrendSubtitle}>SOMATIC PROGRESS GRAPH</Text></View>
+                                            <View><Text style={styles.neuralTrendTitle}>PROGRESS TREND</Text><Text style={styles.neuralTrendSubtitle}>BODY COMPOSITION</Text></View>
                                         </View>
                                         <View style={styles.legendContainer}>
                                             <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: theme.colors.text.brand }]} /><Text style={styles.legendText}>MASS</Text></View>

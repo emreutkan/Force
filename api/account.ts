@@ -11,6 +11,8 @@ import {
   WEIGHT_HISTORY_URL,
   DELETE_WEIGHT_URL,
   EXPORT_DATA_URL,
+  DELETE_ACCOUNT_URL,
+  CHANGE_EMAIL_URL,
 } from './types';
 
 export const getAccount = async (): Promise<GetAccountResponse> => {
@@ -76,5 +78,16 @@ export const deleteWeightEntry = async (
 
 export const exportUserData = async (): Promise<ExportDataResponse> => {
   const response = await apiClient.post(EXPORT_DATA_URL);
+  return response.json();
+};
+
+export const deleteAccount = async (password: string): Promise<void> => {
+  await apiClient.delete(DELETE_ACCOUNT_URL, { json: { password } });
+};
+
+export const changeEmail = async (
+  newEmail: string
+): Promise<{ email: string; message: string }> => {
+  const response = await apiClient.patch(CHANGE_EMAIL_URL, { json: { email: newEmail } });
   return response.json();
 };

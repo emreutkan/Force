@@ -1,19 +1,12 @@
-import HealthKitModule, {
-  HealthValue,
-  HealthKitPermissions,
-} from 'react-native-health';
+import HealthKitModule, { HealthValue, HealthKitPermissions } from 'react-native-health';
 import { useState, useEffect } from 'react';
 import { NativeModules, Platform } from 'react-native';
 
 // react-native-health uses CJS; Metro may expose it as default or as the module
 const PackageExport = (HealthKitModule as any)?.default ?? HealthKitModule;
 
-function getHealthKitNativeModule(): typeof NativeModules[keyof typeof NativeModules] | null {
-  const names = [
-    'AppleHealthKit',
-    'RCTAppleHealthKit',
-    'RNAppleHealthKit',
-  ];
+function getHealthKitNativeModule(): (typeof NativeModules)[keyof typeof NativeModules] | null {
+  const names = ['AppleHealthKit', 'RCTAppleHealthKit', 'RNAppleHealthKit'];
   for (const name of names) {
     const mod = (NativeModules as any)[name];
     if (mod?.initHealthKit) return mod;
@@ -49,17 +42,6 @@ export const useHealthKit = () => {
       return;
     }
     if (!AppleHealthKit?.initHealthKit) {
-      if (__DEV__) {
-        const keys = Object.keys(NativeModules).filter(
-          (k) =>
-            k.toLowerCase().includes('health') ||
-            k.toLowerCase().includes('apple')
-        );
-        console.warn(
-          'HealthKit native module not available. Expected one of: AppleHealthKit, RCTAppleHealthKit, RNAppleHealthKit. Found related:',
-          keys.length ? keys : 'none. Rebuild iOS (npx expo run:ios or prebuild --clean).'
-        );
-      }
       return;
     }
 

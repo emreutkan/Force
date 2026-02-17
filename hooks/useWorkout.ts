@@ -115,6 +115,7 @@ export const useCompleteWorkout = () => {
       queryClient.invalidateQueries({ queryKey: ['active-workout'] });
       queryClient.invalidateQueries({ queryKey: ['today-status'] });
       queryClient.invalidateQueries({ queryKey: ['calendar'] });
+      queryClient.invalidateQueries({ queryKey: ['recovery-status'] }); // Completing a workout affects recovery
     },
   });
 };
@@ -142,6 +143,7 @@ export const useDeleteWorkout = () => {
       queryClient.invalidateQueries({ queryKey: ['active-workout'] });
       queryClient.invalidateQueries({ queryKey: ['workout', workoutId] });
       queryClient.invalidateQueries({ queryKey: ['workout-summary', workoutId] });
+      queryClient.invalidateQueries({ queryKey: ['recovery-status'] }); // Deleting a workout affects recovery
     },
   });
 };

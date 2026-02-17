@@ -200,7 +200,7 @@ const WorkoutSummaryScreen = () => {
                     <Ionicons name="analytics" size={20} color={theme.colors.text.brand} />
                   </View>
                   <View>
-                    <Text style={styles.neuralTitle}>NEURAL ANALYSIS</Text>
+                    <Text style={styles.neuralTitle}>WORKOUT ANALYSIS</Text>
                     <Text style={styles.neuralSubtitle}>PERFORMANCE INSIGHTS</Text>
                   </View>
                 </View>

@@ -1,22 +1,13 @@
-import { updateGender, updateHeight, updateWeight } from '@/api/account';
-import { clearTokens } from '@/hooks/Storage';
-import { theme } from '@/constants/theme';
-import { useInvalidateUser, useUser, useClearUser, useChangePassword } from '@/hooks/useUser';
+import { commonStyles, theme } from '@/constants/theme';
+import { useUser } from '@/hooks/useUser';
 import { useSettingsStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   Pressable,
   View,
 } from 'react-native';
@@ -26,110 +17,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const { data: user } = useUser();
-  const clearUser = useClearUser();
-  const changePassword = useChangePassword();
   // const { data: stats } = useUserStatistics();
-  const invalidateUser = useInvalidateUser();
   const { tutCountdown, tutReactionOffset, setTutCountdown, setTutReactionOffset } = useSettingsStore();
-  // Controls visibility of the 3 modals
-  const [modals, setModals] = useState({
-    height: false,
-    weight: false,
-    gender: false,
-    password: false,
-  });
-
-  // Loading state for async operations
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Form data buffer (avoids changing user store directly before save)
-  const [formData, setFormData] = useState({
-    height: '',
-    weight: '',
-    gender: 'male' as 'male' | 'female',
-    oldPassword: '',
-    newPassword: '',
-  });
-
-  useEffect(() => {
-    if (user) {
-      setFormData((prev) => ({
-        ...prev,
-        height: user.height?.toString() || '',
-        weight: user.weight?.toString() || '',
-        gender: (user.gender as 'male' | 'female') || 'male',
-      }));
-    }
-  }, [user]);
-
-  // Format total volume
-  // const formattedVolume = useMemo(() => {
-  //   const volume = stats?.total_volume || 0;
-  //   if (volume >= 1000000) {
-  //     return `${(volume / 1000000).toFixed(1)}T`;
-  //   } else if (volume >= 1000) {
-  //     return `${(volume / 1000).toFixed(1)}K`;
-  //   }
-  //   return volume.toFixed(0);
-  // }, [stats]);
-
-  // --- Handlers ---
-
-  // Helper to open/close modals and clear sensitive data on close
-  const toggleModal = (key: keyof typeof modals, visible: boolean) => {
-    setModals((prev) => ({ ...prev, [key]: visible }));
-    // Security: Clear password fields when closing the modal
-    if (!visible && key === 'password') {
-      setFormData((prev) => ({ ...prev, oldPassword: '', newPassword: '' }));
-    }
-  };
-
-  const handleLogout = () => {
-    const performLogout = () => {
-      clearTokens();
-      clearUser();
-      router.replace('/(auth)');
-    };
-    Alert.alert('Log Out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: performLogout },
-    ]);
-  };
-
-  // Centralized save handler for all modals
-  const handleSave = async (type: 'height' | 'weight' | 'gender' | 'password') => {
-    setIsSaving(true);
-    try {
-      let result;
-
-      // Execute specific API call based on type
-      if (type === 'height') {
-        if (!formData.height) throw new Error('Please enter your height');
-        result = await updateHeight(parseFloat(formData.height));
-      } else if (type === 'weight') {
-        if (!formData.weight) throw new Error('Please enter your weight');
-        result = await updateWeight(parseFloat(formData.weight));
-      } else if (type === 'gender') {
-        result = await updateGender(formData.gender);
-      } else if (type === 'password') {
-        if (!formData.oldPassword || !formData.newPassword) throw new Error('Missing fields');
-        if (formData.newPassword.length < 8)
-          throw new Error('New password must be at least 8 characters');
-        const result = await changePassword.mutateAsync({
-          oldPassword: formData.oldPassword,
-          newPassword: formData.newPassword,
-        });
-        if (result?.message) throw new Error(result.message);
-      }
-
-      invalidateUser();
-      toggleModal(type, false);
-    } catch (error: any) {
-      Alert.alert('Action Failed', error.message || 'Something went wrong.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -141,13 +30,9 @@ export default function AccountScreen() {
         <Pressable
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          style={styles.backButton}
+          style={commonStyles.backButton}
         >
-          <Ionicons
-            name="arrow-back"
-            size={24}
-            color={theme.colors.text.primary}
-          />
+          <Ionicons name="arrow-back" size={20} color={theme.colors.text.primary} />
         </Pressable>
       </View>
       <ScrollView
@@ -225,58 +110,6 @@ export default function AccountScreen() {
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>PERSONAL RECORDS</Text>
               {/* <Text style={styles.settingSubtitle}>{stats?.total_prs || 0} RECORDS TRACKED</Text> */}
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
-          </Pressable>
-        </View>
-
-        {/* Biometrics Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionHeaderText}>BIOMETRICS</Text>
-        </View>
-        <View style={styles.settingsContainer}>
-          <Pressable
-            style={styles.settingCard}
-            onPress={() => toggleModal('weight', true)}
-          >
-            <View style={styles.iconBox}>
-              <Ionicons name="scale-outline" size={20} color="#FFFFFF" />
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>WEIGHT</Text>
-              <Text style={styles.settingSubtitle}>
-                {user?.weight ? `${user.weight} KG` : 'NOT SET'}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
-          </Pressable>
-
-          <Pressable
-            style={styles.settingCard}
-            onPress={() => toggleModal('height', true)}
-          >
-            <View style={styles.iconBox}>
-              <Ionicons name="resize-outline" size={20} color="#FFFFFF" />
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>HEIGHT</Text>
-              <Text style={styles.settingSubtitle}>
-                {user?.height ? `${user.height} CM` : 'NOT SET'}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
-          </Pressable>
-
-          <Pressable
-            style={styles.settingCard}
-            onPress={() => toggleModal('gender', true)}
-          >
-            <View style={styles.iconBox}>
-              <Ionicons name="body-outline" size={20} color="#FFFFFF" />
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>GENDER</Text>
-              <Text style={styles.settingSubtitle}>{user?.gender?.toUpperCase() || 'NOT SET'}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
           </Pressable>
@@ -386,14 +219,14 @@ export default function AccountScreen() {
         <View style={styles.settingsContainer}>
           <Pressable
             style={styles.settingCard}
-            onPress={() => toggleModal('password', true)}
+            onPress={() => router.push('/(account)/manage')}
           >
-            <View style={styles.iconBox}>
-              <Ionicons name="shield-checkmark-outline" size={20} color="#FFFFFF" />
+            <View style={[styles.iconBox, { backgroundColor: 'rgba(99, 102, 241, 0.1)' }]}>
+              <Ionicons name="person-outline" size={20} color={theme.colors.text.brand} />
             </View>
             <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>CHANGE PASSWORD</Text>
-              <Text style={styles.settingSubtitle}>SECURE YOUR ACCOUNT</Text>
+              <Text style={styles.settingTitle}>ACCOUNT MANAGEMENT</Text>
+              <Text style={styles.settingSubtitle}>EMAIL, PASSWORD, BODY METRICS</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
           </Pressable>
@@ -407,272 +240,14 @@ export default function AccountScreen() {
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>HEALTH CONNECT</Text>
-              <Text style={styles.settingSubtitle}>SYNC BIOMETRICS</Text>
+              <Text style={styles.settingSubtitle}>SYNC HEALTH DATA</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
           </Pressable>
 
-          <Pressable
-            style={styles.settingCard}
-            onPress={() => handleLogout()}
-          >
-            <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 69, 58, 0.1)' }]}>
-              <Ionicons name="log-out-outline" size={20} color={theme.colors.status.error} />
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={[styles.settingTitle, { color: theme.colors.status.error }]}>
-                LOG OUT
-              </Text>
-              <Text style={styles.settingSubtitle}>EXIT SESSION</Text>
-            </View>
-          </Pressable>
         </View>
       </ScrollView>
 
-      <Modal
-        presentationStyle="formSheet"
-        visible={modals.height}
-        animationType="fade"
-        onRequestClose={() => toggleModal('height', false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Update Height</Text>
-              <Text style={styles.modalSubtitle}>This helps us calculate your calorie needs.</Text>
-            </View>
-
-            <View style={styles.bigInputContainer}>
-              <TextInput
-                style={styles.bigInput}
-                value={formData.height}
-                onChangeText={(t) => setFormData({ ...formData, height: t })}
-                keyboardType="numeric"
-                placeholder="0"
-                placeholderTextColor={theme.colors.text.zinc700}
-                autoFocus
-                selectionColor={theme.colors.status.active}
-              />
-              <Text style={styles.bigInputSuffix}>cm</Text>
-            </View>
-
-            <View style={styles.modalActions}>
-              <Pressable
-                style={styles.btnCancel}
-                onPress={() => toggleModal('height', false)}
-              >
-                <Text style={styles.btnCancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={styles.btnSave}
-                onPress={() => handleSave('height')}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <ActivityIndicator color={theme.colors.text.primary} />
-                ) : (
-                  <Text style={styles.btnSaveText}>Save</Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      <Modal
-        presentationStyle="formSheet"
-        visible={modals.weight}
-        animationType="fade"
-        onRequestClose={() => toggleModal('weight', false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Update Weight</Text>
-              <Text style={styles.modalSubtitle}>Tracking your weight helps monitor progress.</Text>
-            </View>
-
-            <View style={styles.bigInputContainer}>
-              <TextInput
-                style={styles.bigInput}
-                value={formData.weight}
-                onChangeText={(t) => setFormData({ ...formData, weight: t })}
-                keyboardType="numeric"
-                placeholder="0"
-                placeholderTextColor={theme.colors.text.zinc700}
-                autoFocus
-                selectionColor={theme.colors.status.active}
-              />
-              <Text style={styles.bigInputSuffix}>kg</Text>
-            </View>
-
-            <View style={styles.modalActions}>
-              <Pressable
-                style={styles.btnCancel}
-                onPress={() => toggleModal('weight', false)}
-              >
-                <Text style={styles.btnCancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={styles.btnSave}
-                onPress={() => handleSave('weight')}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <ActivityIndicator color={theme.colors.text.primary} />
-                ) : (
-                  <Text style={styles.btnSaveText}>Save</Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      <Modal
-        presentationStyle="formSheet"
-        visible={modals.gender}
-        animationType="fade"
-        onRequestClose={() => toggleModal('gender', false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Select Gender</Text>
-            <Text style={styles.modalSubtitle}>For physiological calculations.</Text>
-
-            <View style={styles.genderRow}>
-              <Pressable
-                style={[styles.genderCard, formData.gender === 'male' && styles.genderCardActive]}
-                onPress={() => setFormData({ ...formData, gender: 'male' })}
-              >
-                <Ionicons
-                  name="male"
-                  size={32}
-                  color={
-                    formData.gender === 'male'
-                      ? theme.colors.text.primary
-                      : theme.colors.text.secondary
-                  }
-                />
-                <Text
-                  style={[
-                    styles.genderLabel,
-                    formData.gender === 'male' && styles.genderLabelActive,
-                  ]}
-                >
-                  Male
-                </Text>
-              </Pressable>
-
-              <Pressable
-                style={[styles.genderCard, formData.gender === 'female' && styles.genderCardActive]}
-                onPress={() => setFormData({ ...formData, gender: 'female' })}
-              >
-                <Ionicons
-                  name="female"
-                  size={32}
-                  color={
-                    formData.gender === 'female'
-                      ? theme.colors.text.primary
-                      : theme.colors.text.secondary
-                  }
-                />
-                <Text
-                  style={[
-                    styles.genderLabel,
-                    formData.gender === 'female' && styles.genderLabelActive,
-                  ]}
-                >
-                  Female
-                </Text>
-              </Pressable>
-            </View>
-
-            <View style={styles.modalActions}>
-              <Pressable
-                style={styles.btnCancel}
-                onPress={() => toggleModal('gender', false)}
-              >
-                <Text style={styles.btnCancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={styles.btnSave}
-                onPress={() => handleSave('gender')}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <ActivityIndicator color={theme.colors.text.primary} />
-                ) : (
-                  <Text style={styles.btnSaveText}>Update</Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        presentationStyle="formSheet"
-        visible={modals.password}
-        animationType="fade"
-        onRequestClose={() => toggleModal('password', false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Change Password</Text>
-            <Text style={styles.modalSubtitle}>Ensure your new password is secure.</Text>
-
-            <View style={styles.inputStack}>
-              <TextInput
-                style={styles.cleanInput}
-                value={formData.oldPassword}
-                onChangeText={(t) => setFormData({ ...formData, oldPassword: t })}
-                placeholder="Current Password"
-                placeholderTextColor={theme.colors.text.zinc500}
-                secureTextEntry
-              />
-              <View style={styles.inputSeparator} />
-              <TextInput
-                style={styles.cleanInput}
-                value={formData.newPassword}
-                onChangeText={(t) => setFormData({ ...formData, newPassword: t })}
-                placeholder="New Password"
-                placeholderTextColor={theme.colors.text.zinc500}
-                secureTextEntry
-              />
-            </View>
-
-            <View style={styles.modalActions}>
-              <Pressable
-                style={styles.btnCancel}
-                onPress={() => toggleModal('password', false)}
-              >
-                <Text style={styles.btnCancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={styles.btnSave}
-                onPress={() => handleSave('password')}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <ActivityIndicator color={theme.colors.text.primary} />
-                ) : (
-                  <Text style={styles.btnSaveText}>Change</Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
     </View>
   );
 }
@@ -692,9 +267,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.m,
     paddingVertical: theme.spacing.s,
     marginBottom: theme.spacing.xs,
-  },
-  backButton: {
-    padding: theme.spacing.xs,
   },
   gradientBg: {
     position: 'absolute',

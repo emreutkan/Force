@@ -1,5 +1,5 @@
 import { theme } from '@/constants/theme';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons/*, MaterialIcons*/ } from '@expo/vector-icons'; // MaterialIcons unused while supplements tab is disabled
 import { usePathname, useRouter, useSegments } from 'expo-router';
 import React, { useEffect } from 'react';
 import { LayoutChangeEvent, StyleSheet, Text, Pressable, View } from 'react-native';
@@ -33,12 +33,13 @@ const tabs: TabItem[] = [
     route: '/(tabs)/(workouts)',
     icon: ({ size, color }) => <Ionicons name="reader-outline" size={size} color={color} />,
   },
-  {
-    key: 'supplements',
-    label: 'Supplements',
-    route: '/(tabs)/(supplements)',
-    icon: ({ size, color }) => <MaterialIcons name="medication" size={size} color={color} />,
-  },
+  // Supplements tab - disabled until feature is ready
+  // {
+  //   key: 'supplements',
+  //   label: 'Supplements',
+  //   route: '/(tabs)/(supplements)',
+  //   icon: ({ size, color }) => <MaterialIcons name="medication" size={size} color={color} />,
+  // },
   {
     key: 'calculations',
     label: 'Measurements',

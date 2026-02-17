@@ -8,6 +8,8 @@ import {
   deleteWeightEntry,
   changePassword,
   exportUserData,
+  deleteAccount,
+  changeEmail,
 } from '@/api/account';
 
 // User profile queries
@@ -99,5 +101,23 @@ export const useChangePassword = () => {
 export const useExportUserData = () => {
   return useMutation({
     mutationFn: exportUserData,
+  });
+};
+
+// Delete account mutation
+export const useDeleteAccount = () => {
+  return useMutation({
+    mutationFn: (password: string) => deleteAccount(password),
+  });
+};
+
+// Change email mutation
+export const useChangeEmail = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (newEmail: string) => changeEmail(newEmail),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
   });
 };

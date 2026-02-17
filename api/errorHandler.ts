@@ -1,7 +1,22 @@
 /**
  * Centralized error handling for API responses
  * Handles the new standardized error format: { error: string, message: string, details?: any }
+ * Also handles network/timeout errors (ky TimeoutError, whatwg-fetch "Network request timed out").
  */
+
+/** User-facing message for timeout/network errors */
+export const TIMEOUT_MESSAGE = 'Request timed out. Check your connection and try again.';
+
+/**
+ * Check if an error is a network/timeout error (ky TimeoutError or fetch "Network request timed out").
+ */
+export function isNetworkTimeoutError(error: unknown): boolean {
+  if (error instanceof Error) {
+    if (error.name === 'TimeoutError') return true;
+    if (/timed out|timeout/i.test(error.message)) return true;
+  }
+  return false;
+}
 
 export interface ApiErrorResponse {
     error: string; // Error code (e.g., "BAD_REQUEST", "UNAUTHORIZED")
@@ -91,6 +106,7 @@ export const parseApiErrorAsync = async (error: unknown): Promise<ApiErrorRespon
  * For ky errors use getErrorMessageAsync to read response body.
  */
 export const getErrorMessage = (error: unknown): string => {
+    if (isNetworkTimeoutError(error)) return TIMEOUT_MESSAGE;
     const parsedError = parseApiError(error);
     if (parsedError) return parsedError.message;
     if (error instanceof Error) return error.message;
@@ -101,6 +117,7 @@ export const getErrorMessage = (error: unknown): string => {
  * Get error message from ky HTTPError (reads response body).
  */
 export const getErrorMessageAsync = async (error: unknown): Promise<string> => {
+    if (isNetworkTimeoutError(error)) return TIMEOUT_MESSAGE;
     const parsed = await parseApiErrorAsync(error);
     if (parsed) return parsed.message;
     if (error instanceof Error) return error.message;

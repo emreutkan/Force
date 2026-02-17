@@ -100,15 +100,14 @@ export default function HeroScreen() {
         </View>
 
         <Text style={styles.description}>
-          Precision gym tracking engineered with research-backed metrics and advanced recovery
-          biometrics.
+          Track your workouts, monitor your progress, and optimize your training with detailed analytics.
         </Text>
 
         <View style={styles.featureContainer}>
           <View style={styles.dividerLine} />
           <View style={styles.featureContent}>
             <Ionicons name="server-outline" size={10} color={theme.colors.text.tertiary} />
-            <Text style={styles.featureText}>SCIENCE-BACKED ANALYTICS</Text>
+            <Text style={styles.featureText}>DETAILED ANALYTICS</Text>
           </View>
           <View style={styles.dividerLine} />
         </View>

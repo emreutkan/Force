@@ -72,9 +72,14 @@ export const getWorkouts = async (
   return response.json();
 };
 
-export const getWorkout = async (workoutId: number): Promise<Workout> => {
+export const getWorkout = async (workoutId: number): Promise<Workout | null> => {
   const url = GET_WORKOUT_URL.replace(':id', String(workoutId));
-  const response = await apiClient.get(url);
+  const response = await apiClient.get(url, { throwHttpErrors: false });
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body?.error ?? 'Failed to load workout');
+  }
   return response.json();
 };
 
@@ -95,7 +100,13 @@ export const getWorkoutSummary = async (workoutId: number): Promise<WorkoutSumma
 
 export const deleteWorkout = async (workoutId: number): Promise<void> => {
   const url = DELETE_WORKOUT_URL.replace(':id', String(workoutId));
-  await apiClient.delete(url);
+  const response = await apiClient.delete(url, { throwHttpErrors: false });
+  // 404 = workout already gone (e.g. deleted elsewhere); treat as success so cache invalidates and UI refreshes
+  if (response.status === 404) return;
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({})) as { error?: string };
+    throw new Error(body?.error ?? 'Failed to delete workout');
+  }
 };
 
 // Template Workout API Functions
