@@ -3,10 +3,15 @@ const appJson = require('./app.json');
 // Load .env so env vars are available during build
 require('dotenv').config();
 
-const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '';
+const iosClientId =
+  process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
+  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+  '';
 // Reverse "151902184202-xxx.apps.googleusercontent.com"
 // → "com.googleusercontent.apps.151902184202-xxx"
-const reversedIosClientId = iosClientId.split('.').reverse().join('.');
+const reversedIosClientId = iosClientId
+  ? iosClientId.split('.').reverse().join('.')
+  : 'com.googleusercontent.apps.151902184202-placeholder';
 
 // Replace the Google Sign-In plugin entry with the real URL scheme from env
 const plugins = appJson.expo.plugins.map((plugin) => {
