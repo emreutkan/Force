@@ -68,7 +68,7 @@ export default function FeatureStack() {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: theme.spacing.xxxl,
+    marginBottom: theme.spacing.xl,
   },
   sectionLabel: {
     fontSize: theme.typography.sizes.label,
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 3.6,
     color: theme.colors.text.tertiary,
-    marginBottom: theme.spacing.l,
+    marginBottom: theme.spacing.m,
     marginLeft: 4,
   },
   featureCard: {
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.ui.glass,
     borderRadius: theme.borderRadius.l,
     padding: theme.spacing.m,
-    marginBottom: theme.spacing.m,
+    marginBottom: theme.spacing.s,
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
   },

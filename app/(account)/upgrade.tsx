@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { useState, useEffect } from 'react';
 import {
   Alert,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,10 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfferings, usePurchasePackage, useRestorePurchases } from '@/hooks/useRevenueCat';
 import { isStoreNotConfiguredError, ENTITLEMENT_ID } from '@/services/revenueCat';
 import { useSettingsStore } from '@/state/userStore';
-import PremiumPreview from './components/PremiumPreview';
-import BenefitsRow from './components/BenefitsRow';
 import FeatureStack from './components/FeatureStack';
-import PricingDisplay from './components/PricingDisplay';
 import UnlockButton from './components/UnlockButton';
 import PackageSelector from './components/PackageSelector';
 import type { PurchasesPackage } from 'react-native-purchases';
@@ -160,27 +158,21 @@ export default function UpgradeScreen() {
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
           showsVerticalScrollIndicator={false}
         >
-          {/* 1. Visual Hook - Premium Feature Preview (FOMO) */}
-          <PremiumPreview />
-
-          {/* 2. Authority Hero */}
+          {/* Hero */}
           <View style={styles.heroSection}>
             <View style={styles.proBadge}>
-              <Ionicons name="star" size={14} color={theme.colors.status.rest} />
+              <Ionicons name="star" size={12} color={theme.colors.status.rest} />
               <Text style={styles.proBadgeText}>PRO ACCESS</Text>
             </View>
-            <Text style={styles.heroTitle}>UNLOCK{'\n'}PRO FEATURES</Text>
+            <Text style={styles.heroTitle}>UNLOCK{'\n'}PRO</Text>
             <Text style={styles.authorityText}>ADVANCED TRACKING & ANALYTICS</Text>
           </View>
 
-          {/* 3. Outcome Benefits (not features) */}
-          <BenefitsRow />
-
-          {/* 4. Feature Value Stack */}
+          {/* Features */}
           <FeatureStack />
 
-          {/* 5. Package Selector */}
-          {offering?.availablePackages && offering.availablePackages.length > 1 && selectedPackage && (
+          {/* Package Selector */}
+          {offering?.availablePackages && offering.availablePackages.length > 0 && selectedPackage && (
             <PackageSelector
               packages={offering.availablePackages}
               selectedPackage={selectedPackage}
@@ -188,13 +180,10 @@ export default function UpgradeScreen() {
             />
           )}
 
-          {/* 6. Pricing (last - price-last principle) */}
-          <PricingDisplay packageInfo={selectedPackage} />
-
-          {/* 7. Single CTA */}
+          {/* CTA */}
           <UnlockButton onPress={handleUpgrade} isLoading={isLoading} />
 
-          {/* Restore Purchases Link */}
+          {/* Restore */}
           <Pressable
             onPress={handleRestorePurchases}
             disabled={isLoading}
@@ -203,6 +192,23 @@ export default function UpgradeScreen() {
           >
             <Text style={styles.restoreText}>RESTORE PURCHASES</Text>
           </Pressable>
+
+          {/* Apple-required disclosure */}
+          <Text style={styles.disclosureText}>
+            Payment charged to Apple ID at confirmation. Subscription auto-renews unless cancelled
+            at least 24 hours before end of period. Manage in Apple ID Account Settings.
+          </Text>
+
+          {/* Legal */}
+          <View style={styles.legalRow}>
+            <Pressable onPress={() => Linking.openURL('https://emreutkan.github.io/forcelegal/privacy')}>
+              <Text style={styles.legalLink}>Privacy Policy</Text>
+            </Pressable>
+            <Text style={styles.legalSeparator}>·</Text>
+            <Pressable onPress={() => Linking.openURL('https://emreutkan.github.io/forcelegal/terms')}>
+              <Text style={styles.legalLink}>Terms of Use</Text>
+            </Pressable>
+          </View>
         </ScrollView>
       )}
     </View>
@@ -223,10 +229,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: theme.spacing.m,
+    paddingTop: theme.spacing.s,
   },
   heroSection: {
     alignItems: 'center',
-    marginBottom: theme.spacing.xxxl,
+    marginBottom: theme.spacing.xl,
   },
   proBadge: {
     flexDirection: 'row',
@@ -236,12 +243,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(192, 132, 252, 0.3)',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: theme.borderRadius.full,
-    marginBottom: theme.spacing.l,
+    marginBottom: theme.spacing.m,
   },
   proBadgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: 2,
@@ -249,11 +256,11 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     ...typographyStyles.h1,
-    fontSize: 42,
-    lineHeight: 48,
+    fontSize: 52,
+    lineHeight: 56,
     textAlign: 'center',
-    marginBottom: theme.spacing.m,
-    letterSpacing: -2,
+    marginBottom: theme.spacing.s,
+    letterSpacing: -2.5,
   },
   authorityText: {
     fontSize: theme.typography.sizes.s,
@@ -324,5 +331,32 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     color: theme.colors.text.tertiary,
     textAlign: 'center',
+  },
+  disclosureText: {
+    fontSize: 11,
+    fontWeight: '400',
+    color: theme.colors.text.tertiary,
+    textAlign: 'center',
+    lineHeight: 16,
+    marginTop: theme.spacing.l,
+    paddingHorizontal: theme.spacing.s,
+  },
+  legalRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: theme.spacing.s,
+    marginTop: theme.spacing.m,
+    marginBottom: theme.spacing.s,
+  },
+  legalLink: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.text.secondary,
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    fontSize: 12,
+    color: theme.colors.text.tertiary,
   },
 });
