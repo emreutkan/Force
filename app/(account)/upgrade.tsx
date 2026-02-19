@@ -135,7 +135,7 @@ export default function UpgradeScreen() {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           style={commonStyles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text.primary} />
+          <Ionicons name="chevron-back" size={24} color={theme.colors.text.zinc600} />
         </Pressable>
       </View>
 
@@ -224,8 +224,11 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   header: {
-    paddingHorizontal: theme.spacing.m,
-    paddingVertical: theme.spacing.m,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.l,
+    paddingTop: theme.spacing.l,
+    paddingBottom: theme.spacing.s,
   },
   scrollContent: {
     padding: theme.spacing.m,

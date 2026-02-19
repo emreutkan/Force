@@ -35,12 +35,6 @@ const FEATURES: Feature[] = [
     title: 'AI-POWERED INSIGHTS',
     benefit: 'Receive intelligent training recommendations based on your unique performance patterns and recovery',
   },
-  {
-    icon: 'trophy',
-    iconColor: '#FFD700',
-    title: 'GLOBAL RANKINGS',
-    benefit: 'Compare your lifts with athletes worldwide and track your progress against the best',
-  },
 ];
 
 export default function FeatureStack() {
