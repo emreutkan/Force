@@ -41,12 +41,6 @@ const tabs: TabItem[] = [
   //   icon: ({ size, color }) => <MaterialIcons name="medication" size={size} color={color} />,
   // },
   {
-    key: 'chat',
-    label: 'AI Chat',
-    route: '/(tabs)/(chat)',
-    icon: ({ size, color }) => <Ionicons name="chatbubbles-outline" size={size} color={color} />,
-  },
-  {
     key: 'calculations',
     label: 'Measurements',
     route: '/(tabs)/(calculations)',
@@ -144,6 +138,12 @@ export default function BottomNavigator() {
   const segments = useSegments();
   const insets = useSafeAreaInsets();
 
+  // BottomNavigator is position:absolute zIndex:1000, so it floats above everything —
+  // explicitly unmount it whenever we're on any chat route.
+  const isChatScreen =
+    pathname.includes('chat') || (segments as string[]).some((s) => s.includes('chat'));
+  if (isChatScreen) return null;
+
   // Determine active tab: we're inside (tabs), so segments are e.g. ['(tabs)', '(home)', 'index']
   const activeTab =
     tabs.find((t) => {
@@ -173,7 +173,7 @@ const TabList = ({ activeKey, router }: { activeKey: string; router: any }) => {
     if (activeKey === tabKey) {
       return;
     }
-    router.replace(route);
+    router.replace(route as any);
   };
 
   return (

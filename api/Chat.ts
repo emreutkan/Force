@@ -48,6 +48,6 @@ export const sendChatMessage = async (
   request: SendChatMessageRequest
 ): Promise<ChatMessage> => {
   const url = SEND_CHAT_MESSAGE_URL.replace(':id', String(sessionId));
-  const response = await apiClient.post(url, { json: request });
+  const response = await apiClient.post(url, { json: request, timeout: 300000 });
   return response.json();
 };
