@@ -1,5 +1,5 @@
 import { theme } from '@/constants/theme';
-import { Ionicons/*, MaterialIcons*/ } from '@expo/vector-icons'; // MaterialIcons unused while supplements tab is disabled
+import { Ionicons /*, MaterialIcons*/ } from '@expo/vector-icons'; // MaterialIcons unused while supplements tab is disabled
 import { usePathname, useRouter, useSegments } from 'expo-router';
 import React, { useEffect } from 'react';
 import { LayoutChangeEvent, StyleSheet, Text, Pressable, View } from 'react-native';
@@ -104,10 +104,7 @@ const TabButton = ({ tab, isActive, onPress }: TabButtonProps) => {
   };
 
   return (
-    <Pressable
-      onPress={() => onPress(tab.route)}
-      style={styles.tabWrapper}
-    >
+    <Pressable onPress={() => onPress(tab.route)} style={styles.tabWrapper}>
       <Animated.View style={[styles.tabButton, animatedContainerStyle]}>
         <View style={styles.tabContent}>
           <Animated.View style={animatedIconStyle}>
@@ -141,10 +138,17 @@ export default function BottomNavigator() {
   const segments = useSegments();
   const insets = useSafeAreaInsets();
 
+  // BottomNavigator is position:absolute zIndex:1000, so it floats above everything —
+  // explicitly unmount it whenever we're on any chat route.
+  const isChatScreen =
+    pathname.includes('chat') || (segments as string[]).some((s) => s.includes('chat'));
+  if (isChatScreen) return null;
+
   // Determine active tab: we're inside (tabs), so segments are e.g. ['(tabs)', '(home)', 'index']
   const activeTab =
     tabs.find((t) => {
-      const currentSegment = segments[1]?.replace(/\W/g, '') || segments[0]?.replace(/\W/g, '') || '';
+      const currentSegment =
+        segments[1]?.replace(/\W/g, '') || segments[0]?.replace(/\W/g, '') || '';
       const segmentMatches = currentSegment === t.key;
       const pathMatches =
         pathname.startsWith(t.route) ||
@@ -169,7 +173,7 @@ const TabList = ({ activeKey, router }: { activeKey: string; router: any }) => {
     if (activeKey === tabKey) {
       return;
     }
-    router.replace(route);
+    router.replace(route as any);
   };
 
   return (

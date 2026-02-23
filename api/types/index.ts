@@ -6,6 +6,7 @@ export * from './measurements';
 export * from './workout';
 export * from './pagination';
 export * from './volume';
+export * from './chat';
 
 export const CREATE_CALENDAR_URL = `workout/calendar/create/`;
 export const GET_CALENDAR_URL = `workout/calendar/`;
@@ -53,11 +54,22 @@ export const AVAILABLE_YEARS_URL = `workout/years/`;
 export const CHECK_TODAY_URL = `workout/check-today/`;
 export const RECOVERY_STATUS_URL = `workout/recovery/status/`;
 export const USER_STATS_URL = `workout/user-stats/`;
+export const VOLUME_ANALYSIS_URL = `workout/volume-analysis/`;
+export const OVERLOAD_TREND_URL = `workout/exercise/:exercise_id/overload-trend/`;
+export const SUGGEST_EXERCISE_URL = `workout/active/suggest-exercise/`;
+export const OPTIMIZATION_CHECK_URL = `workout/exercise/:workout_exercise_id/optimization-check/`;
 
 export const TEMPLATE_CREATE_URL = `workout/template/create/`;
 export const TEMPLATE_LIST_URL = `workout/template/list/`;
 export const TEMPLATE_DELETE_URL = `workout/template/delete/:id/`;
 export const TEMPLATE_START_URL = `workout/template/start/`;
+
+// Chat API endpoints
+export const GET_CHAT_SESSIONS_URL = `chat/session/`;
+export const CREATE_CHAT_SESSION_URL = `chat/session/`;
+export const GET_CHAT_SESSION_URL = `chat/session/:id/`;
+export const DELETE_CHAT_SESSION_URL = `chat/session/:id/`;
+export const SEND_CHAT_MESSAGE_URL = `chat/session/:id/message/`;
 
 // Supplements API endpoints - disabled
 // export const GET_USER_SUPPLEMENTS_URL = `supplements/user/list/`;

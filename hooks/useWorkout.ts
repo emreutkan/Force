@@ -23,7 +23,11 @@ import {
   checkToday,
   getRecoveryStatus,
   getUserStats,
+  getSuggestNextExercise,
+  getExerciseOptimizationCheck,
 } from '@/api/Workout';
+import { getVolumeAnalysis } from '@/api/VolumeAnalysis';
+import type { VolumeAnalysisFilters } from '@/api/types';
 import type {
   CreateWorkoutRequest,
   UpdateWorkoutRequest,
@@ -103,12 +107,20 @@ export const useCompleteWorkout = () => {
       data,
     }: {
       workoutId: number;
-      data?: { duration?: string; intensity?: number; notes?: string };
+      data?: {
+        duration?: string;
+        intensity?: number;
+        notes?: string;
+        normalize_duration?: boolean;
+        proceed_as_is?: boolean;
+      };
     }) =>
       completeWorkout(workoutId, {
         duration: data?.duration != null ? Number(data.duration) : undefined,
         intensity: data?.intensity as 'low' | 'medium' | 'high' | undefined,
         notes: data?.notes,
+        normalize_duration: data?.normalize_duration,
+        proceed_as_is: data?.proceed_as_is,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workouts'] });
@@ -212,8 +224,13 @@ export const useUpdateWorkout = () => {
 export const useAddExerciseToPastWorkout = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ workoutId, request }: { workoutId: number; request: AddExerciseToWorkoutRequest }) =>
-      addExerciseToPastWorkout(workoutId, request),
+    mutationFn: ({
+      workoutId,
+      request,
+    }: {
+      workoutId: number;
+      request: AddExerciseToWorkoutRequest;
+    }) => addExerciseToPastWorkout(workoutId, request),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['workout', variables.workoutId] });
       queryClient.invalidateQueries({ queryKey: ['workouts'] });
@@ -294,6 +311,38 @@ export const useUserStats = () => {
     queryKey: ['user-stats'],
     queryFn: getUserStats,
     staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+// Volume analysis query
+export const useVolumeAnalysis = (filters?: VolumeAnalysisFilters) => {
+  return useQuery({
+    queryKey: ['volume-analysis', filters?.weeks_back, filters?.start_date, filters?.end_date],
+    queryFn: () => getVolumeAnalysis(filters),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+// Suggest next exercise query — refreshes whenever active workout changes
+export const useSuggestNextExercise = (enabled: boolean = true) => {
+  return useQuery({
+    queryKey: ['suggest-next-exercise'],
+    queryFn: getSuggestNextExercise,
+    enabled,
+    staleTime: 1000 * 30, // 30 seconds — muscles recover over time
+    refetchOnWindowFocus: false,
+  });
+};
+
+// Optimization check — fetched on demand; callers trigger via queryClient.fetchQuery or useQuery with enabled flag
+export const useExerciseOptimizationCheck = (workoutExerciseId: number | null) => {
+  return useQuery({
+    queryKey: ['optimization-check', workoutExerciseId],
+    queryFn: () => getExerciseOptimizationCheck(workoutExerciseId!),
+    enabled: workoutExerciseId !== null,
+    staleTime: 1000 * 60 * 2,
+    retry: false, // Don't retry on error — show result immediately
+    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
   });
 };
 
