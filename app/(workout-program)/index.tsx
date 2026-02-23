@@ -172,7 +172,7 @@ export default function ProgramListScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={20} color={theme.colors.text.primary} />
+          <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
         </Pressable>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>MY PROGRAMS</Text>

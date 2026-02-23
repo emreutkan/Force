@@ -111,7 +111,7 @@ export default function Step2Screen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={20} color={theme.colors.text.primary} />
+          <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
         </Pressable>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>NAME YOUR DAYS</Text>
@@ -232,7 +232,7 @@ export default function Step2Screen() {
           {/* Buttons */}
           <View style={styles.buttonRow}>
             <Pressable style={styles.backBtnLarge} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={16} color={theme.colors.text.secondary} />
+              <Ionicons name="chevron-back" size={16} color={theme.colors.text.secondary} />
               <Text style={styles.backBtnLargeText}>BACK</Text>
             </Pressable>
             <Pressable style={styles.nextBtn} onPress={handleNext}>

@@ -166,7 +166,7 @@ export default function WorkoutDetailScreen() {
       />
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={commonStyles.iconButton}>
-          <Ionicons name="arrow-back" size={20} color={theme.colors.text.primary} />
+          <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
         </Pressable>
 
         <Text style={styles.headerTitle} numberOfLines={1}>

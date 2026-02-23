@@ -200,7 +200,7 @@ export default function AccountManageScreen() {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           style={commonStyles.backButton}
         >
-          <Ionicons name="arrow-back" size={20} color={theme.colors.text.primary} />
+          <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
         </Pressable>
         <Text style={styles.headerTitle}>ACCOUNT</Text>
         <View style={styles.headerSpacer} />
