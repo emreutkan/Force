@@ -231,7 +231,7 @@ const WorkoutSummaryScreen = () => {
           <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
         </Pressable>
         <Text style={styles.headerTitle}>SESSION SUMMARY</Text>
-        <View style={{ width: 44 }} />
+        <View style={{ width: 40 }} />
       </View>
 
       <FlatList
