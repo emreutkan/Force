@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '100%',
-    backgroundColor: theme.colors.ui.card,
+    backgroundColor: theme.colors.ui.glassStrong,
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
     borderRadius: theme.borderRadius.xl,

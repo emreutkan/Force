@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-  Pressable,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, StyleSheet, Text, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import {
   GiftedChat,
   IMessage,
@@ -81,16 +74,25 @@ export default function ChatConversationScreen() {
     if (isSending) {
       dot1.value = withRepeat(
         withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
-        -1, true
+        -1,
+        true
       );
-      dot2.value = withDelay(150, withRepeat(
-        withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
-        -1, true
-      ));
-      dot3.value = withDelay(300, withRepeat(
-        withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
-        -1, true
-      ));
+      dot2.value = withDelay(
+        150,
+        withRepeat(
+          withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
+          -1,
+          true
+        )
+      );
+      dot3.value = withDelay(
+        300,
+        withRepeat(
+          withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
+          -1,
+          true
+        )
+      );
     } else {
       dot1.value = withTiming(0.3, { duration: 200 });
       dot2.value = withTiming(0.3, { duration: 200 });
@@ -158,59 +160,52 @@ export default function ChatConversationScreen() {
   const renderMessageText = (props: any) => {
     const isAI = props.currentMessage?.user?._id === 2;
     if (!isAI) {
-      // User messages — plain text
-      return (
-        <View style={{ paddingHorizontal: 10, paddingVertical: 6 }}>
-          <Text style={styles.bubbleTextRight}>{props.currentMessage.text}</Text>
-        </View>
-      );
+      return <Text style={styles.bubbleTextRight}>{props.currentMessage.text}</Text>;
     }
-    // AI messages — markdown
     return (
-      <View style={{ paddingHorizontal: 10, paddingVertical: 6 }}>
+      <View style={styles.markdownWrapper}>
         <Markdown style={markdownStyles}>{props.currentMessage.text}</Markdown>
       </View>
     );
   };
 
   const renderBubble = (props: any) => {
-    const isAI = props.currentMessage?.user?._id === 2;
-
     return (
-      <View style={isAI ? styles.aiBubbleWrapper : undefined}>
-        {isAI && (
-          <View style={styles.aiBubbleIndicator}>
-            <Ionicons name="sparkles" size={10} color={theme.colors.status.active} />
-          </View>
-        )}
-        <Bubble
-          {...props}
-          renderMessageText={renderMessageText}
-          wrapperStyle={{
-            right: styles.bubbleRight,
-            left: styles.bubbleLeft,
-          }}
-          timeTextStyle={{
-            right: styles.timeRight,
-            left: styles.timeLeft,
-          }}
-        />
-      </View>
+      <Bubble
+        {...props}
+        renderMessageText={renderMessageText}
+        wrapperStyle={{
+          right: [styles.bubbleRight, commonStyles.shadow],
+          left: [styles.bubbleLeft, commonStyles.shadow],
+        }}
+        timeTextStyle={{
+          right: styles.timeRight,
+          left: styles.timeLeft,
+        }}
+      />
     );
   };
 
   const renderSend = (props: any) => (
     <Send {...props} containerStyle={styles.sendContainer}>
-      <View style={styles.sendButton}>
+      <LinearGradient
+        colors={[theme.colors.status.active, '#4f46e5']}
+        style={styles.sendButton}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
         <Ionicons name="arrow-up" size={18} color="#fff" />
-      </View>
+      </LinearGradient>
     </Send>
   );
 
   const renderInputToolbar = (props: any) => (
     <InputToolbar
       {...props}
-      containerStyle={[styles.inputToolbar, { marginBottom: insets.bottom + 4 }]}
+      containerStyle={[
+        styles.inputToolbar,
+        { marginBottom: Platform.OS === 'ios' ? 4 : insets.bottom + 4 },
+      ]}
       primaryStyle={{ alignItems: 'center' }}
     />
   );
@@ -220,6 +215,7 @@ export default function ChatConversationScreen() {
       {...props}
       textInputStyle={styles.composerInput}
       placeholderTextColor={theme.colors.text.tertiary}
+      multiline
     />
   );
 
@@ -230,9 +226,9 @@ export default function ChatConversationScreen() {
       <View style={{ transform: [{ scaleY: -1 }] }}>
         <View style={styles.welcomeContent}>
           {/* AI Avatar */}
-          <View style={styles.welcomeAvatar}>
+          <View style={[styles.welcomeAvatar, commonStyles.shadow]}>
             <LinearGradient
-              colors={['rgba(99, 102, 241, 0.2)', 'rgba(99, 102, 241, 0.08)']}
+              colors={['rgba(99, 102, 241, 0.3)', 'rgba(99, 102, 241, 0.1)']}
               style={StyleSheet.absoluteFillObject}
             />
             <Ionicons name="sparkles" size={32} color={theme.colors.status.active} />
@@ -268,19 +264,23 @@ export default function ChatConversationScreen() {
   const renderFooter = () => {
     if (!isSending) return null;
     return (
-      <View style={styles.typingContainer}>
-        <View style={styles.typingAvatarSmall}>
+      <Animated.View entering={FadeInUp.duration(300)} style={styles.typingContainer}>
+        <View style={[styles.typingAvatarSmall, commonStyles.shadow]}>
+          <LinearGradient
+            colors={['rgba(99, 102, 241, 0.3)', 'rgba(99, 102, 241, 0.1)']}
+            style={StyleSheet.absoluteFillObject}
+          />
           <Ionicons name="sparkles" size={10} color={theme.colors.status.active} />
         </View>
-        <View style={styles.typingBubble}>
+        <View style={[styles.typingBubble, commonStyles.shadow]}>
           <View style={styles.typingDots}>
             <Animated.View style={[styles.typingDot, dot1Style]} />
             <Animated.View style={[styles.typingDot, dot2Style]} />
             <Animated.View style={[styles.typingDot, dot3Style]} />
           </View>
-          <Text style={styles.typingLabel}>THINKING</Text>
+          <Text style={styles.typingLabel}>ANALYZING</Text>
         </View>
-      </View>
+      </Animated.View>
     );
   };
 
@@ -335,7 +335,7 @@ export default function ChatConversationScreen() {
       <KeyboardAvoidingView
         style={styles.chatWrapper}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={headerHeight}
+        keyboardVerticalOffset={0}
       >
         <GiftedChat
           messages={messages}
@@ -351,6 +351,7 @@ export default function ChatConversationScreen() {
           placeholder="Ask Force AI anything..."
           alwaysShowSend
           minInputToolbarHeight={60}
+          bottomOffset={insets.bottom}
         />
       </KeyboardAvoidingView>
     </View>
@@ -421,6 +422,7 @@ const styles = StyleSheet.create({
   headerDivider: {
     height: 1,
     backgroundColor: theme.colors.ui.border,
+    opacity: 0.5,
   },
   chatWrapper: {
     flex: 1,
@@ -428,54 +430,59 @@ const styles = StyleSheet.create({
 
   // Bubble styles
   aiBubbleWrapper: {
-    position: 'relative',
+    paddingLeft: theme.spacing.s,
+    marginBottom: theme.spacing.xs,
   },
-  aiBubbleIndicator: {
-    position: 'absolute',
-    top: -4,
-    left: 4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: theme.colors.ui.glass,
-    borderWidth: 1,
-    borderColor: theme.colors.ui.primaryBorder,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
+  userBubbleWrapper: {
+    paddingRight: theme.spacing.s,
+    marginBottom: theme.spacing.xs,
   },
   bubbleRight: {
     backgroundColor: theme.colors.status.active,
-    borderRadius: theme.borderRadius.l,
-    padding: 2,
+    borderRadius: 22,
+    borderBottomRightRadius: 4,
+    padding: 6,
+    marginRight: 8,
     marginBottom: 4,
   },
   bubbleLeft: {
-    backgroundColor: theme.colors.ui.glass,
-    borderRadius: theme.borderRadius.l,
+    backgroundColor: theme.colors.ui.glassStrong,
+    borderRadius: 22,
+    borderBottomLeftRadius: 4,
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
-    padding: 2,
+    padding: 6,
+    marginLeft: 8,
     marginBottom: 4,
-    marginTop: 8,
+    marginTop: 4,
+  },
+  markdownWrapper: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   bubbleTextRight: {
     color: '#ffffff',
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '600',
+    lineHeight: 20,
   },
   bubbleTextLeft: {
     color: theme.colors.text.primary,
     fontSize: 15,
     fontWeight: '400',
+    lineHeight: 20,
   },
   timeRight: {
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(255,255,255,0.6)',
     fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   timeLeft: {
     color: theme.colors.text.tertiary,
     fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
 
   // Input styles
@@ -483,30 +490,35 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.ui.glassStrong,
     borderTopWidth: 0,
     paddingVertical: 6,
-    paddingHorizontal: theme.spacing.m,
-    marginHorizontal: theme.spacing.s,
-    borderRadius: theme.borderRadius.xxl,
+    paddingHorizontal: 8,
+    marginHorizontal: theme.spacing.m,
+    borderRadius: 28,
     borderWidth: 1,
-    borderColor: theme.colors.ui.border,
+    borderColor: 'rgba(255,255,255,0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
   composerInput: {
     color: theme.colors.text.primary,
     fontSize: 15,
     backgroundColor: 'transparent',
-    paddingTop: 8,
-    minHeight: 36,
+    paddingTop: 10,
+    paddingHorizontal: 12,
+    minHeight: 40,
   },
   sendContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingRight: 4,
-    paddingBottom: 2,
+    width: 44,
+    height: 44,
   },
   sendButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: theme.colors.status.active,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -636,29 +648,33 @@ const markdownStyles = StyleSheet.create({
     color: theme.colors.text.primary,
     fontSize: 15,
     lineHeight: 22,
+    fontWeight: '400',
   },
   heading1: {
     color: theme.colors.text.primary,
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '900',
     fontStyle: 'italic',
-    marginTop: 12,
-    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 16,
+    marginBottom: 8,
   },
   heading2: {
     color: theme.colors.text.primary,
     fontSize: 18,
     fontWeight: '900',
     fontStyle: 'italic',
-    marginTop: 10,
-    marginBottom: 4,
+    textTransform: 'uppercase',
+    marginTop: 14,
+    marginBottom: 6,
   },
   heading3: {
     color: theme.colors.text.primary,
     fontSize: 16,
     fontWeight: '800',
     fontStyle: 'italic',
-    marginTop: 8,
+    marginTop: 12,
     marginBottom: 4,
   },
   strong: {
@@ -667,99 +683,116 @@ const markdownStyles = StyleSheet.create({
   },
   em: {
     fontStyle: 'italic',
+    color: theme.colors.text.secondary,
   },
   bullet_list: {
-    marginTop: 4,
-    marginBottom: 4,
+    marginTop: 8,
+    marginBottom: 8,
   },
   ordered_list: {
-    marginTop: 4,
-    marginBottom: 4,
+    marginTop: 8,
+    marginBottom: 8,
   },
   list_item: {
-    marginBottom: 2,
+    marginBottom: 6,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   bullet_list_icon: {
     color: theme.colors.status.active,
     fontSize: 14,
-    marginRight: 6,
+    fontWeight: '900',
+    marginRight: 8,
+    marginTop: 2,
   },
   ordered_list_icon: {
     color: theme.colors.status.active,
     fontSize: 14,
-    fontWeight: '700',
-    marginRight: 6,
+    fontWeight: '900',
+    marginRight: 8,
+    marginTop: 2,
   },
   code_inline: {
     backgroundColor: 'rgba(99, 102, 241, 0.15)',
     color: theme.colors.text.brand,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     fontSize: 13,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: 'rgba(99, 102, 241, 0.3)',
   },
   fence: {
-    backgroundColor: 'rgba(9, 9, 11, 0.8)',
+    backgroundColor: 'rgba(9, 9, 11, 0.95)',
     borderColor: theme.colors.ui.border,
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    marginVertical: 6,
+    borderRadius: 12,
+    padding: 12,
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   code_block: {
-    backgroundColor: 'rgba(9, 9, 11, 0.8)',
-    borderColor: theme.colors.ui.border,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
+    backgroundColor: 'transparent',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     fontSize: 13,
     color: theme.colors.text.primary,
-    marginVertical: 6,
   },
   blockquote: {
-    backgroundColor: 'rgba(99, 102, 241, 0.08)',
+    backgroundColor: 'rgba(99, 102, 241, 0.05)',
     borderLeftColor: theme.colors.status.active,
-    borderLeftWidth: 3,
-    paddingLeft: 10,
-    paddingVertical: 4,
-    marginVertical: 6,
+    borderLeftWidth: 4,
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginVertical: 10,
   },
   hr: {
     backgroundColor: theme.colors.ui.border,
     height: 1,
-    marginVertical: 10,
+    marginVertical: 16,
+    opacity: 0.5,
   },
   link: {
     color: theme.colors.text.brand,
     textDecorationLine: 'underline',
+    fontWeight: '600',
   },
   paragraph: {
     marginTop: 0,
-    marginBottom: 6,
+    marginBottom: 10,
   },
   table: {
     borderColor: theme.colors.ui.border,
     borderWidth: 1,
-    borderRadius: 8,
-    marginVertical: 6,
+    borderRadius: 12,
+    marginVertical: 12,
+    overflow: 'hidden',
   },
   thead: {
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.ui.border,
   },
   th: {
     color: theme.colors.text.primary,
-    fontWeight: '700',
-    padding: 6,
-    borderColor: theme.colors.ui.border,
+    fontWeight: '800',
+    padding: 10,
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   td: {
     color: theme.colors.text.primary,
-    padding: 6,
-    borderColor: theme.colors.ui.border,
+    padding: 10,
+    fontSize: 14,
+    borderBottomWidth: 0.5,
+    borderBottomColor: theme.colors.ui.border,
   },
   tr: {
-    borderColor: theme.colors.ui.border,
+    borderBottomWidth: 0,
   },
 });
