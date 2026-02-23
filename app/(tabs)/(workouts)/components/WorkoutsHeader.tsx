@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 export default function WorkoutsHeader() {
   return (
     <View style={styles.header}>
-      <Text style={typographyStyles.h2}>RECORDS</Text>
+      <Text style={[typographyStyles.h2, { flex: 1 }]}>RECORDS</Text>
     </View>
   );
 }

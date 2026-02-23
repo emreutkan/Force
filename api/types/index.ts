@@ -2,23 +2,16 @@
 export * from './account';
 export * from './measurements';
 // export * from './supplements'; // Supplements feature disabled
-export * from './auth';
 
 export * from './workout';
 export * from './pagination';
 export * from './volume';
+export * from './chat';
+export * from './program';
 
 export const CREATE_CALENDAR_URL = `workout/calendar/create/`;
 export const GET_CALENDAR_URL = `workout/calendar/`;
 export const GET_CALENDAR_STATS_URL = `workout/calendar/stats/`;
-export const LOGIN_URL = `user/login/`;
-export const REGISTER_URL = `user/register/`;
-export const CHECK_EMAIL_URL = `user/check-email/`;
-export const CHECK_PASSWORD_URL = `user/check-password/`;
-export const CHECK_NAME_URL = `user/check-name/`;
-export const REQUEST_PASSWORD_RESET_URL = `user/request-password-reset/`;
-export const RESET_PASSWORD_URL = `user/reset-password/`;
-export const REFRESH_TOKEN_URL = `user/refresh/`;
 
 export const CREATE_TEMPLATE_WORKOUT_URL = `workout/template/create/`;
 export const GET_TEMPLATE_WORKOUTS_URL = `workout/template/`;
@@ -61,11 +54,23 @@ export const AVAILABLE_YEARS_URL = `workout/years/`;
 
 export const CHECK_TODAY_URL = `workout/check-today/`;
 export const RECOVERY_STATUS_URL = `workout/recovery/status/`;
+export const USER_STATS_URL = `workout/user-stats/`;
+export const VOLUME_ANALYSIS_URL = `workout/volume-analysis/`;
+export const OVERLOAD_TREND_URL = `workout/exercise/:exercise_id/overload-trend/`;
+export const SUGGEST_EXERCISE_URL = `workout/active/suggest-exercise/`;
+export const OPTIMIZATION_CHECK_URL = `workout/exercise/:workout_exercise_id/optimization-check/`;
 
 export const TEMPLATE_CREATE_URL = `workout/template/create/`;
 export const TEMPLATE_LIST_URL = `workout/template/list/`;
 export const TEMPLATE_DELETE_URL = `workout/template/delete/:id/`;
 export const TEMPLATE_START_URL = `workout/template/start/`;
+
+// Chat API endpoints
+export const GET_CHAT_SESSIONS_URL = `chat/session/`;
+export const CREATE_CHAT_SESSION_URL = `chat/session/`;
+export const GET_CHAT_SESSION_URL = `chat/session/:id/`;
+export const DELETE_CHAT_SESSION_URL = `chat/session/:id/`;
+export const SEND_CHAT_MESSAGE_URL = `chat/session/:id/message/`;
 
 // Supplements API endpoints - disabled
 // export const GET_USER_SUPPLEMENTS_URL = `supplements/user/list/`;
@@ -74,5 +79,15 @@ export const TEMPLATE_START_URL = `workout/template/start/`;
 // export const GET_USER_SUPPLEMENT_LOGS_URL = `supplements/user/log/list/`;
 // export const DELETE_USER_SUPPLEMENT_LOG_URL = `supplements/user/log/delete/:id/`;
 // export const GET_USER_SUPPLEMENT_LOGS_TODAY_URL = `supplements/user/log/today/`;
+
+// Workout Program API endpoints
+export const PROGRAM_CREATE_URL = 'workout/program/create/';
+export const PROGRAM_LIST_URL = 'workout/program/list/';
+export const PROGRAM_DETAIL_URL = 'workout/program/:id/';
+export const PROGRAM_UPDATE_URL = 'workout/program/:id/update/';
+export const PROGRAM_DELETE_URL = 'workout/program/:id/delete/';
+export const PROGRAM_ACTIVATE_URL = 'workout/program/:id/activate/';
+export const PROGRAM_DEACTIVATE_URL = 'workout/program/:id/deactivate/';
+export const PROGRAM_CURRENT_DAY_URL = 'workout/program/current-day/';
 
 export const BACKEND_URL = 'https://api.utrack.irfanemreutkan.com/api';

@@ -14,7 +14,12 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
+          "NSExceptionDomains": {
+            "api.utrack.irfanemreutkan.com": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
+            }
+          }
         },
         "NSHealthShareUsageDescription": "This app needs access to your step count to display your daily activity.",
         "NSHealthUpdateUsageDescription": "This app needs access to update your health data."
@@ -37,13 +42,6 @@
     },
     "plugins": [
       "expo-dev-client",
-      [
-        "react-native-health",
-        {
-          "healthSharePermission": "We need permission to read your health data.",
-          "healthUpdatePermission": "We need permission to save workouts to your health profile."
-        }
-      ],
       "expo-router",
       [
         "expo-splash-screen",
@@ -70,6 +68,13 @@
       "./plugins/withImmersiveMode",
       "./plugins/withHealthKit",
       "./plugins/withGoogleFit",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "overridden-by-app.config.js"
+        }
+      ],
+      "expo-apple-authentication",
       "expo-secure-store",
       "expo-web-browser"
     ],

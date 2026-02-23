@@ -121,6 +121,8 @@ export type CompleteWorkoutRequest = {
   duration?: number;
   intensity?: 'low' | 'medium' | 'high';
   notes?: string;
+  normalize_duration?: boolean;
+  proceed_as_is?: boolean;
 };
 
 export type CompleteWorkoutResponse = Workout;
@@ -226,11 +228,22 @@ export type StartTemplateWorkoutResponse = Workout;
 export type WorkoutSummaryInsight = {
   type: 'recovery' | '1rm';
   message: string;
-  pre_recovery?: number;
+  pre_recovery?: number | null;
   current_1rm?: number;
   previous_1rm?: number | null;
   difference?: number | null;
   percent_change?: number | null;
+};
+
+export type WorkoutDiagnosis = {
+  primary_issue:
+    | 'good_session'
+    | 'fatigue_accumulation'
+    | 'performance_drop'
+    | 'overreaching'
+    | 'insufficient_data';
+  message: string;
+  recommendation: string;
 };
 
 export type WorkoutSummaryResponse = {
@@ -246,6 +259,7 @@ export type WorkoutSummaryResponse = {
     muscles_worked: string[];
     exercises_performed: number;
   };
+  diagnosis?: WorkoutDiagnosis;
   is_pro: boolean;
   has_advanced_insights: boolean;
 };
@@ -284,4 +298,76 @@ export type RecoveryStatusResponse = {
   cns_recovery: CNSRecoveryItem | null;
   is_pro: boolean;
   timestamp: string;
+};
+
+// ============== Suggest Next Exercise ==============
+export type ExerciseSuggestion = {
+  muscle_group: string;
+  recovery_percent: number;
+  already_in_workout: boolean;
+  working_sets_logged: number;
+};
+
+export type SuggestNextExerciseResponse = {
+  suggestions: ExerciseSuggestion[];
+  has_active_workout: boolean;
+};
+
+// ============== Optimization Check ==============
+export type OptimizationWarning = {
+  type: 'primary_not_recovered' | 'secondary_not_recovered' | 'high_volume' | 'excessive_volume';
+  severity: 'error' | 'warning';
+  muscle: string;
+  recovery_percent?: number;
+  sets_already_done?: number;
+  message: string;
+  recommendation: string;
+};
+
+export type OptimizationCheckExercise = {
+  id: number;
+  name: string;
+  primary_muscle: string;
+  secondary_muscles: string[];
+  category: string;
+};
+
+export type OptimizationCheckResponse = {
+  workout_exercise_id: number;
+  exercise: OptimizationCheckExercise;
+  primary_recovery: { muscle_group: string; recovery_percent: number };
+  secondary_recovery: { muscle_group: string; recovery_percent: number }[];
+  sets_in_workout: number;
+  overall_status: 'optimal' | 'proceed_with_caution' | 'not_recommended';
+  warnings: OptimizationWarning[];
+};
+
+export type UserStats = {
+  streak: {
+    current: number;
+    longest: number;
+  };
+  sessions: {
+    total: number;
+    this_week: number;
+    this_month: number;
+  };
+  volume_kg: {
+    total: number;
+    this_week: number;
+    this_month: number;
+  };
+  time: {
+    total_minutes: number;
+    avg_per_session_minutes: number;
+  };
+  calories: {
+    total: number;
+    this_week: number;
+    this_month: number;
+  };
+  consistency: {
+    active_days_last_30: number;
+    avg_sessions_per_week: number;
+  };
 };

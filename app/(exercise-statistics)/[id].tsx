@@ -2,7 +2,9 @@ import { getExercise1RMHistory, getExerciseSetHistory } from '@/api/Exercises';
 import { Exercise1RMHistory, ExerciseRanking } from '@/api/types/exercise';
 import UpgradeModal from '@/components/UpgradeModal';
 import { theme } from '@/constants/theme';
+import { useExerciseOverloadTrend } from '@/hooks/useExercises';
 import { useUser } from '@/hooks/useUser';
+import { useSettingsStore } from '@/state/userStore';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -11,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import EmptyState from './components/EmptyState';
 import KeyMetrics from './components/KeyMetrics';
 import OneRMHistory from './components/OneRMHistory';
+import OverloadTrendCard from './components/OverloadTrendCard';
 import PerformanceHistory from './components/PerformanceHistory';
 import RankingCard from './components/RankingCard';
 import RMProgressionChart from './components/RMProgressionChart';
@@ -19,7 +22,9 @@ import WeightRepsChart from './components/WeightRepsChart';
 
 export default function ExerciseStatisticsScreen() {
   const { id } = useLocalSearchParams();
+  const exerciseId = Number(id);
   const { data: user, isLoading: isLoadingUser } = useUser();
+  const { isPro } = useSettingsStore();
   const [history, setHistory] = useState<Exercise1RMHistory | null>(null);
   const [ranking, setRanking] = useState<ExerciseRanking | null>(null);
   const [recentPerformance, setRecentPerformance] = useState<any[]>([]);
@@ -27,17 +32,20 @@ export default function ExerciseStatisticsScreen() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const insets = useSafeAreaInsets();
 
-  const isPro = useMemo(() => {
-    if (!user) return null;
-    return user.is_pro || user.is_paid_pro || user.is_trial;
-  }, [user]);
+  // Overload trend — only fetched for PRO users (returns 403 otherwise, retry: false)
+  const { data: overloadTrend } = useExerciseOverloadTrend(isPro && exerciseId ? exerciseId : null);
 
   const fetchData = useCallback(async () => {
+    if (!exerciseId || isNaN(exerciseId)) {
+      console.warn('[ExerciseStats] Invalid exercise ID:', id);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const [rmData, sData] = await Promise.all([
-        getExercise1RMHistory(Number(id)),
-        getExerciseSetHistory(Number(id)),
+        getExercise1RMHistory(exerciseId),
+        getExerciseSetHistory(exerciseId),
       ]);
 
       if (rmData && typeof rmData === 'object' && 'history' in rmData) {
@@ -59,7 +67,7 @@ export default function ExerciseStatisticsScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [id]);
+  }, [exerciseId]);
 
   const best1RM = useMemo(() => {
     if (!history || history.history.length === 0) return 0;
@@ -135,6 +143,8 @@ export default function ExerciseStatisticsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <KeyMetrics best1RM={best1RM} progressionPct={progressionPct} />
+
+          {overloadTrend && <OverloadTrendCard data={overloadTrend} />}
 
           {ranking && <RankingCard ranking={ranking} />}
 

@@ -19,6 +19,9 @@ import type {
   CreateTemplateWorkoutResponse,
   StartTemplateWorkoutResponse,
   WorkoutSummaryResponse,
+  UserStats,
+  SuggestNextExerciseResponse,
+  OptimizationCheckResponse,
 } from './types/workout';
 import {
   CREATE_WORKOUT_URL,
@@ -41,6 +44,9 @@ import {
   CALENDAR_STATS_URL,
   CHECK_TODAY_URL,
   RECOVERY_STATUS_URL,
+  USER_STATS_URL,
+  SUGGEST_EXERCISE_URL,
+  OPTIMIZATION_CHECK_URL,
 } from './types/';
 import type { PaginatedResponse } from './types/pagination';
 export const createWorkout = async (
@@ -53,7 +59,7 @@ export const createWorkout = async (
 export const getActiveWorkout = async (): Promise<CreateWorkoutResponse | null> => {
   const response = await apiClient.get(GET_ACTIVE_WORKOUT_URL, { throwHttpErrors: false });
   if (response.status === 404) return null;
-  const data = await response.json() as any;
+  const data = (await response.json()) as any;
   // API may return { active_workout: { ... } } wrapper — unwrap it
   if (data && data.active_workout) {
     return data.active_workout;
@@ -104,7 +110,7 @@ export const deleteWorkout = async (workoutId: number): Promise<void> => {
   // 404 = workout already gone (e.g. deleted elsewhere); treat as success so cache invalidates and UI refreshes
   if (response.status === 404) return;
   if (!response.ok) {
-    const body = await response.json().catch(() => ({})) as { error?: string };
+    const body = (await response.json().catch(() => ({}))) as { error?: string };
     throw new Error(body?.error ?? 'Failed to delete workout');
   }
 };
@@ -131,6 +137,7 @@ export const startTemplateWorkout = async (
   request: StartTemplateWorkoutRequest
 ): Promise<StartTemplateWorkoutResponse> => {
   const response = await apiClient.post(TEMPLATE_START_URL, { json: request });
+
   return response.json();
 };
 
@@ -215,5 +222,24 @@ export const checkToday = async (date?: Date): Promise<CheckTodayResponse | any>
 
 export const getRecoveryStatus = async (): Promise<RecoveryStatusResponse | any> => {
   const response = await apiClient.get(RECOVERY_STATUS_URL);
+  return response.json();
+};
+
+export const getUserStats = async (): Promise<UserStats> => {
+  const response = await apiClient.get(USER_STATS_URL);
+  return response.json();
+};
+
+export const getSuggestNextExercise = async (): Promise<SuggestNextExerciseResponse> => {
+  const response = await apiClient.get(SUGGEST_EXERCISE_URL, { throwHttpErrors: false });
+  if (!response.ok) return { suggestions: [], has_active_workout: false };
+  return response.json();
+};
+
+export const getExerciseOptimizationCheck = async (
+  workoutExerciseId: number
+): Promise<OptimizationCheckResponse> => {
+  const url = OPTIMIZATION_CHECK_URL.replace(':workout_exercise_id', workoutExerciseId.toString());
+  const response = await apiClient.get(url);
   return response.json();
 };

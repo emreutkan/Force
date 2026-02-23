@@ -14,32 +14,44 @@ const FEATURES: Feature[] = [
   {
     icon: 'pulse',
     iconColor: theme.colors.status.rest,
-    title: 'CNS RECOVERY TRACKING',
-    benefit: 'Optimize training intensity like pro powerlifters by monitoring Central Nervous System recovery',
+    title: 'CNS RECOVERY STATUS',
+    benefit: 'Monitor central nervous system fatigue and know exactly when you\'re ready to train hard again.',
+  },
+  {
+    icon: 'trophy',
+    iconColor: theme.colors.status.warning,
+    title: 'FULL 1RM HISTORY',
+    benefit: 'Complete strength history for every exercise. Free users are limited to the last 30 days.',
+  },
+  {
+    icon: 'fitness',
+    iconColor: theme.colors.status.active,
+    title: 'RECOVERY RECOMMENDATIONS',
+    benefit: 'Science-based recovery tips after each workout — muscle groups, protein synthesis, and optimal timing.',
   },
   {
     icon: 'bar-chart',
-    iconColor: theme.colors.status.warning,
-    title: 'UNLIMITED VOLUME ANALYSIS',
-    benefit: 'Access complete training volume data for any time period with detailed muscle group breakdowns',
+    iconColor: theme.colors.status.success,
+    title: '12-WEEK VOLUME ANALYSIS',
+    benefit: 'Analyse training load for any period up to 12 weeks. Free plan is limited to 4 weeks.',
   },
   {
     icon: 'analytics',
     iconColor: theme.colors.status.active,
-    title: 'ADVANCED 1RM TRACKING',
-    benefit: 'Performance tracking with 1RM calculations and progress charts used by elite strength athletes',
+    title: 'ADVANCED WORKOUT INSIGHTS',
+    benefit: 'See 1RM trends after every session — improved, maintained, or declined — to track real progress.',
   },
   {
-    icon: 'flash',
-    iconColor: theme.colors.status.success,
-    title: 'AI-POWERED INSIGHTS',
-    benefit: 'Receive intelligent training recommendations based on your unique performance patterns and recovery',
+    icon: 'time',
+    iconColor: theme.colors.status.rest,
+    title: 'REST & FREQUENCY TIPS',
+    benefit: 'Optimal rest between sets and weekly training frequency recommendations for every exercise type.',
   },
   {
-    icon: 'trophy',
-    iconColor: '#FFD700',
-    title: 'GLOBAL RANKINGS',
-    benefit: 'Compare your lifts with athletes worldwide and track your progress against the best',
+    icon: 'book',
+    iconColor: theme.colors.status.warning,
+    title: 'TRAINING RESEARCH LIBRARY',
+    benefit: 'Browse peer-reviewed research by muscle group, exercise type, and training category.',
   },
 ];
 
@@ -68,7 +80,7 @@ export default function FeatureStack() {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: theme.spacing.xxxl,
+    marginBottom: theme.spacing.xl,
   },
   sectionLabel: {
     fontSize: theme.typography.sizes.label,
@@ -76,7 +88,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 3.6,
     color: theme.colors.text.tertiary,
-    marginBottom: theme.spacing.l,
+    marginBottom: theme.spacing.m,
     marginLeft: 4,
   },
   featureCard: {
@@ -84,7 +96,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.ui.glass,
     borderRadius: theme.borderRadius.l,
     padding: theme.spacing.m,
-    marginBottom: theme.spacing.m,
+    marginBottom: theme.spacing.s,
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
   },
