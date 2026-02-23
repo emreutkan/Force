@@ -1,128 +1,110 @@
 import apiClient from './APIClient';
-import { getErrorMessage, getValidationErrors } from './errorHandler';
+import type {
+  AddSetRequest,
+  UpdateSetRequest,
+  UpdateExerciseOrderRequest,
+  Exercise1RMHistory,
+} from './types/exercise';
+import {
+  EXERCISE_LIST_URL,
+  EXERCISE_ADD_TO_WORKOUT_URL,
+  EXERCISE_1RM_HISTORY_URL,
+  EXERCISE_SET_HISTORY_URL,
+  EXERCISE_LAST_WORKOUT_URL,
+} from './types/exercise';
+import {
+  ADD_SET_URL,
+  DELETE_SET_URL,
+  UPDATE_SET_URL,
+  DELETE_WORKOUT_EXERCISE_URL,
+  UPDATE_EXERCISE_ORDER_URL,
+  OVERLOAD_TREND_URL,
+} from './types';
+import type { OverloadTrendResponse } from './types/volume';
 
-export const getExercises = async (query: string = '', page?: number, pageSize?: number) => {
-    try {
-        const params: any = {};
-        if (query) params.search = query;
-        if (page !== undefined) params.page = page;
-        if (pageSize !== undefined) params.page_size = pageSize;
-        const response = await apiClient.get(`/exercise/list/`, { params });
-        return response.data;
-    } catch (error: any) {
-        return error.message || 'An unknown error occurred';
-    }
-}
+export const getExercises = async (
+  search: string = '',
+  page?: number,
+  pageSize?: number
+): Promise<unknown> => {
+  const searchParams: Record<string, string | number> = {};
+  if (search) searchParams.search = search;
+  if (page !== undefined) searchParams.page = page;
+  if (pageSize !== undefined) searchParams.page_size = pageSize;
+  return apiClient.get(EXERCISE_LIST_URL, { searchParams }).json();
+};
 
-export const addExerciseToWorkout = async (workoutId: number, exerciseId: number) => {
-    try {
-        const response = await apiClient.post(`/exercise/add/${workoutId}/`, {
-            exercise_id: exerciseId
-        });
-        return response.data;
-    } catch (error: any) {
-        return error.message || 'An unknown error occurred';
-    }
-}
+export const addExerciseToWorkout = async (
+  workoutId: number,
+  body: { exercise_id: number; order?: number }
+): Promise<unknown> => {
+  const url = EXERCISE_ADD_TO_WORKOUT_URL.replace(':workout_id', workoutId.toString());
+  return apiClient.post(url, { json: body }).json();
+};
 
-export const removeExerciseFromWorkout = async (workoutId: number, exerciseId: number) => {
-    try {
-        // Warning: This endpoint expects workout_exercise_id, but here we are passing exerciseId. 
-        // If the frontend is passing the raw exercise ID (e.g. "Bench Press" ID), this will fail.
-        // It needs the ID of the row in the workout_exercises table.
-        // Assuming the UI passes the correct ID (idToLock in the UI seems to be workoutExercise.id).
-        const response = await apiClient.delete(`/workout/exercise/${exerciseId}/delete/`);
-        return response.status === 204;
-    } catch (error: any) {
-        return false;
-    }
+export const removeExerciseFromWorkout = async (workoutExerciseId: number): Promise<boolean> => {
+  const url = DELETE_WORKOUT_EXERCISE_URL.replace(':workout_exercise_id', workoutExerciseId.toString());
+  const response = await apiClient.delete(url);
+  return response.status === 204;
+};
 
-}
+export const addSetToExercise = async (
+  workoutExerciseId: number,
+  data: AddSetRequest
+): Promise<unknown> => {
+  const url = ADD_SET_URL.replace(':workout_exercise_id', workoutExerciseId.toString());
+  return apiClient.post(url, { json: data }).json();
+};
 
-export interface AddSetRequest {
-    reps: number;
-    weight: number;
-    rest_time_before_set?: number;
-    is_warmup?: boolean;
-    reps_in_reserve?: number;
-    eccentric_time?: number; // Time under tension - eccentric phase (seconds)
-    concentric_time?: number; // Time under tension - concentric phase (seconds)
-    total_tut?: number; // Total time under tension (seconds)
-}
+export const updateSet = async (setId: number, data: UpdateSetRequest): Promise<unknown> => {
+  const url = UPDATE_SET_URL.replace(':set_id', setId.toString());
+  return apiClient.patch(url, { json: data }).json();
+};
 
-export const addSetToExercise = async (workoutExerciseId: number, data: AddSetRequest) => {
-    try {
-        const response = await apiClient.post(`/workout/exercise/${workoutExerciseId}/add_set/`, data);
-        return response.data;
-    } catch (error: any) {
-        const errorMessage = getErrorMessage(error);
-        const validationErrors = getValidationErrors(error);
-        return { error: true, message: errorMessage, validationErrors };
-    }
-}
+export const deleteSet = async (setId: number): Promise<boolean> => {
+  const url = DELETE_SET_URL.replace(':set_id', setId.toString());
+  const response = await apiClient.delete(url);
+  return response.status === 204;
+};
 
-export const deleteSet = async (setId: number) => {
-    try {
-        const response = await apiClient.delete(`/workout/set/${setId}/delete/`);
-        return response.status === 204;
-    } catch (error: any) {
-        return false;
-    }
-}
+export const updateExerciseOrder = async (
+  workoutId: number,
+  body: UpdateExerciseOrderRequest
+): Promise<boolean> => {
+  const url = UPDATE_EXERCISE_ORDER_URL.replace(':id', workoutId.toString());
+  const response = await apiClient.post(url, { json: body });
+  return response.status === 200;
+};
 
-export interface UpdateSetRequest {
-    reps?: number;
-    weight?: number;
-    reps_in_reserve?: number;
-    rest_time_before_set?: number;
-    is_warmup?: boolean;
-    eccentric_time?: number; // Time under tension - eccentric phase (seconds)
-    concentric_time?: number; // Time under tension - concentric phase (seconds)
-    total_tut?: number; // Total time under tension (seconds)
-}
+export const getExercise1RMHistory = async (
+  exerciseId: number
+): Promise<Exercise1RMHistory | unknown> => {
+  const url = EXERCISE_1RM_HISTORY_URL.replace(':exercise_id', exerciseId.toString());
+  return apiClient.get(url).json();
+};
 
-export const updateSet = async (setId: number, data: UpdateSetRequest) => {
-    try {
-        const response = await apiClient.patch(`/workout/set/${setId}/update/`, data);
-        return response.data;
-    } catch (error: any) {
-        const errorMessage = getErrorMessage(error);
-        const validationErrors = getValidationErrors(error);
-        return { error: true, message: errorMessage, validationErrors };
-    }
-}
+export const getExerciseSetHistory = async (
+  exerciseId: number,
+  page: number = 1,
+  pageSize?: number
+): Promise<unknown> => {
+  const searchParams: Record<string, number> = { page };
+  if (pageSize != null) searchParams.page_size = pageSize;
+  const url = EXERCISE_SET_HISTORY_URL.replace(':exercise_id', exerciseId.toString());
+  return apiClient.get(url, { searchParams }).json();
+};
 
-export const updateExerciseOrder = async (workoutId: number, exercise_orders: { id: number, order: number }[]) => {
-    try {
-        const response = await apiClient.post(`/workout/${workoutId}/update_order/`, { exercise_orders: exercise_orders });
-        return response.status === 200;
-    } catch (error: any) {
-        return false;
-    }
-}
+export const getExerciseLastWorkout = async (exerciseId: number): Promise<unknown> => {
+  const url = EXERCISE_LAST_WORKOUT_URL.replace(':exercise_id', exerciseId.toString());
+  return apiClient.get(url).json();
+};
 
-export const getExercise1RMHistory = async (exerciseId: number): Promise<any> => {
-    try {
-        const response = await apiClient.get(`/workout/exercise/${exerciseId}/1rm-history/`);
-        return response.data;
-    } catch (error: any) {
-        if (error.response) {
-            return error.response.data;
-        }
-        return error.message || 'An unknown error occurred';
-    }
-}
+export const getExerciseOverloadTrend = async (
+  exerciseId: number
+): Promise<OverloadTrendResponse> => {
+  const url = OVERLOAD_TREND_URL.replace(':exercise_id', exerciseId.toString());
+  return apiClient.get(url).json();
+};
 
-export const getExerciseSetHistory = async (exerciseId: number, page: number = 1): Promise<any> => {
-    try {
-        const response = await apiClient.get(`/workout/exercise/${exerciseId}/set-history/`, {
-            params: { page }
-        });
-        return response.data;
-    } catch (error: any) {
-        if (error.response) {
-            return error.response.data;
-        }
-        return error.message || 'An unknown error occurred';
-    }
-}
+// Re-export for consumers that expect these type names from Exercises
+export type { AddSetRequest, UpdateSetRequest };

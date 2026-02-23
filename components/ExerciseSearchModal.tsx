@@ -2,8 +2,8 @@ import { getExercises } from '@/api/Exercises';
 import { theme } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Modal, StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ExerciseSearchModalProps {
@@ -13,8 +13,9 @@ interface ExerciseSearchModalProps {
     title?: string;
     mode?: 'single' | 'multiple';
     selectedExerciseIds?: number[];
-    onToggleExercise?: (exerciseId: number) => void;
+    onToggleExercise?: (exerciseId: number, exercise?: any) => void;
     excludeExerciseIds?: number[];
+    initialSearch?: string;
 }
 
 export default function ExerciseSearchModal({
@@ -26,6 +27,7 @@ export default function ExerciseSearchModal({
     selectedExerciseIds = [],
     onToggleExercise,
     excludeExerciseIds = [],
+    initialSearch = '',
 }: ExerciseSearchModalProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [exercises, setExercises] = useState<any[]>([]);
@@ -34,25 +36,7 @@ export default function ExerciseSearchModal({
     const [hasMoreExercises, setHasMoreExercises] = useState(false);
     const [exercisePage, setExercisePage] = useState(1);
     const insets = useSafeAreaInsets();
-
-    // Load exercises when modal opens or search query changes
-    useEffect(() => {
-        if (!visible) {
-            setExercises([]);
-            setExercisePage(1);
-            setHasMoreExercises(false);
-            setSearchQuery('');
-            return;
-        }
-
-        const delayDebounceFn = setTimeout(() => {
-            loadExercises(true);
-        }, 300);
-
-        return () => clearTimeout(delayDebounceFn);
-    }, [searchQuery, visible]);
-
-    const loadExercises = async (reset = false) => {
+ const loadExercises = useCallback(async (reset = false) => {
         if (reset) {
             setIsLoadingExercises(true);
             setExercisePage(1);
@@ -61,15 +45,15 @@ export default function ExerciseSearchModal({
         }
         try {
             const page = reset ? 1 : exercisePage + 1;
-            const data = await getExercises(searchQuery, page);
-            if (data?.results) {
-                // Paginated response
+            const data = await getExercises(searchQuery, page) as { results?: unknown[]; next?: string | null } | unknown[] | undefined;
+            if (data && typeof data === 'object' && 'results' in data && Array.isArray((data as { results: unknown[] }).results)) {
+                const paginated = data as { results: unknown[]; next?: string | null };
                 if (reset) {
-                    setExercises(data.results);
+                    setExercises(paginated.results);
                 } else {
-                    setExercises(prev => [...prev, ...data.results]);
+                    setExercises(prev => [...prev, ...paginated.results]);
                 }
-                setHasMoreExercises(!!data.next);
+                setHasMoreExercises(!!paginated.next);
                 setExercisePage(page);
             } else if (Array.isArray(data)) {
                 // Fallback for non-paginated response
@@ -86,7 +70,29 @@ export default function ExerciseSearchModal({
             setIsLoadingExercises(false);
             setIsLoadingMoreExercises(false);
         }
-    };
+    }, [searchQuery, exercisePage ]);
+
+    // Load exercises when modal opens or search query changes
+    useEffect(() => {
+        if (!visible) {
+            setExercises([]);
+            setExercisePage(1);
+            setHasMoreExercises(false);
+            setSearchQuery('');
+            return;
+        }
+        // Seed the search with any initial filter (e.g. muscle group from SuggestExerciseRow)
+        if (initialSearch) {
+            setSearchQuery(initialSearch);
+        }
+
+        const delayDebounceFn = setTimeout(() => {
+            loadExercises(true);
+        }, 300);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchQuery, visible, loadExercises]);
+
 
     const loadMoreExercises = () => {
         if (hasMoreExercises && !isLoadingMoreExercises && !isLoadingExercises) {
@@ -94,9 +100,9 @@ export default function ExerciseSearchModal({
         }
     };
 
-    const handleExercisePress = async (exerciseId: number) => {
+    const handleExercisePress = async (exerciseId: number, exercise?: any) => {
         if (mode === 'multiple' && onToggleExercise) {
-            onToggleExercise(exerciseId);
+            onToggleExercise(exerciseId, exercise);
         } else {
             await onSelectExercise(exerciseId);
         }
@@ -111,9 +117,9 @@ export default function ExerciseSearchModal({
                 <Text style={styles.modalTitle}>{title.toUpperCase()}</Text>
                 <Text style={styles.modalSubtitle}>{mode === 'multiple' ? 'SELECT EXERCISES' : 'CHOOSE ONE'}</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeButtonContainer}>
+            <Pressable onPress={onClose} style={styles.closeButtonContainer}>
                 <Ionicons name="close" size={24} color={theme.colors.text.primary} />
-            </TouchableOpacity>
+            </Pressable>
         </View>
     );
 
@@ -131,9 +137,9 @@ export default function ExerciseSearchModal({
                     autoCapitalize="none"
                 />
                 {searchQuery.length > 0 && (
-                    <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <Pressable onPress={() => setSearchQuery('')}>
                         <Ionicons name="close-circle" size={18} color={theme.colors.text.tertiary} />
-                    </TouchableOpacity>
+                    </Pressable>
                 )}
             </View>
         </View>
@@ -154,10 +160,9 @@ export default function ExerciseSearchModal({
                         renderItem={({ item }) => {
                             const selected = isSelected(item.id);
                             return (
-                                <TouchableOpacity 
+                                <Pressable
                                     style={[styles.exerciseCard, selected && styles.exerciseCardSelected]}
-                                    onPress={() => handleExercisePress(item.id)}
-                                    activeOpacity={0.7}
+                                    onPress={() => handleExercisePress(item.id, item)}
                                 >
                                     <View style={styles.exerciseInfoContainer}>
                                         <View style={[styles.exerciseIconPlaceholder, selected && styles.exerciseIconPlaceholderSelected]}>
@@ -174,16 +179,16 @@ export default function ExerciseSearchModal({
                                     </View>
                                     <View style={[styles.addButton, selected && styles.addButtonSelected]}>
                                         {mode === 'multiple' ? (
-                                            <Ionicons 
-                                                name={selected ? "checkmark" : "add"} 
-                                                size={20} 
-                                                color={selected ? "#FFFFFF" : theme.colors.status.active} 
+                                            <Ionicons
+                                                name={selected ? "checkmark" : "add"}
+                                                size={20}
+                                                color={selected ? "#FFFFFF" : theme.colors.status.active}
                                             />
                                         ) : (
                                             <Ionicons name="add" size={20} color={theme.colors.status.active} />
                                         )}
                                     </View>
-                                </TouchableOpacity>
+                                </Pressable>
                             );
                         }}
                         ItemSeparatorComponent={() => <View style={{height: 12}} />}
@@ -211,9 +216,9 @@ export default function ExerciseSearchModal({
 
     return (
         <Modal
+            presentationStyle="formSheet"
             visible={visible}
             animationType="slide"
-            presentationStyle="pageSheet"
             onRequestClose={onClose}
         >
             <View style={styles.modalContainer}>

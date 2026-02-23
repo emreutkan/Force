@@ -1,268 +1,381 @@
-import { theme } from '@/constants/theme';
+import { getErrorMessage } from '@/api/errorHandler';
+import { commonStyles, theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  Pressable,
+  View,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useOfferings, usePurchasePackage, useRestorePurchases } from '@/hooks/useRevenueCat';
+import { isStoreNotConfiguredError, ENTITLEMENT_ID } from '@/services/revenueCat';
+import { useSettingsStore } from '@/state/userStore';
+import FeatureStack from './components/FeatureStack';
+import ComparisonTable from './components/ComparisonTable';
+import UnlockButton from './components/UnlockButton';
+import PackageSelector from './components/PackageSelector';
+import PricingDisplay from './components/PricingDisplay';
+import type { PurchasesPackage } from 'react-native-purchases';
 
 export default function UpgradeScreen() {
-    const insets = useSafeAreaInsets();
-    const [isLoading, setIsLoading] = useState(false);
+  const insets = useSafeAreaInsets();
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
+  const setIsPro = useSettingsStore((state) => state.setIsPro);
 
-    const handleUpgrade = async () => {
-        setIsLoading(true);
-        try {
-            // TODO: Implement actual subscription purchase flow
-            // This would integrate with your payment provider (Stripe, RevenueCat, etc.)
-            Alert.alert(
-                "Upgrade to PRO",
-                "Subscription purchase integration coming soon!",
-                [{ text: "OK" }]
-            );
-        } catch (error) {
-            Alert.alert("Error", "Failed to process upgrade. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  // Fetch offerings from RevenueCat
+  const {
+    data: offering,
+    isLoading: isLoadingOfferings,
+    error: offeringsError,
+    refetch: refetchOfferings,
+  } = useOfferings();
+  const purchaseMutation = usePurchasePackage();
+  const restoreMutation = useRestorePurchases();
 
-    const features = [
-        {
-            icon: "pulse",
-            title: "CNS Recovery Tracking",
-            description: "Track your Central Nervous System recovery to optimize training"
-        },
-        {
-            icon: "bar-chart",
-            title: "Unlimited Volume Analysis",
-            description: "View volume analysis for any time period"
-        },
-        {
-            icon: "analytics",
-            title: "Advanced Workout Insights",
-            description: "See 1RM performance tracking and detailed analysis"
-        },
-        {
-            icon: "bulb",
-            title: "Training Recommendations",
-            description: "Get personalized recovery and rest period recommendations"
-        },
-        {
-            icon: "library",
-            title: "Research-Backed Guidance",
-            description: "Access evidence-based training recommendations"
-        }
-    ];
+  // Set default selected package when offerings load
+  useEffect(() => {
+    if (offering?.availablePackages && !selectedPackage) {
+      // Debug: Log all packages
+      console.log(
+        'Available packages:',
+        offering.availablePackages.map((pkg) => ({
+          identifier: pkg.identifier,
+          price: pkg.product.price,
+          priceString: pkg.product.priceString,
+        }))
+      );
 
-    return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <LinearGradient
-                colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
-                style={styles.gradientBg}
-            />
-            <ScrollView 
-                contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20, marginTop: 58 }]}
-                showsVerticalScrollIndicator={false}
-            >
-                <View style={styles.heroSection}>
-                    <Text style={styles.heroTitle}>Unlock PRO Features</Text>
-                    <Text style={styles.heroSubtitle}>
-                        Get access to advanced analytics and research-backed training insights
-                    </Text>
-                </View>
+      // Default to monthly if available, otherwise first package
+      const monthlyPkg = offering.availablePackages.find((pkg) => pkg.identifier === 'monthly');
+      const yearlyPkg = offering.availablePackages.find((pkg) => pkg.identifier === 'yearly');
+      const weeklyPkg = offering.availablePackages.find((pkg) => pkg.identifier === 'weekly');
 
-                <View style={styles.pricingCard}>
-                    <View style={styles.pricingHeader}>
-                        <Text style={styles.price}>$5</Text>
-                        <Text style={styles.pricePeriod}>/month</Text>
-                    </View>
-                    <Text style={styles.pricingDescription}>
-                        Cancel anytime. No commitment.
-                    </Text>
-                </View>
+      // Priority: yearly > monthly > weekly
+      setSelectedPackage(yearlyPkg || monthlyPkg || weeklyPkg || offering.availablePackages[0]);
+    }
+  }, [offering, selectedPackage]);
 
-                <View style={styles.featuresSection}>
-                    <Text style={styles.sectionTitle}>PRO Features</Text>
-                    {features.map((feature, index) => (
-                        <View key={index} style={styles.featureCard}>
-                            <View style={styles.featureIconContainer}>
-                                <Ionicons name={feature.icon as any} size={24} color={theme.colors.status.rest} />
-                            </View>
-                            <View style={styles.featureContent}>
-                                <Text style={styles.featureTitle}>{feature.title}</Text>
-                                <Text style={styles.featureDescription}>{feature.description}</Text>
-                            </View>
-                        </View>
-                    ))}
-                </View>
+  const handleUpgrade = async () => {
+    if (!selectedPackage) {
+      Alert.alert('Error', 'No subscription packages available. Please try again later.');
+      return;
+    }
 
-                <TouchableOpacity 
-                    style={[styles.upgradeButton, isLoading && styles.upgradeButtonDisabled]}
-                    onPress={handleUpgrade}
-                    disabled={isLoading}
-                    activeOpacity={0.8}
-                >
-                    {isLoading ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                        <Text style={styles.upgradeButtonText}>Upgrade to PRO</Text>
-                    )}
-                </TouchableOpacity>
+    setIsLoading(true);
+    try {
+      const customerInfo = await purchaseMutation.mutateAsync(selectedPackage);
 
-                <TouchableOpacity 
-                    style={styles.cancelButton}
-                    onPress={() => router.back()}
-                    activeOpacity={0.8}
-                >
-                    <Text style={styles.cancelButtonText}>Maybe Later</Text>
-                </TouchableOpacity>
-            </ScrollView>
+      if (customerInfo) {
+        const activeKeys = Object.keys(customerInfo.entitlements.active);
+        console.log('[PURCHASE] Active entitlement keys:', activeKeys);
+        console.log('[PURCHASE] Looking for ENTITLEMENT_ID:', ENTITLEMENT_ID);
+        console.log('[PURCHASE] Match found:', !!customerInfo.entitlements.active[ENTITLEMENT_ID]);
+        const isPro = !!customerInfo.entitlements.active[ENTITLEMENT_ID];
+        setIsPro(isPro);
+        Alert.alert('WELCOME TO PRO!', 'You now have access to all premium features.', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+      } else {
+        // User cancelled
+        console.log('Purchase cancelled by user');
+      }
+    } catch (error: any) {
+      console.error('Purchase error:', error);
+      const message = isStoreNotConfiguredError(error)
+        ? "Purchases aren't available in this build. Set up App Store Connect and Google Play Console for real purchases — see REVENUECAT_QUICKSTART.md."
+        : getErrorMessage(error as Error);
+      Alert.alert('Purchase Failed', message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    setIsLoading(true);
+    try {
+      const customerInfo = await restoreMutation.mutateAsync();
+
+      // Check if user has active entitlement
+      if (Object.keys(customerInfo.entitlements.active).length > 0) {
+        setIsPro(true);
+        Alert.alert('Success', 'Your purchases have been restored!', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+      } else {
+        Alert.alert('No Purchases Found', "We couldn't find any previous purchases to restore.");
+      }
+    } catch (error: any) {
+      console.error('Restore error:', error);
+      const message = isStoreNotConfiguredError(error)
+        ? "Restore isn't available in this build. Set up App Store Connect and Google Play Console first."
+        : getErrorMessage(error as Error);
+      Alert.alert('Restore Failed', message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <LinearGradient
+        colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+        style={styles.gradientBg}
+      />
+
+      {/* Fallback back button for loading/error states */}
+      {(isLoadingOfferings || offeringsError || !offering) && (
+        <View style={styles.fallbackHeader}>
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={commonStyles.backButton}
+          >
+            <Ionicons name="chevron-back" size={28} color={theme.colors.text.zinc600} />
+          </Pressable>
         </View>
-    );
+      )}
+
+      {isLoadingOfferings ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.status.active} />
+          <Text style={styles.loadingText}>LOADING OFFERS...</Text>
+        </View>
+      ) : offeringsError || !offering ? (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={48} color={theme.colors.status.error} />
+          <Text style={styles.errorTitle}>UNABLE TO LOAD OFFERS</Text>
+          <Text style={styles.errorText}>Please check your connection and try again.</Text>
+          <Pressable style={styles.retryButton} onPress={() => refetchOfferings()}>
+            <Text style={styles.retryButtonText}>RETRY</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Hero */}
+          <View style={styles.heroSection}>
+            <View style={styles.titleRow}>
+              <Pressable
+                onPress={() => router.back()}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                style={styles.backButton}
+              >
+                <Ionicons name="chevron-back" size={32} color={theme.colors.text.zinc600} />
+              </Pressable>
+              <View style={styles.titleTextContainer}>
+                <Text style={styles.heroTitle}>UNLOCK{'\n'}PRO</Text>
+                <Text style={styles.authorityText}>RECOVERY · RESEARCH · ANALYTICS</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Features */}
+          <FeatureStack />
+
+          {/* Free vs PRO Comparison */}
+          <ComparisonTable />
+
+          {/* Package Selector — only shown when multiple packages exist */}
+          {offering?.availablePackages &&
+            offering.availablePackages.length > 1 &&
+            selectedPackage && (
+              <PackageSelector
+                packages={offering.availablePackages}
+                selectedPackage={selectedPackage}
+                onSelectPackage={setSelectedPackage}
+              />
+            )}
+
+          {/* Pricing — shown for single package or as supplement */}
+          <PricingDisplay packageInfo={selectedPackage} />
+
+          {/* CTA */}
+          <UnlockButton onPress={handleUpgrade} isLoading={isLoading} />
+
+          {/* Restore */}
+          <Pressable
+            onPress={handleRestorePurchases}
+            disabled={isLoading}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={styles.restoreButton}
+          >
+            <Text style={styles.restoreText}>RESTORE PURCHASES</Text>
+          </Pressable>
+
+          {/* Apple-required disclosure */}
+          <Text style={styles.disclosureText}>
+            Payment charged to Apple ID at confirmation. Subscription auto-renews unless cancelled
+            at least 24 hours before end of period. Manage in Apple ID Account Settings.
+          </Text>
+
+          {/* Legal */}
+          <View style={styles.legalRow}>
+            <Pressable
+              onPress={() => Linking.openURL('https://emreutkan.github.io/forcelegal/privacy')}
+            >
+              <Text style={styles.legalLink}>Privacy Policy</Text>
+            </Pressable>
+            <Text style={styles.legalSeparator}>·</Text>
+            <Pressable
+              onPress={() => Linking.openURL('https://emreutkan.github.io/forcelegal/terms')}
+            >
+              <Text style={styles.legalLink}>Terms of Use</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      )}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#000000',
-    },
-    gradientBg: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-    },
-    scrollContent: {
-        padding: 16,
-    },
-    heroSection: {
-        alignItems: 'center',
-        marginBottom: 32,
-    },
-
-    heroTitle: {
-        fontSize: 28,
-        fontWeight: '800',
-        color: '#FFFFFF',
-        textAlign: 'center',
-        marginBottom: 8,
-    },
-    heroSubtitle: {
-        fontSize: 16,
-        color: theme.colors.text.secondary,
-        textAlign: 'center',
-        lineHeight: 22,
-        paddingHorizontal: 20,
-    },
-    pricingCard: {
-        backgroundColor: theme.colors.ui.glass,
-        borderRadius: theme.borderRadius.xxl,
-        borderWidth: 1,
-        borderColor: theme.colors.ui.border,
-        padding: 24,
-        alignItems: 'center',
-        marginBottom: 32,
-    },
-    pricingHeader: {
-        flexDirection: 'row',
-        alignItems: 'baseline',
-        marginBottom: 8,
-    },
-    price: {
-        fontSize: 48,
-        fontWeight: '800',
-        color: theme.colors.status.rest,
-    },
-    pricePeriod: {
-        fontSize: 18,
-        color: theme.colors.text.secondary,
-        marginLeft: 8,
-    },
-    pricingDescription: {
-        fontSize: 14,
-        color: theme.colors.text.secondary,
-    },
-    featuresSection: {
-        marginBottom: 32,
-    },
-    sectionTitle: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#636366',
-        textTransform: 'uppercase',
-        marginBottom: 16,
-        marginLeft: 4,
-    },
-    featureCard: {
-        flexDirection: 'row',
-        backgroundColor: theme.colors.ui.glass,
-        borderRadius: theme.borderRadius.l,
-        borderWidth: 1,
-        borderColor: theme.colors.ui.border,
-        padding: 16,
-        marginBottom: 12,
-    },
-    featureIconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: `${theme.colors.status.rest}20`,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-    },
-    featureContent: {
-        flex: 1,
-    },
-    featureTitle: {
-        fontSize: 17,
-        fontWeight: '700',
-        color: theme.colors.text.primary,
-        marginBottom: 4,
-    },
-    featureDescription: {
-        fontSize: 14,
-        color: theme.colors.text.secondary,
-        lineHeight: 20,
-    },
-    upgradeButton: {
-        backgroundColor: theme.colors.status.rest,
-        borderRadius: theme.borderRadius.xxl,
-        paddingVertical: 18,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 12,
-    },
-    upgradeButtonDisabled: {
-        opacity: 0.6,
-    },
-    upgradeButtonText: {
-        fontSize: 18,
-        fontWeight: '800',
-        color: theme.colors.text.primary,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-    },
-    cancelButton: {
-        paddingVertical: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    cancelButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: theme.colors.text.secondary,
-        textTransform: 'uppercase',
-    },
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  gradientBg: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  fallbackHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 10,
+    paddingHorizontal: theme.spacing.l,
+    paddingTop: theme.spacing.l,
+  },
+  scrollContent: {
+    padding: theme.spacing.m,
+    paddingTop: 0,
+  },
+  heroSection: {
+    marginBottom: theme.spacing.xl,
+    marginTop: 0,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    marginRight: theme.spacing.m,
+  },
+  titleTextContainer: {
+    flex: 1,
+  },
+  heroTitle: {
+    ...typographyStyles.h1,
+    fontSize: 52,
+    lineHeight: 56,
+    textAlign: 'left',
+    marginBottom: 4,
+    letterSpacing: -2.5,
+  },
+  authorityText: {
+    fontSize: theme.typography.sizes.s,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    color: theme.colors.text.secondary,
+    textAlign: 'left',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: theme.spacing.m,
+  },
+  loadingText: {
+    fontSize: theme.typography.sizes.s,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    color: theme.colors.text.secondary,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: theme.spacing.m,
+    paddingHorizontal: theme.spacing.xl,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    fontStyle: 'italic',
+    textTransform: 'uppercase',
+    letterSpacing: -0.5,
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: theme.typography.sizes.m,
+    fontWeight: '400',
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: theme.colors.status.active,
+    borderRadius: theme.borderRadius.xxl,
+    paddingVertical: theme.spacing.m,
+    paddingHorizontal: theme.spacing.xl,
+    marginTop: theme.spacing.m,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    color: theme.colors.text.primary,
+  },
+  restoreButton: {
+    alignSelf: 'center',
+    marginTop: theme.spacing.l,
+    paddingVertical: theme.spacing.m,
+  },
+  restoreText: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    color: theme.colors.text.tertiary,
+    textAlign: 'center',
+  },
+  disclosureText: {
+    fontSize: 11,
+    fontWeight: '400',
+    color: theme.colors.text.tertiary,
+    textAlign: 'center',
+    lineHeight: 16,
+    marginTop: theme.spacing.l,
+    paddingHorizontal: theme.spacing.s,
+  },
+  legalRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: theme.spacing.s,
+    marginTop: theme.spacing.m,
+    marginBottom: theme.spacing.s,
+  },
+  legalLink: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.text.secondary,
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    fontSize: 12,
+    color: theme.colors.text.tertiary,
+  },
 });
-
