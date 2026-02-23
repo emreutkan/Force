@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   sessionTitle: {
-    fontSize: 14,
+    fontSize: theme.typography.sizes.mono,
     fontWeight: '800',
     color: theme.colors.text.primary,
     textTransform: 'uppercase',
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   fabText: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.xs,
     fontWeight: '900',
     fontStyle: 'italic',
     color: theme.colors.text.primary,
