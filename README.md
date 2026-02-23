@@ -1,76 +1,64 @@
-# FORCE - Personal Fitness Tracker
+# FORCE
 
-**Alpha Version 1**
+FORCE is a mobile fitness tracker built with Expo + React Native. It helps users log workouts, monitor progress, and review training insights over time.
 
-A comprehensive mobile fitness app designed to help you track your workouts, monitor progress, and optimize your training.
+## Core Features
 
-## Features
+- Workout logging with sets, reps, weight, and rest timers
+- Exercise browsing and search
+- Reusable workout templates
+- Body measurements and body-fat estimation (US Navy method)
+- Volume analysis and recovery status insights
+- Calendar/activity views and workout history
+- Supabase-backed authentication and session handling
 
-### Workout Tracking
-- Create and log workouts with detailed exercise tracking
-- Track sets, reps, weight, and rest periods
-- Monitor active workouts in real-time with elapsed time
-- View workout history with pagination support
-- Organize workouts by date and filter through your training history
+## Tech Stack
 
-### Exercise Library
-- Browse an extensive database of exercises
-- Search exercises by name, muscle group, or equipment
-- View exercise details including instructions and safety tips
-- Track exercise performance over time
+- Expo / React Native / React
+- Expo Router + React Navigation
+- Supabase (`@supabase/supabase-js`)
+- Zustand + TanStack React Query
+- TypeScript
 
-### Workout Templates
-- Create reusable workout templates
-- Quickly start workouts from saved templates
-- Organize your favorite training routines
+## Prerequisites
 
-### Body Measurements & Analysis
-- Track body measurements (weight, waist, neck, hips)
-- Calculate body fat percentage using the US Navy Method
-- View measurement history and track progress over time
-- Automatic calculations based on your profile
+- Node.js 18+ (recommended)
+- npm
+- Xcode / Android Studio (for native device builds)
 
-### Volume Analysis
-- Analyze training volume per muscle group
-- View weekly breakdowns of your training volume
-- Track average, maximum, and minimum volume for each muscle group
-- Identify training patterns and imbalances
+## Setup
 
-### Recovery Tracking
-- Monitor muscle recovery status
-- Track fatigue scores and recovery time
-- Get recommendations on which muscles need rest
-- Optimize training frequency based on recovery data
+1. Install dependencies:
 
-### Calendar & Activity
-- Weekly activity view showing workouts and rest days
-- Monthly calendar with detailed statistics
-- Track workout frequency and consistency
-- View total workouts, rest days, and activity patterns
+   ```bash
+   npm ci
+   ```
 
-### Knowledge Base
-- Access research-backed training information
-- Filter by category, muscle group, or exercise type
-- Learn about training intensity, recovery, and best practices
-- Evidence-based guidance for your fitness journey
+2. Configure environment variables:
 
-### Supplements
-- Track your supplement intake
-- Set dosages and frequencies
-- Monitor your supplement stack
+   ```bash
+   EXPO_PUBLIC_SUPABASE_URL=...
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=...
+   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=...
+   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=...
+   RC_TEST_API=...
+   ```
 
-### Account Management
-- Personalize your profile with height and gender
-- Secure authentication
-- Data synced across devices
+3. Start the app:
 
-## Getting Started
+   ```bash
+   npm start
+   ```
 
-1. Create an account or sign in
-2. Set your height and gender in account settings
-3. Start logging your workouts
-4. Track your progress and analyze your training data
+## Available Scripts
 
----
-
-**FORCE** - Your complete fitness companion for tracking, analyzing, and optimizing your training.
+```bash
+npm start              # Start Expo
+npm run start:dev-client
+npm run android
+npm run ios
+npm run web
+npm run lint
+npm run format
+npm run format:check
+```
