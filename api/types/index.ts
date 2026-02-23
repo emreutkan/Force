@@ -7,6 +7,7 @@ export * from './workout';
 export * from './pagination';
 export * from './volume';
 export * from './chat';
+export * from './program';
 
 export const CREATE_CALENDAR_URL = `workout/calendar/create/`;
 export const GET_CALENDAR_URL = `workout/calendar/`;
@@ -79,5 +80,15 @@ export const SEND_CHAT_MESSAGE_URL = `chat/session/:id/message/`;
 // export const DELETE_USER_SUPPLEMENT_LOG_URL = `supplements/user/log/delete/:id/`;
 // export const GET_USER_SUPPLEMENT_LOGS_TODAY_URL = `supplements/user/log/today/`;
 
+// Workout Program API endpoints
+export const PROGRAM_CREATE_URL = 'workout/program/create/';
+export const PROGRAM_LIST_URL = 'workout/program/list/';
+export const PROGRAM_DETAIL_URL = 'workout/program/:id/';
+export const PROGRAM_UPDATE_URL = 'workout/program/:id/update/';
+export const PROGRAM_DELETE_URL = 'workout/program/:id/delete/';
+export const PROGRAM_ACTIVATE_URL = 'workout/program/:id/activate/';
+export const PROGRAM_DEACTIVATE_URL = 'workout/program/:id/deactivate/';
+export const PROGRAM_CURRENT_DAY_URL = 'workout/program/current-day/';
+
 export const BACKEND_URL = 'http://192.168.1.2:8000/api';
-// export const BACKEND_URL = 'http://api.utrack.irfanemreutkan.com/api';
+// export const BACKEND_URL = 'https://forceapi.ieugroup.uk/api';

@@ -22,3 +22,6 @@ export { useBackendStore } from './backendStore';
 
 export { useChatStore } from './chatStore';
 export type { ChatState } from './chatStore';
+
+export { useProgramStore } from './programStore';
+export type { ProgramStoreState } from './programStore';

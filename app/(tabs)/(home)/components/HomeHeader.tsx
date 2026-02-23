@@ -18,16 +18,6 @@ export default function HomeHeader({ today, insets }: HomeHeaderProps) {
           <Text style={{ color: theme.colors.status.active }}>.</Text>
         </Text>
         <View style={styles.headerActions}>
-          {/* AI Chat button */}
-          <Pressable
-            onPress={() => router.push('/(chat)')}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={styles.aiButton}
-          >
-            <Ionicons name="sparkles" size={14} color={theme.colors.status.active} />
-            <Text style={styles.aiButtonText}>AI</Text>
-          </Pressable>
-
           {/* Settings button */}
           <Pressable
             onPress={() => router.push('/(account)')}
@@ -67,23 +57,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.s,
-  },
-  aiButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: theme.colors.ui.primaryLight,
-    borderWidth: 1,
-    borderColor: theme.colors.ui.primaryBorder,
-    borderRadius: theme.borderRadius.full,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  aiButtonText: {
-    fontSize: theme.typography.sizes.xxs,
-    fontWeight: '900',
-    color: theme.colors.status.active,
-    letterSpacing: 1.5,
   },
   gearButton: {
     padding: theme.spacing.xs,

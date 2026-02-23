@@ -40,10 +40,7 @@ export default function ChatHistoryScreen() {
   const pulseValue = useSharedValue(1);
   useEffect(() => {
     pulseValue.value = withRepeat(
-      withSequence(
-        withTiming(1.05, { duration: 1500 }),
-        withTiming(1, { duration: 1500 })
-      ),
+      withSequence(withTiming(1.05, { duration: 1500 }), withTiming(1, { duration: 1500 })),
       -1,
       true
     );
@@ -58,9 +55,7 @@ export default function ChatHistoryScreen() {
   }, []);
 
   // Filter out empty sessions (ghost sessions from old code)
-  const activeSessions = sessions.filter(
-    (s) => s.messages && s.messages.length > 0
-  );
+  const activeSessions = sessions.filter((s) => s.messages && s.messages.length > 0);
 
   const handleNewChat = useCallback(() => {
     router.push('/(chat)/new');
@@ -70,20 +65,19 @@ export default function ChatHistoryScreen() {
     router.push(`/(chat)/${session.id}`);
   }, []);
 
-  const handleDeleteSession = useCallback((session: ChatSession) => {
-    Alert.alert(
-      'DELETE CHAT',
-      `Delete "${session.title}"? This cannot be undone.`,
-      [
+  const handleDeleteSession = useCallback(
+    (session: ChatSession) => {
+      Alert.alert('DELETE CHAT', `Delete "${session.title}"? This cannot be undone.`, [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: () => removeSession(session.id),
         },
-      ]
-    );
-  }, [removeSession]);
+      ]);
+    },
+    [removeSession]
+  );
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -108,7 +102,11 @@ export default function ChatHistoryScreen() {
           onPress={() => handleOpenSession(item)}
           onLongPress={() => handleDeleteSession(item)}
         >
-          <View style={styles.sessionIconContainer}>
+          <View style={[styles.sessionIconContainer, commonStyles.shadow]}>
+            <LinearGradient
+              colors={['rgba(99, 102, 241, 0.25)', 'rgba(99, 102, 241, 0.1)']}
+              style={StyleSheet.absoluteFillObject}
+            />
             <Ionicons name="sparkles" size={18} color={theme.colors.status.active} />
           </View>
 
@@ -123,7 +121,12 @@ export default function ChatHistoryScreen() {
             </Text>
           </View>
 
-          <Ionicons name="chevron-forward" size={16} color={theme.colors.text.tertiary} />
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={theme.colors.text.tertiary}
+            style={{ opacity: 0.5 }}
+          />
         </Pressable>
       </Animated.View>
     );
@@ -177,7 +180,10 @@ export default function ChatHistoryScreen() {
         </Pressable>
 
         <View style={styles.aiIdentity}>
-          <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.aiAvatarLarge}>
+          <Animated.View
+            entering={FadeInDown.delay(100).duration(400)}
+            style={styles.aiAvatarLarge}
+          >
             <LinearGradient
               colors={['rgba(99, 102, 241, 0.2)', 'rgba(99, 102, 241, 0.08)']}
               style={StyleSheet.absoluteFillObject}
@@ -232,10 +238,7 @@ export default function ChatHistoryScreen() {
           renderItem={renderSessionItem}
           ListHeaderComponent={renderHeader}
           ListEmptyComponent={renderEmpty}
-          contentContainerStyle={[
-            styles.listContent,
-            { paddingBottom: insets.bottom + 100 },
-          ]}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 100 }]}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -320,7 +323,7 @@ const styles = StyleSheet.create({
 
   // List
   listContent: {
-    paddingHorizontal: theme.spacing.s,
+    paddingHorizontal: theme.spacing.m,
   },
 
   // Session cards
@@ -336,14 +339,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sessionIconContainer: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: theme.colors.ui.primaryLight,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: theme.colors.ui.primaryBorder,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   sessionContent: {
     flex: 1,
