@@ -13,6 +13,16 @@ type GetCacheEntry = {
 };
 
 const getCache = new Map<string, GetCacheEntry>();
+const MAX_CACHE_ENTRIES = 100;
+
+function setCacheEntry(key: string, entry: GetCacheEntry): void {
+  // Evict the oldest entry before adding so size never exceeds MAX_CACHE_ENTRIES
+  if (getCache.size >= MAX_CACHE_ENTRIES) {
+    const firstKey = getCache.keys().next().value;
+    if (firstKey !== undefined) getCache.delete(firstKey);
+  }
+  getCache.set(key, entry);
+}
 
 function getCacheKey(request: Request): string {
   return request.url;
@@ -78,13 +88,11 @@ const apiClient = ky.create({
               body.includes('<!') ? `(HTML ${response.status})` : body
             );
           } catch (_) {}
-          // 5xx or repeated 4xx HTML responses = backend down
-          if (response.status >= 500 || (response.status >= 400 && response.status < 500)) {
-            const clone2 = response.clone();
-            const body2 = await clone2.text().catch(() => '');
-            if (response.status >= 500 || body2.includes('<!')) {
-              useBackendStore.getState().recordFailure();
-            }
+          // 5xx or HTML 4xx responses = backend down
+          const clone2 = response.clone();
+          const body2 = await clone2.text().catch(() => '');
+          if (response.status >= 500 || body2.includes('<!')) {
+            useBackendStore.getState().recordFailure();
           }
         } else {
           useBackendStore.getState().recordSuccess();
@@ -107,7 +115,7 @@ const apiClient = ky.create({
           const key = getCacheKey(request);
           const clone = response.clone();
           const body = await clone.text();
-          getCache.set(key, {
+          setCacheEntry(key, {
             body,
             etag: response.headers.get('ETag') ?? undefined,
             lastModified: response.headers.get('Last-Modified') ?? undefined,

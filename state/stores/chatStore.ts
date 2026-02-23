@@ -105,8 +105,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
       });
 
       // Refresh sessions to update titles/updated_at and the full message history
-      get().fetchSessions();
-      get().fetchSession(sessionId);
+      try {
+        await get().fetchSessions();
+        await get().fetchSession(sessionId);
+      } catch (err: any) {
+        console.error('[ChatStore] Failed to refresh sessions after send:', err);
+      }
     } catch (err: any) {
       set({ error: err.message || 'Failed to send message', isSending: false });
     }

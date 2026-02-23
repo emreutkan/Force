@@ -185,7 +185,10 @@ export const getCalendar = async (
   month?: number,
   week?: number
 ): Promise<CalendarResponse | any> => {
-  const response = await apiClient.get(CALENDAR_URL, { searchParams: { year, month, week } });
+  const searchParams: Record<string, number> = { year };
+  if (month !== undefined) searchParams.month = month;
+  if (week !== undefined) searchParams.week = week;
+  const response = await apiClient.get(CALENDAR_URL, { searchParams });
   return response.json();
 };
 
