@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   logo: {
-    fontSize: 108,
+    fontSize: theme.typography.sizes.hero,
     fontWeight: '900',
     fontStyle: 'italic',
     letterSpacing: -4.8,
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tagline: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: 3.6,

@@ -52,7 +52,7 @@ export default function Step1Screen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={20} color={theme.colors.text.primary} />
+          <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
         </Pressable>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>NEW PROGRAM</Text>
@@ -144,7 +144,7 @@ export default function Step1Screen() {
         {/* Next button */}
         <Pressable style={styles.nextBtn} onPress={handleNext}>
           <Text style={styles.nextBtnText}>NEXT STEP</Text>
-          <Ionicons name="arrow-forward" size={18} color="#fff" />
+          <Ionicons name="arrow-forward" size={18} color={theme.colors.text.primary} />
         </Pressable>
       </ScrollView>
     </View>
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   nextBtnText: {
-    color: '#fff',
+    color: theme.colors.text.primary,
     fontWeight: '900',
     fontStyle: 'italic',
     fontSize: theme.typography.sizes.s,

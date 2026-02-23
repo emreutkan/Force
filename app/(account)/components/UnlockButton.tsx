@@ -26,12 +26,12 @@ export default function UnlockButton({ onPress, isLoading }: UnlockButtonProps) 
         style={styles.gradient}
       >
         {isLoading ? (
-          <ActivityIndicator size="small" color="#FFFFFF" />
+          <ActivityIndicator size="small" color={theme.colors.text.primary} />
         ) : (
           <>
-            <Ionicons name="rocket" size={20} color="#FFFFFF" style={styles.icon} />
+            <Ionicons name="rocket" size={20} color={theme.colors.text.primary} style={styles.icon} />
             <Text style={styles.text}>UNLOCK PRO ACCESS</Text>
-            <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+            <Ionicons name="arrow-forward" size={20} color={theme.colors.text.primary} />
           </>
         )}
       </LinearGradient>

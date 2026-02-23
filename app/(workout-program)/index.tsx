@@ -172,7 +172,7 @@ export default function ProgramListScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={20} color={theme.colors.text.primary} />
+          <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
         </Pressable>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>MY PROGRAMS</Text>
@@ -184,7 +184,7 @@ export default function ProgramListScreen() {
           </View>
         )}
         <Pressable style={styles.createBtn} onPress={handleCreate}>
-          <Ionicons name="add" size={20} color="#fff" />
+          <Ionicons name="add" size={20} color={theme.colors.text.primary} />
         </Pressable>
       </View>
 
@@ -206,7 +206,7 @@ export default function ProgramListScreen() {
             <Text style={styles.emptyTitle}>NO PROGRAMS YET</Text>
             <Text style={styles.emptySub}>Create a split to organize your training week</Text>
             <Pressable style={styles.emptyBtn} onPress={handleCreate}>
-              <Ionicons name="add" size={18} color="#fff" />
+              <Ionicons name="add" size={18} color={theme.colors.text.primary} />
               <Text style={styles.emptyBtnText}>CREATE PROGRAM</Text>
             </Pressable>
           </View>
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   countBadgeText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.xs,
     fontWeight: '900',
     fontStyle: 'italic',
     color: theme.colors.status.active,
@@ -349,11 +349,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.ui.primaryBorder,
     borderRadius: theme.borderRadius.full,
-    paddingHorizontal: 10,
+    paddingHorizontal: theme.spacing.xs,
     paddingVertical: 4,
   },
   activePillText: {
-    fontSize: 9,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '900',
     color: theme.colors.status.active,
     letterSpacing: 1,
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   emptyBtnText: {
-    color: '#fff',
+    color: theme.colors.text.primary,
     fontWeight: '900',
     fontStyle: 'italic',
     fontSize: theme.typography.sizes.s,

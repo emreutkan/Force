@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   bubbleTextRight: {
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     fontSize: 15,
     fontWeight: '600',
     lineHeight: 20,

@@ -166,7 +166,7 @@ export default function WorkoutDetailScreen() {
       />
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={commonStyles.iconButton}>
-          <Ionicons name="arrow-back" size={20} color={theme.colors.text.primary} />
+          <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
         </Pressable>
 
         <Text style={styles.headerTitle} numberOfLines={1}>
@@ -227,7 +227,7 @@ export default function WorkoutDetailScreen() {
                   setIsEditMode(true);
                 }}
               >
-                <Ionicons name="create-outline" size={22} color="#FFF" />
+                <Ionicons name="create-outline" size={22} color={theme.colors.text.primary} />
                 <Text style={styles.menuText}>Edit Workout</Text>
                 <Ionicons name="chevron-forward" size={16} color="#545458" />
               </Pressable>
@@ -264,7 +264,7 @@ export default function WorkoutDetailScreen() {
               style={styles.addButton}
               onPress={() => setIsSearchVisible(true)}
             >
-              <Ionicons name="add-circle-outline" size={24} color="#FFF" />
+              <Ionicons name="add-circle-outline" size={24} color={theme.colors.text.primary} />
               <Text style={styles.addButtonText}>Add Exercise</Text>
             </Pressable>
           </View>
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 17,
     fontWeight: '400',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
   },
   menuDivider: {
     height: StyleSheet.hairlineWidth,
@@ -401,8 +401,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   addButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    color: theme.colors.text.primary,
+    fontSize: theme.typography.sizes.s,
     fontWeight: '600',
   },
 });

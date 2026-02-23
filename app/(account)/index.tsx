@@ -44,7 +44,7 @@ export default function AccountScreen() {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           style={commonStyles.backButton}
         >
-          <Ionicons name="arrow-back" size={20} color={theme.colors.text.primary} />
+          <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
         </Pressable>
       </View>
       <ScrollView
@@ -285,7 +285,7 @@ export default function AccountScreen() {
             onPress={() => router.push('/(permissions)')}
           >
             <View style={styles.iconBox}>
-              <Ionicons name="pulse-outline" size={20} color="#FFFFFF" />
+              <Ionicons name="pulse-outline" size={20} color={theme.colors.text.primary} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>HEALTH CONNECT</Text>

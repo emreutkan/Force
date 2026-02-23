@@ -177,13 +177,13 @@ export default function CreateTemplateScreen() {
             disabled={isCreating}
           >
             {isCreating ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={theme.colors.text.primary} />
             ) : (
               <>
                 <Ionicons
                   name="checkmark-circle"
                   size={20}
-                  color="#FFFFFF"
+                  color={theme.colors.text.primary}
                   style={{ marginRight: 8 }}
                 />
                 <Text style={styles.createButtonText}>CONFIRM TEMPLATE</Text>
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   createButtonText: {
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     fontSize: 14,
     fontWeight: '900',
     fontStyle: 'italic',

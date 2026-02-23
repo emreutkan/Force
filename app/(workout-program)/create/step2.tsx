@@ -111,7 +111,7 @@ export default function Step2Screen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={20} color={theme.colors.text.primary} />
+          <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
         </Pressable>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>NAME YOUR DAYS</Text>
@@ -198,7 +198,7 @@ export default function Step2Screen() {
                     <Ionicons
                       name="barbell-outline"
                       size={12}
-                      color={!day.is_rest_day ? '#fff' : theme.colors.text.tertiary}
+                      color={!day.is_rest_day ? theme.colors.text.primary : theme.colors.text.tertiary}
                     />
                     <Text
                       style={[styles.toggleBtnText, !day.is_rest_day && styles.toggleBtnTextActive]}
@@ -232,12 +232,12 @@ export default function Step2Screen() {
           {/* Buttons */}
           <View style={styles.buttonRow}>
             <Pressable style={styles.backBtnLarge} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={16} color={theme.colors.text.secondary} />
+              <Ionicons name="chevron-back" size={16} color={theme.colors.text.secondary} />
               <Text style={styles.backBtnLargeText}>BACK</Text>
             </Pressable>
             <Pressable style={styles.nextBtn} onPress={handleNext}>
               <Text style={styles.nextBtnText}>NEXT STEP</Text>
-              <Ionicons name="arrow-forward" size={16} color="#fff" />
+              <Ionicons name="arrow-forward" size={16} color={theme.colors.text.primary} />
             </Pressable>
           </View>
         </ScrollView>
@@ -268,7 +268,7 @@ export default function Step2Screen() {
             </Text>
 
             <Pressable style={styles.modalBtnPrimary} onPress={addRestDayAndContinue}>
-              <Ionicons name="add-circle-outline" size={16} color="#fff" />
+              <Ionicons name="add-circle-outline" size={16} color={theme.colors.text.primary} />
               <Text style={styles.modalBtnPrimaryText}>ADD REST DAY</Text>
             </Pressable>
 
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   nextBtnText: {
-    color: '#fff',
+    color: theme.colors.text.primary,
     fontWeight: '900',
     fontStyle: 'italic',
     fontSize: theme.typography.sizes.s,
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.s,
   },
   modalBtnPrimaryText: {
-    color: '#fff',
+    color: theme.colors.text.primary,
     fontWeight: '900',
     fontStyle: 'italic',
     fontSize: theme.typography.sizes.s,
