@@ -148,7 +148,7 @@ export default function RecoveryStatusScreen() {
               <View style={styles.statsRow}>
                 <View style={styles.statCard}>
                   <Text style={styles.statLabel}>RECOVERED</Text>
-                  <Text style={[styles.statValue, { color: '#30D158' }]}>
+                  <Text style={[styles.statValue, { color: theme.colors.status.success }]}>
                     {stats.recovered}
                     <Text style={styles.statDenom}>/{stats.total}</Text>
                   </Text>

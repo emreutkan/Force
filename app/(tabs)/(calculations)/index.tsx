@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
     cardLabel: { ...typographyStyles.labelTight, color: theme.colors.text.secondary, letterSpacing: 1 },
     cardValueRow: { flexDirection: 'row', alignItems: 'baseline', paddingHorizontal: theme.spacing.m, marginBottom: theme.spacing.s },
-    cardValue: { ...typographyStyles.h2, color: '#FFFFFF', fontWeight: '900', fontSize: 38 },
+    cardValue: { ...typographyStyles.h2, color: theme.colors.text.primary, fontWeight: '900', fontSize: 38 },
     cardUnit: { ...typographyStyles.labelTight, color: theme.colors.text.tertiary, marginLeft: 4, fontWeight: '900', fontSize: 14, opacity: 0.5 },
     cardGraphWrapper: { marginTop: 'auto', width: '100%', bottom: -5 },
 
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     neuralTrendHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: theme.spacing.l },
     neuralTrendHeaderMain: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.m },
     neuralTrendIconContainer: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(99, 102, 241, 0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(99, 102, 241, 0.2)' },
-    neuralTrendTitle: { fontSize: 16, fontWeight: '900', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.5 },
+    neuralTrendTitle: { fontSize: 16, fontWeight: '900', color: theme.colors.text.primary, textTransform: 'uppercase', letterSpacing: 0.5 },
     neuralTrendSubtitle: { fontSize: 10, fontWeight: '700', color: theme.colors.text.tertiary, textTransform: 'uppercase', letterSpacing: 1 },
     legendContainer: { flexDirection: 'row', gap: theme.spacing.m, marginTop: 4 },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },

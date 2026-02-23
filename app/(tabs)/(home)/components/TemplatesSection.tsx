@@ -91,7 +91,7 @@ export default function TemplatesSection() {
           style={[styles.createButton, !canCreateTemplate && styles.createButtonDisabled]}
           onPress={handleCreatePress}
         >
-          <Ionicons name="add" size={20} color="#FFFFFF" />
+          <Ionicons name="add" size={20} color={theme.colors.text.primary} />
           <Text style={styles.createButtonText}>NEW</Text>
           {!isPro && (
             <View style={styles.limitBadge}>
@@ -134,7 +134,7 @@ export default function TemplatesSection() {
                 <Text style={styles.metricText}>{tpl.exercises.length} EXERCISES</Text>
               </View>
               <View style={styles.startButton}>
-                <Ionicons name="play" size={12} color="#FFFFFF" />
+                <Ionicons name="play" size={12} color={theme.colors.text.primary} />
                 <Text style={styles.startButtonText}>START</Text>
               </View>
             </View>
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 10,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     fontStyle: 'italic',
   },
   limitBadge: {
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   templateName: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     fontStyle: 'italic',
     letterSpacing: 0.5,
   },
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   startButtonText: {
     fontSize: 11,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     fontStyle: 'italic',
   },
   emptyCard: {

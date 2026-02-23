@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 17,
     fontWeight: '400',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
   },
   menuDivider: {
     height: StyleSheet.hairlineWidth,
@@ -401,8 +401,4 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   addButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+    color: theme.colors.text.primary,

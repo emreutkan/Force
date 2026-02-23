@@ -13,7 +13,7 @@ export default function SupplementsHeader({ onAddPress }: SupplementsHeaderProps
         <Text style={styles.mainTitle}>SUPPLEMENT STACK</Text>
       </View>
       <Pressable style={styles.addButton} onPress={onAddPress}>
-        <Ionicons name="add" size={24} color="#FFFFFF" />
+        <Ionicons name="add" size={24} color={theme.colors.text.primary} />
       </Pressable>
     </View>
   );

@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#22c55e',
+    backgroundColor: theme.colors.status.success,
   },
   timerText: {
     color: theme.colors.text.primary,
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   finishButtonText: {
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     fontSize: 14,
     fontWeight: '900',
     letterSpacing: 1.5,

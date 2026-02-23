@@ -23,7 +23,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
   },
   emptyText: {
     marginTop: 8,

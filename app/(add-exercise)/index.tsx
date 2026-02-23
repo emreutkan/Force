@@ -1,4 +1,5 @@
 import { getWorkout } from "@/api/Workout";
+import { theme } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -60,7 +61,7 @@ const styles = StyleSheet.create({
     },
     sheet: {
         height: '90%',
-        backgroundColor: '#1C1C1E',
+        backgroundColor: theme.colors.ui.glassStrong,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         padding: 20,

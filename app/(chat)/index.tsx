@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '900',
     fontStyle: 'italic',
-    color: '#fff',
+    color: theme.colors.text.primary,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },

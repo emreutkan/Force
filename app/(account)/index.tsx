@@ -285,7 +285,7 @@ export default function AccountScreen() {
             onPress={() => router.push('/(permissions)')}
           >
             <View style={styles.iconBox}>
-              <Ionicons name="pulse-outline" size={20} color="#FFFFFF" />
+              <Ionicons name="pulse-outline" size={20} color={theme.colors.text.primary} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>HEALTH CONNECT</Text>

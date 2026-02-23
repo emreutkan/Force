@@ -785,7 +785,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#000000',
+    backgroundColor: theme.colors.background,
     borderRadius: 22,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
@@ -793,7 +793,7 @@ const styles = StyleSheet.create({
   googleButtonText: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#ffffff',
+    color: theme.colors.text.primary,
   },
   appleButtonWrapper: {
     width: '100%',

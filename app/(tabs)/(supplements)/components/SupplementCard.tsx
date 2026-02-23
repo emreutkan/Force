@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   logButtonText: {
     fontSize: 11,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     fontStyle: 'italic',
   },
   logButtonTextDone: {
