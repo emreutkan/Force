@@ -166,6 +166,15 @@ export default function BottomNavigator() {
   );
 }
 
+// AI Chat button — separate from regular tabs since chat is outside (tabs)
+const AIChatButton = ({ router }: { router: any }) => (
+  <Pressable onPress={() => router.push('/(chat)')} style={styles.aiTabWrapper}>
+    <View style={styles.aiTabButton}>
+      <Ionicons name="sparkles" size={18} color={theme.colors.status.active} />
+    </View>
+  </Pressable>
+);
+
 // Helper to render the list and keep the main component clean
 const TabList = ({ activeKey, router }: { activeKey: string; router: any }) => {
   const handleTabPress = (tabKey: string, route: string) => {
@@ -186,6 +195,7 @@ const TabList = ({ activeKey, router }: { activeKey: string; router: any }) => {
           onPress={(route) => handleTabPress(tab.key, route)}
         />
       ))}
+      <AIChatButton router={router} />
     </View>
   );
 };
@@ -245,5 +255,19 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: theme.colors.text.secondary,
     marginRight: theme.spacing.m,
+  },
+  aiTabWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiTabButton: {
+    width: 48,
+    height: 48,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: theme.colors.ui.brandSurface,
+    borderWidth: 1,
+    borderColor: theme.colors.ui.primaryBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

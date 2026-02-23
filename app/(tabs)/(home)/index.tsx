@@ -15,6 +15,8 @@ import HomeHeader from './components/HomeHeader';
 import MuscleRecoverySection from './components/MuscleRecoverySection';
 import StartWorkoutMenu from './components/StartWorkoutMenu';
 import TemplatesSection from './components/TemplatesSection';
+import TodayProgramCard from './components/TodayProgramCard';
+import ProgramsSection from './components/ProgramsSection';
 import { getCalendar, getCalendarStats } from '@/api/Workout';
 import {
   useDeleteWorkout,
@@ -227,6 +229,10 @@ export default function Home() {
         />
 
         <MuscleRecoverySection onPress={() => router.push('/(recovery-status)')} />
+
+        <TodayProgramCard />
+
+        <ProgramsSection />
 
         <TemplatesSection />
       </RNScrollView>

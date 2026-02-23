@@ -135,6 +135,7 @@ function RootLayout() {
             <Stack.Screen name="(account)" options={{ headerShown: false }} />
             <Stack.Screen name="(reset-password)" options={{ headerShown: false }} />
             <Stack.Screen name="(chat)" options={{ headerShown: false }} />
+            <Stack.Screen name="(workout-program)" options={{ headerShown: false }} />
           </Stack>
           <StatusBar style="light" />
           <MaintenanceOverlay />
