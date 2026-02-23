@@ -266,11 +266,11 @@ export default function Step3Screen() {
           disabled={createProgram.isPending}
         >
           {createProgram.isPending ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color={theme.colors.text.primary} />
           ) : (
             <>
               <Text style={styles.createBtnText}>CREATE PROGRAM</Text>
-              <Ionicons name="checkmark" size={18} color="#fff" />
+              <Ionicons name="checkmark" size={18} color={theme.colors.text.primary} />
             </>
           )}
         </Pressable>
@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
   },
   createBtnDisabled: { opacity: 0.6, shadowOpacity: 0 },
   createBtnText: {
-    color: '#fff',
+    color: theme.colors.text.primary,
     fontWeight: '900',
     fontStyle: 'italic',
     fontSize: theme.typography.sizes.s,

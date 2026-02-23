@@ -229,7 +229,7 @@ export default function ProgramDetailScreen() {
               disabled={activateProgram.isPending}
             >
               {activateProgram.isPending ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={theme.colors.text.primary} />
               ) : (
                 <Text style={styles.activateBtnText}>ACTIVATE</Text>
               )}
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
-  activateBtnText: { color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase' },
+  activateBtnText: { color: theme.colors.text.primary, fontSize: 10, fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase' },
   overflowBtn: {
     width: 36,
     height: 36,
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   goBackBtnText: {
-    color: '#fff',
+    color: theme.colors.text.primary,
     fontWeight: '900',
     fontStyle: 'italic',
     fontSize: theme.typography.sizes.s,

@@ -144,7 +144,7 @@ export default function Step1Screen() {
         {/* Next button */}
         <Pressable style={styles.nextBtn} onPress={handleNext}>
           <Text style={styles.nextBtnText}>NEXT STEP</Text>
-          <Ionicons name="arrow-forward" size={18} color="#fff" />
+          <Ionicons name="arrow-forward" size={18} color={theme.colors.text.primary} />
         </Pressable>
       </ScrollView>
     </View>
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   nextBtnText: {
-    color: '#fff',
+    color: theme.colors.text.primary,
     fontWeight: '900',
     fontStyle: 'italic',
     fontSize: theme.typography.sizes.s,

@@ -184,7 +184,7 @@ export default function ProgramListScreen() {
           </View>
         )}
         <Pressable style={styles.createBtn} onPress={handleCreate}>
-          <Ionicons name="add" size={20} color="#fff" />
+          <Ionicons name="add" size={20} color={theme.colors.text.primary} />
         </Pressable>
       </View>
 
@@ -206,7 +206,7 @@ export default function ProgramListScreen() {
             <Text style={styles.emptyTitle}>NO PROGRAMS YET</Text>
             <Text style={styles.emptySub}>Create a split to organize your training week</Text>
             <Pressable style={styles.emptyBtn} onPress={handleCreate}>
-              <Ionicons name="add" size={18} color="#fff" />
+              <Ionicons name="add" size={18} color={theme.colors.text.primary} />
               <Text style={styles.emptyBtnText}>CREATE PROGRAM</Text>
             </Pressable>
           </View>
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   emptyBtnText: {
-    color: '#fff',
+    color: theme.colors.text.primary,
     fontWeight: '900',
     fontStyle: 'italic',
     fontSize: theme.typography.sizes.s,
