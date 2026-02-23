@@ -402,3 +402,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: theme.colors.text.primary,
+    fontSize: theme.typography.sizes.s,
+    fontWeight: '600',
+  },
+});
