@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
   searchIcon: { marginRight: 12 },
   searchInput: {
     flex: 1,
-    color: '#FFF',
+    color: theme.colors.text.primary,
     fontSize: 16,
     fontWeight: '500',
   },

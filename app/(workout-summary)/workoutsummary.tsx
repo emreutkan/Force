@@ -228,7 +228,7 @@ const WorkoutSummaryScreen = () => {
 
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
         </Pressable>
         <Text style={styles.headerTitle}>SESSION SUMMARY</Text>
         <View style={{ width: 44 }} />
@@ -427,7 +427,7 @@ const WorkoutSummaryScreen = () => {
             <Animated.View entering={FadeInDown.delay(800)} style={styles.footer}>
               <Pressable style={styles.doneButton} onPress={() => router.replace('/(tabs)/(home)')}>
                 <Text style={styles.doneButtonText}>ACKNOWLEDGE</Text>
-                <Ionicons name="checkmark-done" size={20} color="#FFF" />
+                <Ionicons name="checkmark-done" size={20} color={theme.colors.text.primary} />
               </Pressable>
             </Animated.View>
           </>
@@ -446,12 +446,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: theme.spacing.m,
     height: 56,
   },
-  backButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: '#FFF', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
-  scrollContent: { padding: 20 },
+  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.ui.glass, borderWidth: 1, borderColor: theme.colors.ui.border, justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { color: theme.colors.text.primary, fontSize: theme.typography.sizes.xs, fontWeight: '900', letterSpacing: 1 },
+  scrollContent: { padding: theme.spacing.l },
 
   // Hero Section
   heroSection: { alignItems: 'center', marginBottom: 30, marginTop: 10 },
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   workoutInfo: { alignItems: 'center', marginTop: 20 },
-  workoutTitle: { fontSize: 24, fontWeight: '900', color: '#FFF', textAlign: 'center' },
+  workoutTitle: { fontSize: 24, fontWeight: '900', color: theme.colors.text.primary, textAlign: 'center' },
   workoutDate: {
     fontSize: 11,
     fontWeight: '700',
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(99, 102, 241, 0.2)',
   },
-  neuralTitle: { fontSize: 14, fontWeight: '900', color: '#FFF', letterSpacing: 0.5 },
+  neuralTitle: { fontSize: 14, fontWeight: '900', color: theme.colors.text.primary, letterSpacing: 0.5 },
   neuralSubtitle: {
     fontSize: 9,
     fontWeight: '700',
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
   },
   borderBottom: { borderBottomWidth: 1, borderBottomColor: theme.colors.ui.border },
   logLeft: { flex: 1 },
-  logName: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  logName: { color: theme.colors.text.primary, fontSize: 16, fontWeight: '700' },
   logSubtext: {
     color: theme.colors.text.tertiary,
     fontSize: 11,
@@ -566,5 +566,5 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 10,
   },
-  doneButtonText: { color: '#FFF', fontSize: 15, fontWeight: '900', letterSpacing: 1 },
+  doneButtonText: { color: theme.colors.text.primary, fontSize: 15, fontWeight: '900', letterSpacing: 1 },
 });

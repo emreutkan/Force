@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     tabItem: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 12, backgroundColor: theme.colors.ui.glass, borderWidth: 1, borderColor: theme.colors.ui.border },
     tabItemActive: { backgroundColor: theme.colors.text.brand, borderColor: theme.colors.text.brand },
     tabText: { fontSize: 11, fontWeight: '900', color: theme.colors.text.secondary, letterSpacing: 0.5 },
-    tabTextActive: { color: '#FFF' },
+    tabTextActive: { color: theme.colors.text.primary },
 
     // Biometrics specific
     cardsRow: { flexDirection: 'row', gap: theme.spacing.m, marginBottom: theme.spacing.xl, marginTop: 10 },
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
     inputLabel: { fontSize: 10, fontWeight: '800', color: theme.colors.text.tertiary, marginBottom: 8, letterSpacing: 1 },
     inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.background, borderWidth: 1, borderColor: theme.colors.ui.border, borderRadius: 16, paddingHorizontal: 16, height: 56 },
     inputIcon: { marginRight: 12 },
-    input: { flex: 1, color: '#FFF', fontSize: 18, fontWeight: '700' },
+    input: { flex: 1, color: theme.colors.text.primary, fontSize: 18, fontWeight: '700' },
     inputSuffix: { fontSize: 12, fontWeight: '900', color: theme.colors.text.tertiary },
     resultContainer: { alignItems: 'center', paddingVertical: 20, backgroundColor: 'rgba(99, 102, 241, 0.05)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(99, 102, 241, 0.1)' },
     resultHeader: { marginBottom: 10 },
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     percentageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     pctItem: { flexBasis: '31%', backgroundColor: theme.colors.ui.glass, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.ui.border, alignItems: 'center' },
     pctLabel: { fontSize: 10, fontWeight: '900', color: theme.colors.text.secondary, marginBottom: 4 },
-    pctValue: { fontSize: 16, fontWeight: '900', color: '#FFF' },
+    pctValue: { fontSize: 16, fontWeight: '900', color: theme.colors.text.primary },
     pctUnit: { fontSize: 10, color: theme.colors.text.tertiary, marginLeft: 2 },
 
     infoCard: { flexDirection: 'row', gap: 12, backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 16, marginTop: 30, alignItems: 'center' },

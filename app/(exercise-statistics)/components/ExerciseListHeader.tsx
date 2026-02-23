@@ -11,7 +11,7 @@ export default function ExerciseListHeader({ paddingTop }: ExerciseListHeaderPro
   return (
     <View style={[styles.header, { paddingTop: paddingTop + 10 }]}>
       <Pressable onPress={() => router.back()} style={styles.backButton}>
-        <Ionicons name="chevron-back" size={24} color="#FFF" />
+        <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
       </Pressable>
       <View style={styles.headerTitleContainer}>
         <Text style={styles.headerTitle}>EXERCISE STATS</Text>
@@ -25,14 +25,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: theme.spacing.l,
     paddingBottom: 15,
     gap: 15,
   },
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 20,
     backgroundColor: theme.colors.ui.glass,
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
@@ -41,14 +41,14 @@ const styles = StyleSheet.create({
   },
   headerTitleContainer: { flex: 1 },
   headerTitle: {
-    fontSize: 18,
+    fontSize: theme.typography.sizes.m,
     fontWeight: '900',
-    color: '#FFF',
+    color: theme.colors.text.primary,
     fontStyle: 'italic',
     letterSpacing: 0.5,
   },
   headerSubtitle: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '800',
     color: theme.colors.text.tertiary,
     letterSpacing: 1,

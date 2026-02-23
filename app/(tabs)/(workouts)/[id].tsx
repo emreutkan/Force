@@ -227,7 +227,7 @@ export default function WorkoutDetailScreen() {
                   setIsEditMode(true);
                 }}
               >
-                <Ionicons name="create-outline" size={22} color="#FFF" />
+                <Ionicons name="create-outline" size={22} color={theme.colors.text.primary} />
                 <Text style={styles.menuText}>Edit Workout</Text>
                 <Ionicons name="chevron-forward" size={16} color="#545458" />
               </Pressable>
@@ -264,7 +264,7 @@ export default function WorkoutDetailScreen() {
               style={styles.addButton}
               onPress={() => setIsSearchVisible(true)}
             >
-              <Ionicons name="add-circle-outline" size={24} color="#FFF" />
+              <Ionicons name="add-circle-outline" size={24} color={theme.colors.text.primary} />
               <Text style={styles.addButtonText}>Add Exercise</Text>
             </Pressable>
           </View>

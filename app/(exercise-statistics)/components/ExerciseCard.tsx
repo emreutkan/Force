@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   exerciseText: { flex: 1 },
   exerciseName: {
-    color: '#FFF',
+    color: theme.colors.text.primary,
     fontSize: 14,
     fontWeight: '800',
     fontStyle: 'italic',
