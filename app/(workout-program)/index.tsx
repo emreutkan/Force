@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   countBadgeText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.xs,
     fontWeight: '900',
     fontStyle: 'italic',
     color: theme.colors.status.active,
@@ -349,11 +349,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.ui.primaryBorder,
     borderRadius: theme.borderRadius.full,
-    paddingHorizontal: 10,
+    paddingHorizontal: theme.spacing.xs,
     paddingVertical: 4,
   },
   activePillText: {
-    fontSize: 9,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '900',
     color: theme.colors.status.active,
     letterSpacing: 1,

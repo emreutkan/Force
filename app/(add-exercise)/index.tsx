@@ -83,9 +83,9 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     text: {
-        fontSize: 20,
+        fontSize: theme.typography.sizes.data,
         fontWeight: 'bold',
-        color: 'white',
+        color: theme.colors.text.primary,
         textAlign: 'center',
     },
 });
