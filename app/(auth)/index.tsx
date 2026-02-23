@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: theme.spacing.m,
     backgroundColor: 'transparent',
     minHeight: 56,
     maxHeight: 60,
@@ -698,7 +698,7 @@ const styles = StyleSheet.create({
   inputTop: {
     flex: 1,
     minHeight: 56,
-    fontSize: 17,
+    fontSize: theme.typography.sizes.m,
     color: theme.colors.text.primary,
     backgroundColor: 'transparent',
   },
@@ -715,8 +715,8 @@ const styles = StyleSheet.create({
   },
   inputBottom: {
     height: 56,
-    paddingHorizontal: 16,
-    fontSize: 17,
+    paddingHorizontal: theme.spacing.m,
+    fontSize: theme.typography.sizes.m,
     backgroundColor: theme.colors.ui.glass,
     justifyContent: 'center',
     alignItems: 'center',
@@ -751,7 +751,7 @@ const styles = StyleSheet.create({
   },
   splitButtonText: {
     color: theme.colors.text.primary,
-    fontSize: 16,
+    fontSize: theme.typography.sizes.s,
     fontWeight: '800',
     textTransform: 'uppercase',
   },
@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.15)',
   },
   googleButtonText: {
-    fontSize: 24,
+    fontSize: theme.typography.sizes.h4,
     fontWeight: '600',
     color: theme.colors.text.primary,
   },
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.ui.border,
   },
   dividerText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 2,
