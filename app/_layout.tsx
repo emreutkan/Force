@@ -92,7 +92,9 @@ function RootLayout() {
     });
 
     // Supabase PASSWORD_RECOVERY event (fired after session is set)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         router.replace('/(reset-password)');
       }
@@ -105,7 +107,6 @@ function RootLayout() {
   }, []);
 
   return (
-
     <QueryClientProvider client={queryClient}>
       <RevenueCatSync />
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -133,6 +134,8 @@ function RootLayout() {
             <Stack.Screen name="(workout-summary)" options={{ headerShown: false }} />
             <Stack.Screen name="(account)" options={{ headerShown: false }} />
             <Stack.Screen name="(reset-password)" options={{ headerShown: false }} />
+            <Stack.Screen name="(chat)" options={{ headerShown: false }} />
+            <Stack.Screen name="(workout-program)" options={{ headerShown: false }} />
           </Stack>
           <StatusBar style="light" />
           <MaintenanceOverlay />
