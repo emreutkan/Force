@@ -1,5 +1,5 @@
 import { getErrorMessage } from '@/api/errorHandler';
-import { commonStyles, theme, typographyStyles } from '@/constants/theme';
+import { theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -124,6 +124,68 @@ export default function UpgradeScreen() {
     }
   };
 
+  const renderPricingSection = () => {
+    if (isLoadingOfferings) {
+      return (
+        <View style={styles.pricingPlaceholder}>
+          <ActivityIndicator size="small" color={theme.colors.status.active} />
+          <Text style={styles.loadingText}>LOADING OFFERS...</Text>
+        </View>
+      );
+    }
+
+    if (offeringsError || !offering) {
+      return (
+        <View style={styles.pricingPlaceholder}>
+          <Ionicons name="alert-circle-outline" size={28} color={theme.colors.status.error} />
+          <Text style={styles.pricingErrorText}>Couldn't load pricing</Text>
+          <Pressable style={styles.retryButton} onPress={() => refetchOfferings()}>
+            <Text style={styles.retryButtonText}>RETRY</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    return (
+      <>
+        {offering.availablePackages.length > 1 && selectedPackage && (
+          <PackageSelector
+            packages={offering.availablePackages}
+            selectedPackage={selectedPackage}
+            onSelectPackage={setSelectedPackage}
+          />
+        )}
+        <PricingDisplay packageInfo={selectedPackage} />
+        <UnlockButton onPress={handleUpgrade} isLoading={isLoading} />
+        <Pressable
+          onPress={handleRestorePurchases}
+          disabled={isLoading}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={styles.restoreButton}
+        >
+          <Text style={styles.restoreText}>RESTORE PURCHASES</Text>
+        </Pressable>
+        <Text style={styles.disclosureText}>
+          Payment charged to Apple ID at confirmation. Subscription auto-renews unless cancelled at
+          least 24 hours before end of period. Manage in Apple ID Account Settings.
+        </Text>
+        <View style={styles.legalRow}>
+          <Pressable
+            onPress={() => Linking.openURL('https://emreutkan.github.io/forcelegal/privacy')}
+          >
+            <Text style={styles.legalLink}>Privacy Policy</Text>
+          </Pressable>
+          <Text style={styles.legalSeparator}>·</Text>
+          <Pressable
+            onPress={() => Linking.openURL('https://emreutkan.github.io/forcelegal/terms')}
+          >
+            <Text style={styles.legalLink}>Terms of Use</Text>
+          </Pressable>
+        </View>
+      </>
+    );
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <LinearGradient
@@ -131,110 +193,36 @@ export default function UpgradeScreen() {
         style={styles.gradientBg}
       />
 
-      {/* Fallback back button for loading/error states */}
-      {(isLoadingOfferings || offeringsError || !offering) && (
-        <View style={styles.fallbackHeader}>
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={commonStyles.backButton}
-          >
-            <Ionicons name="chevron-back" size={28} color={theme.colors.text.zinc600} />
-          </Pressable>
-        </View>
-      )}
-
-      {isLoadingOfferings ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.status.active} />
-          <Text style={styles.loadingText}>LOADING OFFERS...</Text>
-        </View>
-      ) : offeringsError || !offering ? (
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={48} color={theme.colors.status.error} />
-          <Text style={styles.errorTitle}>UNABLE TO LOAD OFFERS</Text>
-          <Text style={styles.errorText}>Please check your connection and try again.</Text>
-          <Pressable style={styles.retryButton} onPress={() => refetchOfferings()}>
-            <Text style={styles.retryButtonText}>RETRY</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <ScrollView
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Hero */}
-          <View style={styles.heroSection}>
-            <View style={styles.titleRow}>
-              <Pressable
-                onPress={() => router.back()}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                style={styles.backButton}
-              >
-                <Ionicons name="chevron-back" size={32} color={theme.colors.text.zinc600} />
-              </Pressable>
-              <View style={styles.titleTextContainer}>
-                <Text style={styles.heroTitle}>UNLOCK{'\n'}PRO</Text>
-                <Text style={styles.authorityText}>RECOVERY · RESEARCH · ANALYTICS</Text>
-              </View>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero */}
+        <View style={styles.heroSection}>
+          <View style={styles.titleRow}>
+            <Pressable
+              onPress={() => router.back()}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={styles.backButton}
+            >
+              <Ionicons name="chevron-back" size={32} color={theme.colors.text.zinc600} />
+            </Pressable>
+            <View style={styles.titleTextContainer}>
+              <Text style={styles.heroTitle}>UNLOCK{'\n'}PRO</Text>
+              <Text style={styles.authorityText}>RECOVERY · RESEARCH · ANALYTICS</Text>
             </View>
           </View>
+        </View>
 
-          {/* Features */}
-          <FeatureStack />
+        {/* Features */}
+        <FeatureStack />
 
-          {/* Free vs PRO Comparison */}
-          <ComparisonTable />
+        {/* Free vs PRO Comparison */}
+        <ComparisonTable />
 
-          {/* Package Selector — only shown when multiple packages exist */}
-          {offering?.availablePackages &&
-            offering.availablePackages.length > 1 &&
-            selectedPackage && (
-              <PackageSelector
-                packages={offering.availablePackages}
-                selectedPackage={selectedPackage}
-                onSelectPackage={setSelectedPackage}
-              />
-            )}
-
-          {/* Pricing — shown for single package or as supplement */}
-          <PricingDisplay packageInfo={selectedPackage} />
-
-          {/* CTA */}
-          <UnlockButton onPress={handleUpgrade} isLoading={isLoading} />
-
-          {/* Restore */}
-          <Pressable
-            onPress={handleRestorePurchases}
-            disabled={isLoading}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={styles.restoreButton}
-          >
-            <Text style={styles.restoreText}>RESTORE PURCHASES</Text>
-          </Pressable>
-
-          {/* Apple-required disclosure */}
-          <Text style={styles.disclosureText}>
-            Payment charged to Apple ID at confirmation. Subscription auto-renews unless cancelled
-            at least 24 hours before end of period. Manage in Apple ID Account Settings.
-          </Text>
-
-          {/* Legal */}
-          <View style={styles.legalRow}>
-            <Pressable
-              onPress={() => Linking.openURL('https://emreutkan.github.io/forcelegal/privacy')}
-            >
-              <Text style={styles.legalLink}>Privacy Policy</Text>
-            </Pressable>
-            <Text style={styles.legalSeparator}>·</Text>
-            <Pressable
-              onPress={() => Linking.openURL('https://emreutkan.github.io/forcelegal/terms')}
-            >
-              <Text style={styles.legalLink}>Terms of Use</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      )}
+        {/* Pricing section — inline loading/error, never blocks the rest */}
+        {renderPricingSection()}
+      </ScrollView>
     </View>
   );
 }
@@ -246,14 +234,6 @@ const styles = StyleSheet.create({
   },
   gradientBg: {
     ...StyleSheet.absoluteFillObject,
-  },
-  fallbackHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    zIndex: 10,
-    paddingHorizontal: theme.spacing.l,
-    paddingTop: theme.spacing.l,
   },
   scrollContent: {
     padding: theme.spacing.m,
@@ -289,11 +269,12 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     textAlign: 'left',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  pricingPlaceholder: {
     alignItems: 'center',
+    justifyContent: 'center',
     gap: theme.spacing.m,
+    paddingVertical: theme.spacing.xxl,
+    marginHorizontal: theme.spacing.m,
   },
   loadingText: {
     fontSize: theme.typography.sizes.s,
@@ -302,27 +283,10 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     color: theme.colors.text.secondary,
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: theme.spacing.m,
-    paddingHorizontal: theme.spacing.xl,
-  },
-  errorTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    fontStyle: 'italic',
-    textTransform: 'uppercase',
-    letterSpacing: -0.5,
-    color: theme.colors.text.primary,
-    textAlign: 'center',
-  },
-  errorText: {
+  pricingErrorText: {
     fontSize: theme.typography.sizes.m,
-    fontWeight: '400',
+    fontWeight: '500',
     color: theme.colors.text.secondary,
-    textAlign: 'center',
   },
   retryButton: {
     backgroundColor: theme.colors.status.active,

@@ -56,7 +56,7 @@ export const createWorkout = async (
   return response.json();
 };
 
-export const getActiveWorkout = async (): Promise<CreateWorkoutResponse | null> => {
+export const getActiveWorkout = async (): Promise<Workout | null> => {
   const response = await apiClient.get(GET_ACTIVE_WORKOUT_URL, { throwHttpErrors: false });
   if (response.status === 404) return null;
   const data = (await response.json()) as any;
