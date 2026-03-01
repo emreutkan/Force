@@ -1,4 +1,4 @@
-import { updateGender, updateHeight, updateWeight } from '@/api/account';
+import { updateGender, updateHeight, updateWeight, exportUserData } from '@/api/account';
 import { supabase } from '@/lib/supabase';
 import * as Sentry from '@sentry/react-native';
 import { commonStyles, theme } from '@/constants/theme';
@@ -22,6 +22,7 @@ import {
   Modal,
   Platform,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -49,6 +50,22 @@ export default function AccountManageScreen() {
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportData = async () => {
+    setIsExporting(true);
+    try {
+      const data = await exportUserData();
+      await Share.share({
+        title: 'Force — My Data Export',
+        message: JSON.stringify(data, null, 2),
+      });
+    } catch {
+      Alert.alert('Export Failed', 'Unable to export your data. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
   const [authProvider, setAuthProvider] = useState<string>('email');
 
   useEffect(() => {
@@ -308,6 +325,27 @@ export default function AccountManageScreen() {
               <Text style={[styles.rowTitle, { color: theme.colors.status.error }]}>LOG OUT</Text>
               <Text style={styles.rowSub}>EXIT CURRENT SESSION</Text>
             </View>
+          </Pressable>
+        </View>
+
+        {/* Data */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionLabel}>DATA</Text>
+        </View>
+        <View style={styles.group}>
+          <Pressable style={styles.row} onPress={handleExportData} disabled={isExporting}>
+            <View style={[styles.iconBox, { backgroundColor: 'rgba(52, 211, 153, 0.1)' }]}>
+              {isExporting ? (
+                <ActivityIndicator size="small" color={theme.colors.status.success} />
+              ) : (
+                <Ionicons name="download-outline" size={20} color={theme.colors.status.success} />
+              )}
+            </View>
+            <View style={styles.rowContent}>
+              <Text style={styles.rowTitle}>EXPORT DATA</Text>
+              <Text style={styles.rowSub}>DOWNLOAD ALL YOUR DATA AS JSON</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
           </Pressable>
         </View>
 

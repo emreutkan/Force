@@ -1,5 +1,6 @@
 import { theme, commonStyles } from '@/constants/theme';
 import { usePersonalRecordDetail } from '@/hooks/useExercises';
+import { MiniTrendGraph } from '@/components/calculations/MiniTrendGraph';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -8,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
   Pressable,
 } from 'react-native';
@@ -48,6 +50,7 @@ function fmtDate(iso: string | null): string {
 
 export default function PersonalRecordDetailScreen() {
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id: string }>();
   const exerciseId = Number(id);
   const { data: pr, isLoading } = usePersonalRecordDetail(exerciseId || null);
@@ -124,11 +127,35 @@ export default function PersonalRecordDetailScreen() {
             </View>
           </View>
 
-          {/* 1RM History timeline */}
-          {pr.pr_history.length > 0 && (
+          {/* 1RM Chart */}
+          {pr.pr_history.length >= 2 && (
             <>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionLabel}>1RM PROGRESSION</Text>
+              </View>
+              <View style={[styles.chartCard, { borderColor: `${color}22` }]}>
+                <MiniTrendGraph
+                  data={pr.pr_history.map((e) => e.one_rep_max)}
+                  color={color}
+                  width={screenWidth - theme.spacing.m * 2 - theme.spacing.m * 2}
+                />
+                <View style={styles.chartFooter}>
+                  <Text style={styles.chartLabel}>
+                    {fmtDate(pr.pr_history[0]?.workout_date)}
+                  </Text>
+                  <Text style={styles.chartLabel}>
+                    {fmtDate(pr.pr_history[pr.pr_history.length - 1]?.workout_date)}
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* 1RM History timeline */}
+          {pr.pr_history.length > 0 && (
+            <>
+              <View style={[styles.sectionHeader, { marginTop: theme.spacing.m }]}>
+                <Text style={styles.sectionLabel}>HISTORY</Text>
               </View>
               <View style={styles.timelineCard}>
                 {pr.pr_history.map((entry, idx) => {
@@ -287,6 +314,27 @@ const styles = StyleSheet.create({
     color: theme.colors.text.tertiary,
     textTransform: 'uppercase',
     letterSpacing: 3.6,
+  },
+
+  // Chart
+  chartCard: {
+    backgroundColor: theme.colors.ui.glass,
+    borderRadius: theme.borderRadius.l,
+    borderWidth: 1,
+    padding: theme.spacing.m,
+    marginBottom: theme.spacing.s,
+  },
+  chartFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  chartLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: theme.colors.text.tertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 
   // Timeline
