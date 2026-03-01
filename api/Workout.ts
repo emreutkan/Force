@@ -39,11 +39,17 @@ import {
   TEMPLATE_START_URL,
   REST_TIMER_URL,
   REST_TIMER_STOP_URL,
+  REST_TIMER_RESUME_URL,
   CALENDAR_URL,
   AVAILABLE_YEARS_URL,
   CALENDAR_STATS_URL,
   CHECK_TODAY_URL,
+  CHECK_DATE_URL,
   RECOVERY_STATUS_URL,
+  RECOVERY_RECOMMENDATIONS_URL,
+  FREQUENCY_RECOMMENDATIONS_URL,
+  REST_RECOMMENDATIONS_URL,
+  TRAINING_RESEARCH_URL,
   USER_STATS_URL,
   SUGGEST_EXERCISE_URL,
   OPTIMIZATION_CHECK_URL,
@@ -175,7 +181,12 @@ export const getRestTimerState = async (): Promise<
 };
 
 export const stopRestTimer = async (): Promise<RestTimerStopResponse> => {
-  const response = await apiClient.get(REST_TIMER_STOP_URL);
+  const response = await apiClient.post(REST_TIMER_STOP_URL);
+  return response.json();
+};
+
+export const resumeRestTimer = async (): Promise<RestTimerStopResponse> => {
+  const response = await apiClient.post(REST_TIMER_RESUME_URL);
   return response.json();
 };
 
@@ -225,6 +236,52 @@ export const checkToday = async (date?: Date): Promise<CheckTodayResponse | any>
 
 export const getRecoveryStatus = async (): Promise<RecoveryStatusResponse | any> => {
   const response = await apiClient.get(RECOVERY_STATUS_URL);
+  return response.json();
+};
+
+export const getRecoveryRecommendations = async (): Promise<any> => {
+  const response = await apiClient.get(RECOVERY_RECOMMENDATIONS_URL);
+  return response.json();
+};
+
+export const getFrequencyRecommendations = async (): Promise<any> => {
+  const response = await apiClient.get(FREQUENCY_RECOMMENDATIONS_URL);
+  return response.json();
+};
+
+export const getRestRecommendations = async (workoutExerciseId: number): Promise<any> => {
+  const url = REST_RECOMMENDATIONS_URL.replace(':workout_exercise_id', workoutExerciseId.toString());
+  const response = await apiClient.get(url);
+  return response.json();
+};
+
+export const getTrainingResearch = async (
+  muscleGroup?: string,
+  category?: string
+): Promise<any> => {
+  const searchParams: Record<string, string> = {};
+  if (muscleGroup) searchParams.muscle_group = muscleGroup;
+  if (category) searchParams.category = category;
+  const response = await apiClient.get(TRAINING_RESEARCH_URL, {
+    searchParams: Object.keys(searchParams).length ? searchParams : undefined,
+  });
+  return response.json();
+};
+
+export const checkDate = async (date?: {
+  date?: string;
+  day?: number;
+  month?: number;
+  year?: number;
+}): Promise<{ total_workouts: number; days_past: number; weeks_past: number }> => {
+  const searchParams: Record<string, string | number> = {};
+  if (date?.date) searchParams.date = date.date;
+  if (date?.day !== undefined) searchParams.day = date.day;
+  if (date?.month !== undefined) searchParams.month = date.month;
+  if (date?.year !== undefined) searchParams.year = date.year;
+  const response = await apiClient.get(CHECK_DATE_URL, {
+    searchParams: Object.keys(searchParams).length ? searchParams : undefined,
+  });
   return response.json();
 };
 

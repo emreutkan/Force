@@ -27,8 +27,8 @@ export const CHANGE_PASSWORD_URL = `user/change-password/`;
 export const GENDER_URL = `user/gender/`;
 export const WEIGHT_URL = `user/weight/`;
 export const WEIGHT_HISTORY_URL = `user/weight/history/`;
-export const DELETE_WEIGHT_URL = `user/weight/delete/`;
-export const EXPORT_DATA_URL = `user/export-data/`;
+export const DELETE_WEIGHT_URL = `user/weight/`;
+export const EXPORT_DATA_URL = `user/data/export/`;
 export const DELETE_ACCOUNT_URL = `user/me/delete/`;
 export const CHANGE_EMAIL_URL = `user/me/`;
 export const CREATE_WORKOUT_URL = `workout/create/`;
@@ -64,6 +64,24 @@ export const TEMPLATE_CREATE_URL = `workout/template/create/`;
 export const TEMPLATE_LIST_URL = `workout/template/list/`;
 export const TEMPLATE_DELETE_URL = `workout/template/delete/:id/`;
 export const TEMPLATE_START_URL = `workout/template/start/`;
+
+export const MEASUREMENTS_URL = 'measurements/';
+export const MEASUREMENTS_CREATE_URL = 'measurements/create/';
+export const MEASUREMENTS_BODYFAT_MEN_URL = 'measurements/calculate-body-fat/men/';
+export const MEASUREMENTS_BODYFAT_WOMEN_URL = 'measurements/calculate-body-fat/women/';
+
+// Personal Records
+export const PERSONAL_RECORDS_URL = 'workout/personal-records/';
+export const PERSONAL_RECORD_DETAIL_URL = 'workout/personal-records/:exercise_id/';
+
+// Recovery recommendations
+export const RECOVERY_RECOMMENDATIONS_URL = 'workout/recommendations/recovery/';
+export const FREQUENCY_RECOMMENDATIONS_URL = 'workout/recommendations/frequency/';
+export const REST_RECOMMENDATIONS_URL = 'workout/exercise/:workout_exercise_id/rest-recommendations/';
+export const TRAINING_RESEARCH_URL = 'workout/research/';
+
+// Check date stats
+export const CHECK_DATE_URL = 'workout/check-date/';
 
 // Chat API endpoints
 export const GET_CHAT_SESSIONS_URL = `chat/session/`;

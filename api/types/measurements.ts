@@ -13,6 +13,35 @@ export type BodyMeasurement = {
   updated_at: string;
 };
 
+// Body Measurement Request
+export type CreateBodyMeasurementRequest = {
+  height: number;
+  weight: number;
+  waist: number;
+  neck: number;
+  hips?: number;
+  gender: 'male' | 'female';
+  notes?: string;
+};
+
+// Body Fat Calculation
+export type BodyFatMenRequest = {
+  height: number;
+  weight: number;
+  waist: number;
+  neck: number;
+};
+
+export type BodyFatWomenRequest = BodyFatMenRequest & {
+  hips: number;
+};
+
+export type BodyFatResponse = {
+  body_fat_percentage: number;
+  measurements: Record<string, number>;
+  method: string;
+};
+
 // Weight History Types
 export type WeightHistoryEntry = {
   id: number;
