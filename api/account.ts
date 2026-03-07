@@ -15,6 +15,8 @@ import {
   CHANGE_EMAIL_URL,
 } from './types';
 
+const IMPORT_DATA_URL = 'user/data/import/';
+
 export const getAccount = async (): Promise<GetAccountResponse> => {
   const response = await apiClient.get(ME_URL).json<GetAccountResponse>();
   return response;
@@ -77,12 +79,23 @@ export const deleteWeightEntry = async (
 };
 
 export const exportUserData = async (): Promise<ExportDataResponse> => {
-  const response = await apiClient.post(EXPORT_DATA_URL);
+  const response = await apiClient.get(EXPORT_DATA_URL, { searchParams: { format: 'json' } });
   return response.json();
 };
 
 export const deleteAccount = async (password?: string): Promise<void> => {
   await apiClient.delete(DELETE_ACCOUNT_URL, { json: { password } });
+};
+
+export const importUserData = async (file: {
+  uri: string;
+  name: string;
+  type: string;
+}): Promise<{ message: string }> => {
+  const form = new FormData();
+  form.append('file', file as any);
+  const response = await apiClient.post(IMPORT_DATA_URL, { body: form });
+  return response.json();
 };
 
 export const changeEmail = async (
