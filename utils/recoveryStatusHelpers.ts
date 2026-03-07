@@ -3,7 +3,7 @@ export const formatTimeRemaining = (hours: number): string => {
   if (hours < 1) return `${Math.ceil(hours * 60)}m`;
   if (hours < 24) return `${Math.ceil(hours)}h`;
   const days = Math.floor(hours / 24);
-  const h = Math.ceil(hours % 24);
+  const h = Math.floor(hours % 24);
   return h > 0 ? `${days}d ${h}h` : `${days}d`;
 };
 

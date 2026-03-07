@@ -60,122 +60,75 @@ export default function AccountScreen() {
             <Text style={styles.avatarText}>{user?.email?.charAt(0).toUpperCase() || 'U'}</Text>
           </LinearGradient>
           <View style={styles.profileInfo}>
-            <Text style={styles.userEmail}>{user?.email}</Text>
+            <Text style={styles.userEmail} numberOfLines={1}>{user?.email}</Text>
             <Text style={styles.memberSince}>
               MEMBER SINCE {user?.created_at ? new Date(user.created_at).getFullYear() : 2024}
             </Text>
           </View>
         </View>
 
-        {/* ── Row 1: Streak + Sessions + Longest Streak ── */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>STREAK</Text>
-            <View style={styles.statValueContainer}>
-              <Text style={styles.statValue}>{stats?.streak.current ?? '—'}</Text>
-              <Ionicons name="flame" size={14} color="#FF9F0A" style={styles.statIcon} />
+        {/* Compact Stats Strip */}
+        <View style={styles.statsStrip}>
+          <View style={styles.statChip}>
+            <View style={styles.statChipRow}>
+              <Text style={styles.statChipValue}>{stats?.streak.current ?? '—'}</Text>
+              <Ionicons name="flame" size={12} color="#FF9F0A" style={{ marginTop: 1 }} />
             </View>
-            <Text style={styles.statSub}>DAYS</Text>
+            <Text style={styles.statChipLabel}>STREAK</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>SESSIONS</Text>
-            <Text style={styles.statValue}>{stats?.sessions.total ?? '—'}</Text>
-            <Text style={styles.statSub}>TOTAL</Text>
+          <View style={styles.statDivider} />
+          <View style={styles.statChip}>
+            <Text style={styles.statChipValue}>{stats?.sessions.total ?? '—'}</Text>
+            <Text style={styles.statChipLabel}>SESSIONS</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>BEST RUN</Text>
-            <View style={styles.statValueContainer}>
-              <Text style={styles.statValue}>{stats?.streak.longest ?? '—'}</Text>
-              <Ionicons name="trophy" size={14} color={theme.colors.status.warning} style={styles.statIcon} />
-            </View>
-            <Text style={styles.statSub}>DAYS</Text>
-          </View>
-        </View>
-
-        {/* ── Row 2: This Week ── */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionHeaderText}>THIS WEEK</Text>
-        </View>
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>SESSIONS</Text>
-            <Text style={styles.statValue}>{stats?.sessions.this_week ?? '—'}</Text>
-            <Text style={styles.statSub}>WORKOUTS</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>VOLUME</Text>
-            <Text style={styles.statValue}>
-              {stats ? formatVolume(stats.volume_kg.this_week) : '—'}
-            </Text>
-            <Text style={styles.statSub}>LIFTED</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>CALORIES</Text>
-            <Text style={styles.statValue}>
-              {stats ? Math.round(stats.calories.this_week) : '—'}
-            </Text>
-            <Text style={styles.statSub}>KCAL</Text>
-          </View>
-        </View>
-
-        {/* ── Row 3: Performance ── */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionHeaderText}>PERFORMANCE</Text>
-        </View>
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>AVG SESSION</Text>
-            <Text style={styles.statValue}>
+          <View style={styles.statDivider} />
+          <View style={styles.statChip}>
+            <Text style={styles.statChipValue}>
               {stats ? formatMinutes(stats.time.avg_per_session_minutes) : '—'}
             </Text>
-            <Text style={styles.statSub}>DURATION</Text>
+            <Text style={styles.statChipLabel}>AVG SESSION</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>ACTIVE DAYS</Text>
-            <Text style={styles.statValue}>{stats?.consistency.active_days_last_30 ?? '—'}</Text>
-            <Text style={styles.statSub}>LAST 30D</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>PER WEEK</Text>
-            <Text style={styles.statValue}>
-              {stats ? stats.consistency.avg_sessions_per_week.toFixed(1) : '—'}
+          <View style={styles.statDivider} />
+          <View style={styles.statChip}>
+            <Text style={styles.statChipValue}>
+              {stats ? formatVolume(stats.volume_kg.total) : '—'}
             </Text>
-            <Text style={styles.statSub}>AVG SESSIONS</Text>
+            <Text style={styles.statChipLabel}>TOTAL VOL</Text>
           </View>
         </View>
 
-        {/* Analytics Section */}
+        {/* Analytics */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionHeaderText}>ANALYTICS</Text>
         </View>
-        <View style={styles.settingsContainer}>
+        <View style={styles.group}>
           <Pressable
-            style={styles.settingCard}
+            style={styles.row}
             onPress={() => router.push('/(exercise-statistics)/list')}
           >
             <View style={[styles.iconBox, { backgroundColor: 'rgba(99, 102, 241, 0.1)' }]}>
               <Ionicons name="barbell-outline" size={20} color={theme.colors.text.brand} />
             </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>EXERCISE STATISTICS</Text>
-              <Text style={styles.settingSubtitle}>VIEW PERFORMANCE BY EXERCISE</Text>
+            <View style={styles.rowContent}>
+              <Text style={styles.rowTitle}>EXERCISE STATISTICS</Text>
+              <Text style={styles.rowSub}>PERFORMANCE BY EXERCISE</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
           </Pressable>
         </View>
 
-        {/* Workout Settings Section */}
+        {/* Workout Settings */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionHeaderText}>WORKOUT</Text>
         </View>
-        <View style={styles.settingsContainer}>
-          <View style={styles.settingCard}>
+        <View style={styles.group}>
+          <View style={styles.row}>
             <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 159, 10, 0.1)' }]}>
               <Ionicons name="timer-outline" size={20} color={theme.colors.status.warning} />
             </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>TUT COUNTDOWN</Text>
-              <Text style={styles.settingSubtitle}>SECONDS BEFORE TRACKING STARTS</Text>
+            <View style={styles.rowContent}>
+              <Text style={styles.rowTitle}>TUT COUNTDOWN</Text>
+              <Text style={styles.rowSub}>SECONDS BEFORE TRACKING STARTS</Text>
             </View>
             <View style={styles.stepperContainer}>
               <Pressable
@@ -194,13 +147,15 @@ export default function AccountScreen() {
             </View>
           </View>
 
-          <View style={styles.settingCard}>
+          <View style={styles.separator} />
+
+          <View style={styles.row}>
             <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 69, 58, 0.1)' }]}>
               <Ionicons name="speedometer-outline" size={20} color={theme.colors.status.error} />
             </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>REACTION OFFSET</Text>
-              <Text style={styles.settingSubtitle}>SECONDS SUBTRACTED FROM TUT</Text>
+            <View style={styles.rowContent}>
+              <Text style={styles.rowTitle}>REACTION OFFSET</Text>
+              <Text style={styles.rowSub}>SECONDS SUBTRACTED FROM TUT</Text>
             </View>
             <View style={styles.stepperContainer}>
               <Pressable
@@ -220,12 +175,13 @@ export default function AccountScreen() {
           </View>
         </View>
 
+        {/* Subscription */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionHeaderText}>SUBSCRIPTION</Text>
         </View>
-        <View style={styles.settingsContainer}>
+        <View style={styles.group}>
           <Pressable
-            style={styles.settingCard}
+            style={styles.row}
             onPress={() => router.push('/(account)/upgrade')}
           >
             <View
@@ -244,11 +200,11 @@ export default function AccountScreen() {
                 color={isPro ? theme.colors.status.rest : theme.colors.status.active}
               />
             </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>
+            <View style={styles.rowContent}>
+              <Text style={styles.rowTitle}>
                 {isPro ? (user?.is_trial ? 'FREE TRIAL' : 'PRO MEMBER') : 'FREE PLAN'}
               </Text>
-              <Text style={styles.settingSubtitle}>
+              <Text style={styles.rowSub}>
                 {user?.is_trial && user?.trial_days_remaining !== null
                   ? `${user.trial_days_remaining} DAYS LEFT`
                   : user?.is_paid_pro && user?.pro_days_remaining !== null
@@ -262,48 +218,45 @@ export default function AccountScreen() {
           </Pressable>
         </View>
 
+        {/* Account */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionHeaderText}>ACCOUNT</Text>
         </View>
-        <View style={styles.settingsContainer}>
+        <View style={styles.group}>
           <Pressable
-            style={styles.settingCard}
+            style={styles.row}
             onPress={() => router.push('/(account)/manage')}
           >
             <View style={[styles.iconBox, { backgroundColor: 'rgba(99, 102, 241, 0.1)' }]}>
               <Ionicons name="person-outline" size={20} color={theme.colors.text.brand} />
             </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>ACCOUNT MANAGEMENT</Text>
-              <Text style={styles.settingSubtitle}>EMAIL, PASSWORD, BODY METRICS</Text>
+            <View style={styles.rowContent}>
+              <Text style={styles.rowTitle}>ACCOUNT MANAGEMENT</Text>
+              <Text style={styles.rowSub}>EMAIL, PASSWORD, BODY METRICS</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
           </Pressable>
 
+          <View style={styles.separator} />
+
           <Pressable
-            style={styles.settingCard}
+            style={styles.row}
             onPress={() => router.push('/(permissions)')}
           >
             <View style={styles.iconBox}>
-              <Ionicons name="pulse-outline" size={20} color="#FFFFFF" />
+              <Ionicons name="pulse-outline" size={20} color={theme.colors.text.secondary} />
             </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>HEALTH CONNECT</Text>
-              <Text style={styles.settingSubtitle}>SYNC HEALTH DATA</Text>
+            <View style={styles.rowContent}>
+              <Text style={styles.rowTitle}>HEALTH CONNECT</Text>
+              <Text style={styles.rowSub}>SYNC HEALTH DATA</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
           </Pressable>
-
         </View>
       </ScrollView>
-
     </View>
   );
 }
-
-// ============================================================================
-// 4. STYLES
-// ============================================================================
 
 const styles = StyleSheet.create({
   container: {
@@ -326,93 +279,91 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: theme.spacing.m,
-    paddingTop: theme.spacing.xl,
+    paddingTop: theme.spacing.l,
   },
 
   // --- Profile Header ---
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: theme.spacing.xxxl,
+    marginBottom: theme.spacing.l,
     paddingHorizontal: theme.spacing.xs,
   },
   avatarGradient: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: 'rgba(99, 102, 241, 0.3)',
+    flexShrink: 0,
   },
   avatarText: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: '900',
     fontStyle: 'italic',
     color: theme.colors.text.primary,
   },
   profileInfo: {
     marginLeft: theme.spacing.m,
+    flex: 1,
   },
   userEmail: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '900',
     fontStyle: 'italic',
     color: theme.colors.text.primary,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   memberSince: {
-    fontSize: theme.typography.sizes.label,
+    fontSize: 10,
     fontWeight: '900',
     color: theme.colors.text.tertiary,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
 
-  // --- Stats Cards ---
-  statsContainer: {
+  // --- Compact Stats Strip ---
+  statsStrip: {
     flexDirection: 'row',
-    gap: theme.spacing.s,
-    marginBottom: theme.spacing.xl,
-  },
-  statCard: {
-    flex: 1,
     backgroundColor: theme.colors.ui.glass,
     borderRadius: theme.borderRadius.l,
-    padding: theme.spacing.m,
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
+    marginBottom: theme.spacing.xl,
+    paddingVertical: theme.spacing.m,
   },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: theme.colors.text.tertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: theme.spacing.s,
+  statChip: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  statValueContainer: {
+  statChipRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 3,
   },
-  statValue: {
-    fontSize: 28,
+  statChipValue: {
+    fontSize: 18,
     fontWeight: '900',
     fontStyle: 'italic',
     color: theme.colors.text.primary,
     fontVariant: ['tabular-nums'],
   },
-  statIcon: {
-    marginTop: 2,
-  },
-  statSub: {
+  statChipLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '800',
     color: theme.colors.text.tertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: theme.colors.ui.border,
+    alignSelf: 'center',
   },
 
   // --- Sections ---
@@ -422,206 +373,62 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.xs,
   },
   sectionHeaderText: {
-    fontSize: theme.typography.sizes.label,
+    fontSize: 11,
     fontWeight: '900',
     color: theme.colors.text.tertiary,
     textTransform: 'uppercase',
     letterSpacing: 3.6,
   },
 
-  // --- Settings Cards ---
-  settingsContainer: {
-    gap: theme.spacing.s,
-    marginBottom: theme.spacing.m,
-  },
-  settingCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // --- Grouped Rows (iOS-style) ---
+  group: {
     backgroundColor: theme.colors.ui.glass,
     borderRadius: theme.borderRadius.l,
-    padding: theme.spacing.m,
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
+    overflow: 'hidden',
+    marginBottom: theme.spacing.xs,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: theme.spacing.m,
     gap: theme.spacing.m,
   },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: theme.colors.ui.border,
+    marginLeft: 68,
+  },
   iconBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    flexShrink: 0,
   },
-  settingContent: {
+  rowContent: {
     flex: 1,
   },
-  settingTitle: {
+  rowTitle: {
     fontSize: 13,
     fontWeight: '900',
     textTransform: 'uppercase',
     color: theme.colors.text.primary,
-    letterSpacing: 0.8,
-    marginBottom: 4,
+    letterSpacing: 0.6,
+    marginBottom: 3,
   },
-  settingSubtitle: {
+  rowSub: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: theme.colors.text.tertiary,
     textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  subscriptionSubtitle: {
-    color: theme.colors.status.rest,
+    letterSpacing: 0.8,
   },
 
-  // --- Modern Modals ---
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    justifyContent: 'center',
-    padding: theme.spacing.m,
-  },
-  modalCard: {
-    backgroundColor: theme.colors.ui.glass,
-    borderRadius: theme.borderRadius.xxl,
-    padding: theme.spacing.xl,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.ui.border,
-    shadowColor: theme.colors.background,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  modalHeader: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.l,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    fontStyle: 'italic',
-    textTransform: 'uppercase',
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing.s,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-  },
-  modalSubtitle: {
-    fontSize: theme.typography.sizes.s,
-    color: theme.colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: theme.spacing.xl,
-  },
-
-  // Height Specific
-  bigInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'center',
-    marginBottom: theme.spacing.xxl,
-  },
-  bigInput: {
-    fontSize: theme.typography.sizes.xxxl,
-    fontWeight: '700',
-    color: theme.colors.text.primary,
-    minWidth: 60,
-    textAlign: 'center',
-  },
-  bigInputSuffix: {
-    fontSize: theme.typography.sizes.l,
-    fontWeight: '600',
-    color: theme.colors.text.secondary,
-    marginLeft: theme.spacing.s,
-  },
-
-  // Gender Specific (Visual Cards)
-  genderRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.s,
-    marginBottom: theme.spacing.xxl,
-    width: '100%',
-  },
-  genderCard: {
-    flex: 1,
-    backgroundColor: theme.colors.ui.border,
-    borderRadius: theme.borderRadius.l,
-    paddingVertical: theme.spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  genderCardActive: {
-    backgroundColor: theme.colors.status.active,
-    borderColor: theme.colors.status.active,
-  },
-  genderLabel: {
-    marginTop: theme.spacing.s,
-    fontSize: theme.typography.sizes.s,
-    color: theme.colors.text.secondary,
-    fontWeight: '600',
-  },
-  genderLabelActive: {
-    color: theme.colors.text.primary,
-  },
-
-  // Password Specific (Stacked Inputs)
-  inputStack: {
-    width: '100%',
-    backgroundColor: theme.colors.ui.border,
-    borderRadius: theme.borderRadius.m,
-    marginBottom: theme.spacing.xl,
-  },
-  cleanInput: {
-    padding: theme.spacing.m,
-    fontSize: theme.typography.sizes.m,
-    color: theme.colors.text.primary,
-    height: 54,
-  },
-  inputSeparator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: theme.colors.ui.border,
-    marginLeft: theme.spacing.m,
-  },
-
-  // Modal Action Buttons
-  modalActions: {
-    flexDirection: 'row',
-    gap: theme.spacing.s,
-    width: '100%',
-  },
-  btnCancel: {
-    flex: 1,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: theme.colors.ui.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnCancelText: {
-    color: theme.colors.text.primary,
-    fontSize: theme.typography.sizes.m,
-    fontWeight: '600',
-  },
-  btnSave: {
-    flex: 1,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: theme.colors.status.active,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnSaveText: {
-    color: theme.colors.text.primary,
-    fontSize: theme.typography.sizes.m,
-    fontWeight: '600',
-  },
-
-  // Stepper
+  // --- Stepper ---
   stepperContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -637,10 +444,10 @@ const styles = StyleSheet.create({
   },
   stepperValue: {
     color: theme.colors.text.primary,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
-    minWidth: 30,
+    minWidth: 28,
     textAlign: 'center',
   },
 });

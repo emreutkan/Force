@@ -2,8 +2,19 @@ import { supabase } from '@/lib/supabase';
 import { theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as AppleAuthentication from 'expo-apple-authentication';
+
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+let GoogleSignin: any;
+let statusCodes: any;
+if (!isExpoGo) {
+  const GSI = require('@react-native-google-signin/google-signin');
+  GoogleSignin = GSI.GoogleSignin;
+  statusCodes = GSI.statusCodes;
+}
+
 import * as Crypto from 'expo-crypto';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -41,11 +52,13 @@ export default function AuthScreen() {
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-    });
-    if (Platform.OS === 'ios') {
+    if (!isExpoGo && GoogleSignin) {
+      GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+      });
+    }
+    if (Platform.OS === 'ios' && !isExpoGo) {
       AppleAuthentication.isAvailableAsync().then(setAppleAvailable);
     }
   }, []);
@@ -83,6 +96,10 @@ export default function AuthScreen() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (isExpoGo || !GoogleSignin) {
+      showAlert('Unavailable', 'Google Sign-In requires a custom Dev Client.');
+      return;
+    }
     try {
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
@@ -349,9 +366,13 @@ export default function AuthScreen() {
 
         <View style={styles.middleSection}>
           <View style={styles.titleContainer}>
-            <Text style={typographyStyles.hero}>
-              FORCE
-              <Text style={{ color: theme.colors.status.rest }}>.</Text>
+            <Text
+              style={typographyStyles.hero}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              allowFontScaling={false}
+            >
+              FORCE<Text style={{ color: theme.colors.status.rest }}>.</Text>
             </Text>
           </View>
           <Text style={styles.heroSubtitle}>
@@ -784,16 +805,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 10,
     backgroundColor: '#000000',
     borderRadius: 22,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
   },
   googleButtonText: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '500',
     color: '#ffffff',
+    letterSpacing: 0.2,
   },
   appleButtonWrapper: {
     width: '100%',
