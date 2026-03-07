@@ -10,6 +10,8 @@ import {
   getExercise1RMHistory,
   getExerciseSetHistory,
   getExerciseOverloadTrend,
+  getPersonalRecords,
+  getPersonalRecordDetail,
   type AddSetRequest,
   type UpdateSetRequest,
 } from '@/api/Exercises';
@@ -114,6 +116,24 @@ export const useExerciseOverloadTrend = (exerciseId: number | null) => {
     enabled: exerciseId !== null,
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: false, // Don't retry on 403 (non-pro users)
+  });
+};
+
+// Personal Records
+export const usePersonalRecords = () => {
+  return useQuery({
+    queryKey: ['personal-records'],
+    queryFn: getPersonalRecords,
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
+export const usePersonalRecordDetail = (exerciseId: number | null) => {
+  return useQuery({
+    queryKey: ['personal-record', exerciseId],
+    queryFn: () => getPersonalRecordDetail(exerciseId!),
+    enabled: exerciseId !== null,
+    staleTime: 1000 * 60 * 5,
   });
 };
 

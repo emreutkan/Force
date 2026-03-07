@@ -1,12 +1,13 @@
 import ExerciseSearchModal from '@/components/ExerciseSearchModal';
 import WorkoutDetailView from '@/components/shared/workout/WorkoutDetailView';
 import SuggestExerciseRow from '@/components/shared/workout/SuggestExerciseRow';
+import ExcessiveDurationModal from '@/components/shared/workout/ExcessiveDurationModal';
 import { theme } from '@/constants/theme';
 import { useActiveWorkoutStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -28,6 +29,11 @@ export default function ActiveWorkoutScreen() {
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalInitialSearch, setModalInitialSearch] = useState('');
+  const [showDurationModal, setShowDurationModal] = useState(false);
+  // Holds the executeCompletion fn to call once user picks an option
+  const pendingCompletionRef = useRef<
+    ((opts: { normalize_duration?: boolean; proceed_as_is?: boolean }) => Promise<void>) | null
+  >(null);
 
   // Optimization check results: keyed by workoutExerciseId
   const [optimizationResults, setOptimizationResults] = useState<
@@ -236,26 +242,9 @@ export default function ActiveWorkoutScreen() {
         router.replace(`/(workout-summary)/workoutsummary?workoutId=${activeWorkout.id}`);
       } catch (error: any) {
         if (error?.response?.data?.error === 'EXCESSIVE_DURATION') {
-          Alert.alert(
-            'Excessive Duration',
-            'The recorded workout duration seems excessively long. Would you like to normalize it based on your actual work and rest times, or proceed as is?',
-            [
-              {
-                text: 'Normalize',
-                onPress: () => executeCompletion({ normalize_duration: true }),
-                style: 'default',
-              },
-              {
-                text: 'Proceed As Is',
-                onPress: () => executeCompletion({ proceed_as_is: true }),
-                style: 'destructive',
-              },
-              {
-                text: 'Cancel',
-                style: 'cancel',
-              },
-            ]
-          );
+          // Store the retry function, then open our custom modal
+          pendingCompletionRef.current = executeCompletion;
+          setShowDurationModal(true);
           return;
         }
 
@@ -379,6 +368,18 @@ export default function ActiveWorkoutScreen() {
         onSelectExercise={handleAddExercise}
         title="Add Exercise"
         initialSearch={modalInitialSearch}
+      />
+      <ExcessiveDurationModal
+        visible={showDurationModal}
+        onNormalize={() => {
+          setShowDurationModal(false);
+          pendingCompletionRef.current?.({ normalize_duration: true });
+        }}
+        onProceedAsIs={() => {
+          setShowDurationModal(false);
+          pendingCompletionRef.current?.({ proceed_as_is: true });
+        }}
+        onCancel={() => setShowDurationModal(false)}
       />
 
       {/* Suggest exercise strip — shown just above the footer */}

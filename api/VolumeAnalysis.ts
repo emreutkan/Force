@@ -1,5 +1,6 @@
 import apiClient from './APIClient';
 import type { VolumeAnalysisFilters, VolumeAnalysisResponse } from './types';
+import { VOLUME_ANALYSIS_URL } from './types';
 
 export const getVolumeAnalysis = async (
   filters?: VolumeAnalysisFilters
@@ -9,5 +10,5 @@ export const getVolumeAnalysis = async (
   if (filters?.start_date) searchParams.start_date = filters.start_date;
   if (filters?.end_date) searchParams.end_date = filters.end_date;
 
-  return apiClient.get('/workout/volume-analysis/', { searchParams }).json();
+  return apiClient.get(VOLUME_ANALYSIS_URL, { searchParams }).json();
 };
