@@ -4,6 +4,8 @@ import type {
   UpdateSetRequest,
   UpdateExerciseOrderRequest,
   Exercise1RMHistory,
+  PersonalRecord,
+  PersonalRecordDetail,
 } from './types/exercise';
 import {
   EXERCISE_LIST_URL,
@@ -19,6 +21,8 @@ import {
   DELETE_WORKOUT_EXERCISE_URL,
   UPDATE_EXERCISE_ORDER_URL,
   OVERLOAD_TREND_URL,
+  PERSONAL_RECORDS_URL,
+  PERSONAL_RECORD_DETAIL_URL,
 } from './types';
 import type { OverloadTrendResponse } from './types/volume';
 
@@ -103,6 +107,17 @@ export const getExerciseOverloadTrend = async (
   exerciseId: number
 ): Promise<OverloadTrendResponse> => {
   const url = OVERLOAD_TREND_URL.replace(':exercise_id', exerciseId.toString());
+  return apiClient.get(url).json();
+};
+
+export const getPersonalRecords = async (): Promise<PersonalRecord[]> => {
+  return apiClient.get(PERSONAL_RECORDS_URL).json();
+};
+
+export const getPersonalRecordDetail = async (
+  exerciseId: number
+): Promise<PersonalRecordDetail> => {
+  const url = PERSONAL_RECORD_DETAIL_URL.replace(':exercise_id', exerciseId.toString());
   return apiClient.get(url).json();
 };
 

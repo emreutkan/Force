@@ -100,7 +100,7 @@ export type UpdateExerciseOrderRequest = {
 
 // Exercise API URL constants (relative to api base; no leading slash when using ky prefixUrl)
 export const EXERCISE_LIST_URL = 'exercise/list/';
-export const EXERCISE_ADD_TO_WORKOUT_URL = 'exercise/add/:workout_id/';
+export const EXERCISE_ADD_TO_WORKOUT_URL = 'workout/:workout_id/add_exercise/';
 export const EXERCISE_1RM_HISTORY_URL = 'workout/exercise/:exercise_id/1rm-history/';
 export const EXERCISE_SET_HISTORY_URL = 'workout/exercise/:exercise_id/set-history/';
 export const EXERCISE_LAST_WORKOUT_URL = 'workout/exercise/:exercise_id/last-workout/';
@@ -146,4 +146,27 @@ export type ExerciseLeaderboard = {
   stat_type: 'weight' | 'one_rm';
   leaderboard: LeaderboardEntry[];
   user_entry: LeaderboardEntry | null;
+};
+
+// Personal Records Types
+export type PersonalRecord = {
+  exercise_id: number;
+  exercise_name: string;
+  primary_muscle: string;
+  best_1rm: number | null;
+  best_1rm_date: string | null;
+  best_weight: number | null;
+  best_weight_date: string | null;
+  best_volume_set: number | null;
+  best_volume_set_date: string | null;
+};
+
+export type PersonalRecordDetail = PersonalRecord & {
+  pr_history: {
+    workout_id: number;
+    workout_title: string;
+    workout_date: string;
+    one_rep_max: number;
+  }[];
+  total_workouts: number;
 };

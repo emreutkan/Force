@@ -93,9 +93,13 @@ export default function HeroScreen() {
         ]}
       >
         <View style={styles.titleContainer}>
-          <Text style={typographyStyles.hero}>
-            FORCE
-            <Text style={{ color: theme.colors.status.active }}>.</Text>
+          <Text
+            style={typographyStyles.hero}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            allowFontScaling={false}
+          >
+            FORCE<Text style={{ color: theme.colors.status.active }}>.</Text>
           </Text>
         </View>
 
