@@ -17,6 +17,7 @@ import StartWorkoutMenu from './components/StartWorkoutMenu';
 import TemplatesSection from './components/TemplatesSection';
 import TodayProgramCard from './components/TodayProgramCard';
 import ProgramsSection from './components/ProgramsSection';
+import NextWorkoutCoachCard from './components/NextWorkoutCoachCard';
 import { getCalendar, getCalendarStats } from '@/api/Workout';
 import {
   useDeleteWorkout,
@@ -24,6 +25,7 @@ import {
   useWorkouts,
   useCreateWorkout,
   useTodayStatus,
+  useNextWorkoutCoach,
 } from '@/hooks/useWorkout';
 
 export default function Home() {
@@ -54,6 +56,7 @@ export default function Home() {
   const { data: workoutsData, refetch: refetchWorkouts } = useWorkouts(1, 100);
   const { data: todayStatus } = useTodayStatus(today);
   const hasActiveWorkout = todayStatus?.status === 'active';
+  const { data: nextCoach } = useNextWorkoutCoach(todayStatus?.status === 'none');
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -229,6 +232,8 @@ export default function Home() {
         />
 
         <MuscleRecoverySection onPress={() => router.push('/(recovery-status)')} />
+
+        <NextWorkoutCoachCard data={nextCoach} />
 
         <TodayProgramCard />
 

@@ -59,6 +59,9 @@ export const VOLUME_ANALYSIS_URL = `workout/volume-analysis/`;
 export const OVERLOAD_TREND_URL = `workout/exercise/:exercise_id/overload-trend/`;
 export const SUGGEST_EXERCISE_URL = `workout/active/suggest-exercise/`;
 export const OPTIMIZATION_CHECK_URL = `workout/exercise/:workout_exercise_id/optimization-check/`;
+export const NEXT_WORKOUT_COACH_URL = `workout/coach/next/`;
+export const ACTIVE_WORKOUT_COACH_URL = `workout/active/coach/`;
+export const WORKOUT_COACH_REVIEW_URL = `workout/:id/coach-review/`;
 
 export const TEMPLATE_CREATE_URL = `workout/template/create/`;
 export const TEMPLATE_LIST_URL = `workout/template/list/`;

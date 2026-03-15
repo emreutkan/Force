@@ -22,6 +22,9 @@ import type {
   UserStats,
   SuggestNextExerciseResponse,
   OptimizationCheckResponse,
+  NextWorkoutCoachResponse,
+  ActiveWorkoutCoachResponse,
+  CoachReviewResponse,
 } from './types/workout';
 import {
   CREATE_WORKOUT_URL,
@@ -53,6 +56,9 @@ import {
   USER_STATS_URL,
   SUGGEST_EXERCISE_URL,
   OPTIMIZATION_CHECK_URL,
+  NEXT_WORKOUT_COACH_URL,
+  ACTIVE_WORKOUT_COACH_URL,
+  WORKOUT_COACH_REVIEW_URL,
 } from './types/';
 import type { PaginatedResponse } from './types/pagination';
 export const createWorkout = async (
@@ -300,6 +306,24 @@ export const getExerciseOptimizationCheck = async (
   workoutExerciseId: number
 ): Promise<OptimizationCheckResponse> => {
   const url = OPTIMIZATION_CHECK_URL.replace(':workout_exercise_id', workoutExerciseId.toString());
+  const response = await apiClient.get(url);
+  return response.json();
+};
+
+export const getNextWorkoutCoach = async (): Promise<NextWorkoutCoachResponse> => {
+  const response = await apiClient.get(NEXT_WORKOUT_COACH_URL, { throwHttpErrors: false });
+  if (!response.ok) throw new Error('Failed to load next workout coach');
+  return response.json();
+};
+
+export const getActiveWorkoutCoach = async (): Promise<ActiveWorkoutCoachResponse | null> => {
+  const response = await apiClient.get(ACTIVE_WORKOUT_COACH_URL, { throwHttpErrors: false });
+  if (!response.ok) return null;
+  return response.json();
+};
+
+export const getWorkoutCoachReview = async (workoutId: number): Promise<CoachReviewResponse> => {
+  const url = WORKOUT_COACH_REVIEW_URL.replace(':id', String(workoutId));
   const response = await apiClient.get(url);
   return response.json();
 };

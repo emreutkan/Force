@@ -54,6 +54,8 @@ export const useAddExerciseToWorkout = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['workout', variables.workoutId] });
       queryClient.invalidateQueries({ queryKey: ['active-workout'] });
+      queryClient.invalidateQueries({ queryKey: ['active-workout-coach'] });
+      queryClient.invalidateQueries({ queryKey: ['suggest-next-exercise'] });
     },
   });
 };
@@ -80,6 +82,7 @@ export const useAddSetToExercise = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workout'] });
       queryClient.invalidateQueries({ queryKey: ['active-workout'] });
+      queryClient.invalidateQueries({ queryKey: ['active-workout-coach'] });
     },
   });
 };
@@ -92,6 +95,7 @@ export const useUpdateSet = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workout'] });
       queryClient.invalidateQueries({ queryKey: ['active-workout'] });
+      queryClient.invalidateQueries({ queryKey: ['active-workout-coach'] });
     },
   });
 };

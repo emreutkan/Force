@@ -25,6 +25,9 @@ import {
   getUserStats,
   getSuggestNextExercise,
   getExerciseOptimizationCheck,
+  getNextWorkoutCoach,
+  getActiveWorkoutCoach,
+  getWorkoutCoachReview,
 } from '@/api/Workout';
 import { getVolumeAnalysis } from '@/api/VolumeAnalysis';
 import type { VolumeAnalysisFilters } from '@/api/types';
@@ -343,6 +346,39 @@ export const useExerciseOptimizationCheck = (workoutExerciseId: number | null) =
     staleTime: 1000 * 60 * 2,
     retry: false, // Don't retry on error — show result immediately
     gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
+  });
+};
+
+// Next workout coach — pre-training briefing shown on home screen
+export const useNextWorkoutCoach = (enabled: boolean = true) => {
+  return useQuery({
+    queryKey: ['next-workout-coach'],
+    queryFn: getNextWorkoutCoach,
+    enabled,
+    staleTime: 1000 * 60 * 2, // 2 minutes — recovery state shifts over time
+    retry: false,
+  });
+};
+
+// Active workout coach — live decisions during a session
+export const useActiveWorkoutCoach = (enabled: boolean = true) => {
+  return useQuery({
+    queryKey: ['active-workout-coach'],
+    queryFn: getActiveWorkoutCoach,
+    enabled,
+    staleTime: 1000 * 30, // 30 seconds — updates as sets are logged
+    refetchOnWindowFocus: false,
+  });
+};
+
+// Standalone coach review for a completed workout
+export const useWorkoutCoachReview = (workoutId: number | null) => {
+  return useQuery({
+    queryKey: ['workout-coach-review', workoutId],
+    queryFn: () => getWorkoutCoachReview(workoutId!),
+    enabled: workoutId !== null,
+    staleTime: 1000 * 60 * 5,
+    retry: false,
   });
 };
 

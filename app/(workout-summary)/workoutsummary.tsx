@@ -21,6 +21,7 @@ import { getErrorMessage } from '@/api/errorHandler';
 import { useSettingsStore } from '@/state/stores/settingsStore';
 import StatsCard from './components/StatsCard';
 import AnalysisRow from './components/analysisRow';
+import CoachReviewSection from './components/CoachReviewSection';
 
 // ============================================================================
 // DIAGNOSIS CARD
@@ -377,6 +378,12 @@ const WorkoutSummaryScreen = () => {
                   <View style={{ marginTop: 12 }}>
                     <DiagnosisCard diagnosis={summary.diagnosis} />
                   </View>
+                )}
+
+                {isPro && summary.coach_review && (
+                  <Animated.View entering={FadeInDown.delay(650)} style={{ marginTop: 16 }}>
+                    <CoachReviewSection coachReview={summary.coach_review} />
+                  </Animated.View>
                 )}
 
                 {!isPro && !summary.is_pro && (

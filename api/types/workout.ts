@@ -262,6 +262,7 @@ export type WorkoutSummaryResponse = {
   diagnosis?: WorkoutDiagnosis;
   is_pro: boolean;
   has_advanced_insights: boolean;
+  coach_review?: CoachReviewResponse;
 };
 
 // ============== Recovery status ==============
@@ -306,6 +307,9 @@ export type ExerciseSuggestion = {
   recovery_percent: number;
   already_in_workout: boolean;
   working_sets_logged: number;
+  weekly_set_deficit: number;
+  priority_rank: number;
+  suggested_exercise: CoachExerciseRef | null;
 };
 
 export type SuggestNextExerciseResponse = {
@@ -341,6 +345,117 @@ export type OptimizationCheckResponse = {
   overall_status: 'optimal' | 'proceed_with_caution' | 'not_recommended';
   warnings: OptimizationWarning[];
 };
+
+// ============== Coaching API ==============
+
+export type SessionDecision = 'train' | 'train_with_modifications' | 'delay_day';
+export type LiveDecision = 'continue' | 'switch' | 'stop';
+export type ExerciseActionType = 'push' | 'hold' | 'backoff' | 'skip' | 'swap';
+
+export interface CoachFinding {
+  code: string;
+  severity: 'error' | 'warning' | 'info';
+  message: string;
+  evidence: Record<string, unknown>;
+}
+
+export interface CoachExerciseRef {
+  id: number;
+  name: string;
+  primary_muscle: string;
+  secondary_muscles: string[];
+  category: string;
+  equipment_type: string;
+}
+
+export interface ExerciseActionEvidence {
+  primary_recovery_percent: number;
+  secondary_recovery_percents: Record<string, number>;
+  weekly_sets: number;
+  weekly_target_min: number;
+  weekly_target_max: number;
+  days_since_last_trained: number | null;
+  in_session_sets: number;
+  cns_recovery_percent: number;
+  performance: {
+    status: 'insufficient_data' | 'regressing' | 'progressing' | 'stagnating' | 'maintained';
+    current_1rm: number | null;
+    previous_1rm: number | null;
+    change_percent: number | null;
+    sample_size: number;
+    data_points: Array<{ workout_exercise_id: number; date: string; one_rep_max: number }>;
+  };
+  latest_exposure_proxies: {
+    set_count: number;
+    avg_rir: number | null;
+    avg_rest_seconds: number | null;
+    rep_drop_pct: number | null;
+  } | null;
+}
+
+export interface ExerciseAction {
+  exercise_id: number;
+  workout_exercise_id: number | null;
+  exercise: CoachExerciseRef;
+  action: ExerciseActionType;
+  load_delta_pct: number;
+  set_delta: number;
+  reason_codes: string[];
+  swap_exercise: CoachExerciseRef | null;
+  evidence: ExerciseActionEvidence;
+}
+
+export interface NextWorkoutCoachProgram {
+  id: number;
+  name: string;
+  cycle_length: number;
+  days_completed_since_activation: number;
+  current_day: null | {
+    id: number;
+    day_number: number;
+    name: string;
+    is_rest_day: boolean;
+    exercises: Array<{ id: number; order: number; target_sets: number; exercise: CoachExerciseRef }>;
+  };
+}
+
+export interface NextWorkoutCoachResponse {
+  session_decision: SessionDecision;
+  findings: CoachFinding[];
+  exercise_actions: ExerciseAction[];
+  program: NextWorkoutCoachProgram | null;
+  active_workout_id: number | null;
+}
+
+export interface ActiveWorkoutCoachSuggestion {
+  muscle_group: string;
+  recovery_percent: number;
+  already_in_workout: boolean;
+  working_sets_logged: number;
+  weekly_set_deficit: number;
+  priority_rank: number;
+  suggested_exercise: CoachExerciseRef | null;
+}
+
+export interface ActiveWorkoutCoachResponse {
+  active_workout: { id: number; title: string; exercise_count: number } | null;
+  session_decision: SessionDecision;
+  live_decision: LiveDecision;
+  findings: CoachFinding[];
+  exercise_actions: ExerciseAction[];
+  suggestions: ActiveWorkoutCoachSuggestion[];
+}
+
+export interface CoachReviewResponse {
+  workout_id: number;
+  session_decision: SessionDecision;
+  findings: CoachFinding[];
+  exercise_actions: ExerciseAction[];
+  what_went_wrong: CoachFinding[];
+  what_went_right: CoachFinding[];
+  what_to_change_next_time: Array<{ code: string; message: string }>;
+  summary: { finding_count: number; issue_count: number; positive_count: number };
+}
 
 export type UserStats = {
   streak: {
