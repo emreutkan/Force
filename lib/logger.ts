@@ -87,21 +87,31 @@ function withScope(level: Exclude<LogLevel, 'debug'>, message: string, context?:
   });
 }
 
+function devLog(level: LogLevel, message: string, ...args: unknown[]): void {
+  if (!__DEV__) return;
+  const fn = level === 'error' ? console.error : level === 'warning' ? console.warn : console.log;
+  fn(`[${level.toUpperCase()}] ${message}`, ...args.filter((a) => a !== undefined));
+}
+
 export const logger = {
   debug(message: string, context?: unknown): void {
+    devLog('debug', message, context);
     addBreadcrumb('debug', message, context);
   },
 
   info(message: string, context?: unknown): void {
+    devLog('info', message, context);
     addBreadcrumb('info', message, context);
   },
 
   warn(message: string, context?: unknown): void {
+    devLog('warning', message, context);
     addBreadcrumb('warning', message, context);
     withScope('warning', message, context);
   },
 
   error(message: string, error?: unknown, context?: unknown): void {
+    devLog('error', message, error, context);
     const breadcrumbContext =
       error === undefined
         ? context

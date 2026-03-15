@@ -148,4 +148,13 @@ const apiClient = ky.create({
   timeout: 30000,
 });
 
+/** Clears the in-memory GET cache for all URLs (or a specific URL). */
+export function clearGetCache(url?: string): void {
+  if (url) {
+    getCache.delete(url);
+  } else {
+    getCache.clear();
+  }
+}
+
 export default apiClient;

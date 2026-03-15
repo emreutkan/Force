@@ -4,7 +4,7 @@ import UpgradeModal from '@/components/UpgradeModal';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { commonStyles, theme, typographyStyles } from '@/constants/theme';
 import { logger } from '@/lib/logger';
-import { useSettingsStore } from '@/state/stores/settingsStore';
+import { useUser } from '@/hooks/useUser';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from 'expo-router';
@@ -174,7 +174,8 @@ function BalanceCard({ pair }: { pair: BalancePair }) {
 
 export default function VolumeAnalysisScreen() {
     const insets = useSafeAreaInsets();
-    const isPro = useSettingsStore((s) => s.isPro);
+    const { data: user } = useUser();
+    const isPro = user?.is_pro ?? false;
 
     const [analysis, setAnalysis] = useState<VolumeAnalysisResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);

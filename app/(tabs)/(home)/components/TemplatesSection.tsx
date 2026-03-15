@@ -3,7 +3,6 @@ import UpgradeModal from '@/components/UpgradeModal';
 import { theme, typographyStyles } from '@/constants/theme';
 import { logger } from '@/lib/logger';
 import { useUser } from '@/hooks/useUser';
-import { useSettingsStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -14,7 +13,8 @@ import { TemplatesSectionSkeleton } from './homeLoadingSkeleton';
 const FREE_TEMPLATE_LIMIT = 3;
 
 export default function TemplatesSection() {
-  const { isPro } = useSettingsStore();
+  const { data: user } = useUser();
+  const isPro = user?.is_pro ?? false;
   const { data: templatesData, refetch, isLoading: templatesLoading } = useTemplateWorkouts();
   const deleteTemplateMutation = useDeleteTemplateWorkout();
   const startTemplateMutation = useStartTemplateWorkout();

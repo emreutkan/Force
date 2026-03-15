@@ -5,7 +5,6 @@ import { theme } from '@/constants/theme';
 import { logger } from '@/lib/logger';
 import { useExerciseOverloadTrend } from '@/hooks/useExercises';
 import { useUser } from '@/hooks/useUser';
-import { useSettingsStore } from '@/state/userStore';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -25,7 +24,7 @@ export default function ExerciseStatisticsScreen() {
   const { id } = useLocalSearchParams();
   const exerciseId = Number(id);
   const { data: user, isLoading: isLoadingUser } = useUser();
-  const { isPro } = useSettingsStore();
+  const isPro = user?.is_pro ?? false;
   const [history, setHistory] = useState<Exercise1RMHistory | null>(null);
   const [ranking, setRanking] = useState<ExerciseRanking | null>(null);
   const [recentPerformance, setRecentPerformance] = useState<any[]>([]);

@@ -4,7 +4,7 @@ import { CNSRecoveryItem } from '@/api/types/workout';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { theme, typographyStyles } from '@/constants/theme';
 import { logger } from '@/lib/logger';
-import { useSettingsStore } from '@/state/userStore';
+import { useUser } from '@/hooks/useUser';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from 'expo-router';
@@ -132,7 +132,8 @@ function CNSCard({ data }: { data: CNSRecoveryItem }) {
 
 export default function RecoveryStatusScreen() {
   const insets = useSafeAreaInsets();
-  const isPro = useSettingsStore((s) => s.isPro);
+  const { data: user } = useUser();
+  const isPro = user?.is_pro ?? false;
   const [statusMap, setStatusMap] = useState<Record<string, MuscleRecoveryItem>>({});
   const [cnsRecovery, setCnsRecovery] = useState<CNSRecoveryItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);

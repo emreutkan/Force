@@ -19,6 +19,7 @@ const IMPORT_DATA_URL = 'user/data/import/';
 
 export const getAccount = async (): Promise<GetAccountResponse> => {
   const response = await apiClient.get(ME_URL).json<GetAccountResponse>();
+  if (__DEV__) console.log('[ME]', JSON.stringify(response));
   return response;
 };
 export const updateHeight = async (

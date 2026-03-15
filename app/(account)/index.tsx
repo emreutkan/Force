@@ -136,8 +136,9 @@ export default function AccountScreen() {
     tutReactionOffset,
     setTutCountdown,
     setTutReactionOffset,
-    isPro,
   } = useSettingsStore();
+
+  const isPro = user?.is_pro ?? false;
 
   const userEmail = user?.email || 'No email';
   const memberSince = user?.created_at ? new Date(user.created_at).getFullYear() : 2024;

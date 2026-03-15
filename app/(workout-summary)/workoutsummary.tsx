@@ -19,7 +19,7 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { getErrorMessage } from '@/api/errorHandler';
-import { useSettingsStore } from '@/state/stores/settingsStore';
+import { useUser } from '@/hooks/useUser';
 import StatsCard from './components/StatsCard';
 import AnalysisRow from './components/analysisRow';
 import CoachReviewSection from './components/CoachReviewSection';
@@ -158,7 +158,8 @@ const diagnosisStyles = StyleSheet.create({
 const WorkoutSummaryScreen = () => {
   const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
   const insets = useSafeAreaInsets();
-  const isPro = useSettingsStore((s) => s.isPro);
+  const { data: user } = useUser();
+  const isPro = user?.is_pro ?? false;
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [summary, setSummary] = useState<WorkoutSummaryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
