@@ -1,6 +1,7 @@
 import ExerciseSearchModal from '@/components/ExerciseSearchModal';
 import WorkoutDetailView from '@/components/shared/workout/WorkoutDetailView';
 import SuggestExerciseRow from '@/components/shared/workout/SuggestExerciseRow';
+import LiveCoachBanner from '@/components/shared/workout/LiveCoachBanner';
 import ExcessiveDurationModal from '@/components/shared/workout/ExcessiveDurationModal';
 import { theme } from '@/constants/theme';
 import { useActiveWorkoutStore } from '@/state/userStore';
@@ -15,6 +16,7 @@ import {
   useCompleteWorkout,
   useRestTimerState,
   useSuggestNextExercise,
+  useActiveWorkoutCoach,
 } from '@/hooks/useWorkout';
 import {
   useAddExerciseToWorkout,
@@ -40,6 +42,9 @@ export default function ActiveWorkoutScreen() {
     Record<number, OptimizationCheckResponse>
   >({});
 
+  // Live coach banner dismiss state
+  const [coachBannerDismissed, setCoachBannerDismissed] = useState(false);
+
   // Rest timer state from Zustand
   const { setLastSetTimestamp, setLastExerciseCategory } = useActiveWorkoutStore();
 
@@ -58,6 +63,9 @@ export default function ActiveWorkoutScreen() {
     isLoading: isSuggestLoading,
     refetch: refetchSuggestions,
   } = useSuggestNextExercise(!!activeWorkout);
+
+  // Active workout coach — live decisions during a session
+  const { data: activeCoach } = useActiveWorkoutCoach(!!activeWorkout);
 
   // Sync rest timer state to Zustand when it changes
   useEffect(() => {
@@ -123,8 +131,8 @@ export default function ActiveWorkoutScreen() {
     }
   };
 
-  const handleMusclePress = (muscleGroup: string) => {
-    setModalInitialSearch(muscleGroup);
+  const handleMusclePress = (muscleGroup: string, suggestedExerciseName?: string) => {
+    setModalInitialSearch(suggestedExerciseName ?? muscleGroup);
     setIsModalVisible(true);
   };
 
@@ -342,6 +350,14 @@ export default function ActiveWorkoutScreen() {
             {activeWorkout.title.toUpperCase()}
           </Text>
         </View>
+      )}
+
+      {/* Live coach banner — shown when coach recommends switching or stopping */}
+      {!coachBannerDismissed && (
+        <LiveCoachBanner
+          data={activeCoach}
+          onDismiss={() => setCoachBannerDismissed(true)}
+        />
       )}
 
       <WorkoutDetailView

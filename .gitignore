@@ -104,6 +104,9 @@ notes.md
 
 .claude/
 .vscode/
+.agents/
+.agent/
+skills-lock.json
 
 CLAUDE.md
 NOTES.md

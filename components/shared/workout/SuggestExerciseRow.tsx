@@ -14,7 +14,7 @@ interface SuggestExerciseRowProps {
     suggestions: ExerciseSuggestion[];
     isLoading?: boolean;
     /** Called when user taps a chip — parent navigates to exercise picker filtered for this muscle */
-    onMusclePress: (muscleGroup: string) => void;
+    onMusclePress: (muscleGroup: string, suggestedExerciseName?: string) => void;
 }
 
 export default function SuggestExerciseRow({
@@ -60,7 +60,7 @@ export default function SuggestExerciseRow({
                                 styles.chip,
                                 s.already_in_workout && styles.chipInWorkout,
                             ]}
-                            onPress={() => onMusclePress(s.muscle_group)}
+                            onPress={() => onMusclePress(s.muscle_group, s.suggested_exercise?.name)}
                         >
                             {/* Recovery ring indicator */}
                             <View style={[styles.recoveryRing, { borderColor: color }]}>
@@ -81,6 +81,12 @@ export default function SuggestExerciseRow({
                                     <Text style={styles.chipReadyLabel}>READY</Text>
                                 )}
                             </View>
+
+                            {s.weekly_set_deficit > 0 && (
+                                <View style={styles.deficitBadge}>
+                                    <Text style={styles.deficitBadgeText}>-{s.weekly_set_deficit}</Text>
+                                </View>
+                            )}
 
                             {!s.already_in_workout && (
                                 <Ionicons
@@ -166,6 +172,20 @@ const styles = StyleSheet.create({
         fontSize: 8,
         fontWeight: '600',
         color: theme.colors.text.tertiary,
+        letterSpacing: 0.3,
+    },
+    deficitBadge: {
+        backgroundColor: 'rgba(251,146,60,0.15)',
+        borderWidth: 1,
+        borderColor: 'rgba(251,146,60,0.35)',
+        borderRadius: 4,
+        paddingHorizontal: 5,
+        paddingVertical: 2,
+    },
+    deficitBadgeText: {
+        fontSize: 8,
+        fontWeight: '900',
+        color: theme.colors.status.warning,
         letterSpacing: 0.3,
     },
     loadingRow: {
