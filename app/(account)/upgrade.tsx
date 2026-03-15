@@ -1,5 +1,6 @@
 import { getErrorMessage } from '@/api/errorHandler';
 import { theme, typographyStyles } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -45,8 +46,8 @@ export default function UpgradeScreen() {
   useEffect(() => {
     if (offering?.availablePackages && !selectedPackage) {
       // Debug: Log all packages
-      console.log(
-        'Available packages:',
+      logger.info(
+        'Available packages loaded',
         offering.availablePackages.map((pkg) => ({
           identifier: pkg.identifier,
           price: pkg.product.price,
@@ -76,9 +77,12 @@ export default function UpgradeScreen() {
 
       if (customerInfo) {
         const activeKeys = Object.keys(customerInfo.entitlements.active);
-        console.log('[PURCHASE] Active entitlement keys:', activeKeys);
-        console.log('[PURCHASE] Looking for ENTITLEMENT_ID:', ENTITLEMENT_ID);
-        console.log('[PURCHASE] Match found:', !!customerInfo.entitlements.active[ENTITLEMENT_ID]);
+        logger.info('[PURCHASE] Active entitlement keys', { activeKeys });
+        logger.info('[PURCHASE] Looking for entitlement ID', { entitlementId: ENTITLEMENT_ID });
+        logger.info('[PURCHASE] Entitlement match result', {
+          entitlementId: ENTITLEMENT_ID,
+          matched: !!customerInfo.entitlements.active[ENTITLEMENT_ID],
+        });
         const isPro = !!customerInfo.entitlements.active[ENTITLEMENT_ID];
         setIsPro(isPro);
         Alert.alert('WELCOME TO PRO!', 'You now have access to all premium features.', [
@@ -86,10 +90,10 @@ export default function UpgradeScreen() {
         ]);
       } else {
         // User cancelled
-        console.log('Purchase cancelled by user');
+        logger.info('Purchase cancelled by user');
       }
     } catch (error: any) {
-      console.error('Purchase error:', error);
+      logger.error('Purchase error', error);
       const message = isStoreNotConfiguredError(error)
         ? "Purchases aren't available in this build. Set up App Store Connect and Google Play Console for real purchases — see REVENUECAT_QUICKSTART.md."
         : getErrorMessage(error as Error);
@@ -114,7 +118,7 @@ export default function UpgradeScreen() {
         Alert.alert('No Purchases Found', "We couldn't find any previous purchases to restore.");
       }
     } catch (error: any) {
-      console.error('Restore error:', error);
+      logger.error('Restore error', error);
       const message = isStoreNotConfiguredError(error)
         ? "Restore isn't available in this build. Set up App Store Connect and Google Play Console first."
         : getErrorMessage(error as Error);

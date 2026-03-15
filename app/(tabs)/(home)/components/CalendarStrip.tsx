@@ -1,6 +1,7 @@
 import { CalendarDay } from '@/api/types/index';
 import { getCalendar } from '@/api/Workout';
 import { theme, typographyStyles } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { useDateStore } from '@/state/userStore';
 import { useSetSelectedDate } from '@/hooks/useWorkout';
 import { useFocusEffect } from 'expo-router';
@@ -35,7 +36,7 @@ export default function CalendarStrip({ onPress }: CalendarStripProps) {
         setCalendarData(result.calendar);
       }
     } catch (error) {
-      console.error('Error fetching calendar:', error);
+      logger.error('Error fetching calendar', error);
     } finally {
       setLoading(false);
     }

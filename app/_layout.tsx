@@ -21,7 +21,7 @@ Sentry.init({
 });
 
 // Initialize before any component mounts to avoid singleton errors
-initializeRevenueCat();
+void initializeRevenueCat();
 
 // Always start from index (loading screen) on app launch — prevents Expo Router
 // from restoring the last visited screen (e.g. statistics, upgrade) on cold start

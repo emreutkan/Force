@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { stopRestTimer } from '@/api/Workout';
 import { useActiveWorkoutStore, useSettingsStore } from '@/state/userStore';
 import { useRestTimer } from '@/components/shared/workout/RestTimerBar';
@@ -124,7 +125,7 @@ export const AddSetRowWithTUT = ({
                 setCurrentTUT(0);
             }
         } catch (error) {
-            console.error('Failed to stop rest timer:', error);
+            logger.error('Failed to stop rest timer', error);
         }
     };
 

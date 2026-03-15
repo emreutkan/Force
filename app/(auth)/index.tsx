@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 import { theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
@@ -266,7 +267,7 @@ export default function AuthScreen() {
       if (error) throw error;
       router.replace('/(tabs)/(home)');
     } catch (e: any) {
-      console.error('[Auth] login failed:', e);
+      logger.error('[Auth] login failed', e);
       showAlert('Login Failed', e.message || 'An unexpected error occurred.');
     } finally {
       setLoading(false);
@@ -303,7 +304,7 @@ export default function AuthScreen() {
         );
       }
     } catch (e: any) {
-      console.error('[Auth] register failed:', e);
+      logger.error('[Auth] register failed', e);
       if (e.message?.toLowerCase().includes('already registered')) {
         Alert.alert('Account Exists', 'This email is already registered.', [
           { text: 'Cancel', style: 'cancel' },
@@ -334,7 +335,7 @@ export default function AuthScreen() {
         redirectTo: 'force://reset-password',
       });
       if (error) {
-        console.error('[Auth] reset password failed:', error);
+        logger.error('[Auth] reset password failed', error);
         showAlert('Error', error.message);
       } else {
         showAlert('Email Sent', 'Check your email for a password reset link.');

@@ -1,4 +1,5 @@
 import { theme, typographyStyles } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -55,7 +56,7 @@ export default function HeroScreen() {
       await AsyncStorage.setItem(HERO_SEEN_KEY, 'true');
       router.replace('/(auth)');
     } catch (error) {
-      console.error('Error saving hero seen:', error);
+      logger.error('Error saving hero seen', error);
       router.replace('/(auth)');
     }
   };

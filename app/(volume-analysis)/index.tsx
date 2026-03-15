@@ -3,6 +3,7 @@ import type { BalancePair, MuscleSummary, VolumeAnalysisResponse } from '@/api/t
 import UpgradeModal from '@/components/UpgradeModal';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { commonStyles, theme, typographyStyles } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { useSettingsStore } from '@/state/stores/settingsStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -197,7 +198,7 @@ export default function VolumeAnalysisScreen() {
                 }
             }
         } catch (error) {
-            console.error(error);
+            logger.error('Failed to load volume analysis', error);
         } finally {
             setIsLoading(false);
         }

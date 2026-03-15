@@ -2,6 +2,7 @@ import ky from 'ky';
 import { supabase } from '../lib/supabase';
 import { BACKEND_URL } from './types';
 import { useBackendStore } from '@/state/stores/backendStore';
+import { logger } from '@/lib/logger';
 
 const GET_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -32,8 +33,6 @@ function isGetCacheFresh(entry: GetCacheEntry): boolean {
   return Date.now() - entry.timestamp < GET_CACHE_TTL_MS;
 }
 
-const MAX_LOG_BODY = 8000;
-
 const apiClient = ky.create({
   prefixUrl: BACKEND_URL,
   hooks: {
@@ -59,40 +58,39 @@ const apiClient = ky.create({
           }
         }
 
-        console.log(`[API] REQUEST: ${request.method} ${request.url}`);
+        logger.debug('[API] Request', {
+          method: request.method,
+          url: request.url,
+        });
       },
     ],
     afterResponse: [
       async (request, options, response) => {
-        const clone = response.clone();
-        try {
-          const text = await clone.text();
-          const preview = text.length > MAX_LOG_BODY ? text.slice(0, MAX_LOG_BODY) + '...' : text;
-          console.log(
-            `[API] RESPONSE: ${response.status} ${request.method} ${request.url}`,
-            preview
-          );
-        } catch (_) {
-          console.log(
-            `[API] RESPONSE: ${response.status} ${request.method} ${request.url} (body not readable)`
-          );
-        }
+        logger.debug('[API] Response', {
+          status: response.status,
+          method: request.method,
+          url: request.url,
+        });
 
-        // Log 4xx body so we can see validation/error reason
+        // Record failures without logging raw response bodies in production.
         if (response.status >= 400) {
-          const clone = response.clone();
-          try {
-            const body = await clone.text();
-            console.warn(
-              `[API] ${response.status} ${request.method} ${request.url}`,
-              body.includes('<!') ? `(HTML ${response.status})` : body
-            );
-          } catch (_) {}
-          // 5xx or HTML 4xx responses = backend down
-          const clone2 = response.clone();
-          const body2 = await clone2.text().catch(() => '');
-          if (response.status >= 500 || body2.includes('<!')) {
+          const bodyText = await response.clone().text().catch(() => '');
+          const isHtmlResponse = bodyText.includes('<!');
+
+          if (response.status >= 500 || isHtmlResponse) {
+            logger.error('[API] Backend request failed', undefined, {
+              status: response.status,
+              method: request.method,
+              url: request.url,
+              isHtmlResponse,
+            });
             useBackendStore.getState().recordFailure();
+          } else {
+            logger.warn('[API] Request returned a client error', {
+              status: response.status,
+              method: request.method,
+              url: request.url,
+            });
           }
         } else {
           useBackendStore.getState().recordSuccess();

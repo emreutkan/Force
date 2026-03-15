@@ -13,7 +13,6 @@ import { useUser } from '@/hooks/useUser';
 import { theme, commonStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   FadeInDown,
   FadeInUp,
@@ -30,27 +29,23 @@ import Markdown from 'react-native-markdown-display';
 const SUGGESTIONS = [
   {
     icon: 'barbell-outline' as const,
-    label: 'BUILD A PUSH/PULL/LEGS SPLIT',
+    label: 'Build a push/pull/legs split',
     prompt: 'Help me build a push/pull/legs training split',
-    color: theme.colors.status.active,
   },
   {
     icon: 'trending-up-outline' as const,
-    label: 'BREAK THROUGH A PLATEAU',
+    label: 'Break through a plateau',
     prompt: "I'm stuck on my bench press. How do I break through a plateau?",
-    color: theme.colors.status.warning,
   },
   {
     icon: 'pulse-outline' as const,
-    label: 'OPTIMIZE MY RECOVERY',
+    label: 'Optimize my recovery',
     prompt: 'What are the best recovery strategies between heavy sessions?',
-    color: theme.colors.status.rest,
   },
   {
     icon: 'restaurant-outline' as const,
-    label: 'DIAL IN MY NUTRITION',
+    label: 'Dial in my nutrition',
     prompt: 'Help me plan my nutrition for muscle building',
-    color: theme.colors.status.success,
   },
 ];
 
@@ -114,10 +109,6 @@ export default function ChatConversationScreen() {
           user: {
             _id: msg.role === 'user' ? 1 : 2,
             name: msg.role === 'user' ? user?.email?.split('@')[0] || 'You' : 'Force AI',
-            avatar:
-              msg.role === 'ai'
-                ? 'https://ui-avatars.com/api/?name=F&background=6366f1&color=fff&bold=true'
-                : undefined,
           },
         }))
         .reverse(); // Backend returns oldest→newest, GiftedChat needs newest→oldest
@@ -169,33 +160,26 @@ export default function ChatConversationScreen() {
     );
   };
 
-  const renderBubble = (props: any) => {
-    return (
-      <Bubble
-        {...props}
-        renderMessageText={renderMessageText}
-        wrapperStyle={{
-          right: [styles.bubbleRight, commonStyles.shadow],
-          left: [styles.bubbleLeft, commonStyles.shadow],
-        }}
-        timeTextStyle={{
-          right: styles.timeRight,
-          left: styles.timeLeft,
-        }}
-      />
-    );
-  };
+  const renderBubble = (props: any) => (
+    <Bubble
+      {...props}
+      renderMessageText={renderMessageText}
+      wrapperStyle={{
+        right: styles.bubbleRight,
+        left: styles.bubbleLeft,
+      }}
+      timeTextStyle={{
+        right: styles.timeRight,
+        left: styles.timeLeft,
+      }}
+    />
+  );
 
   const renderSend = (props: any) => (
     <Send {...props} containerStyle={styles.sendContainer}>
-      <LinearGradient
-        colors={[theme.colors.status.active, '#4f46e5']}
-        style={styles.sendButton}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <Ionicons name="arrow-up" size={18} color="#fff" />
-      </LinearGradient>
+      <View style={styles.sendButton}>
+        <Ionicons name="arrow-up" size={18} color={theme.colors.text.primary} />
+      </View>
     </Send>
   );
 
@@ -225,33 +209,20 @@ export default function ChatConversationScreen() {
       {/* GiftedChat renders empty inverted — flip it back */}
       <View style={{ transform: [{ scaleY: -1 }] }}>
         <View style={styles.welcomeContent}>
-          {/* AI Avatar */}
-          <View style={[styles.welcomeAvatar, commonStyles.shadow]}>
-            <LinearGradient
-              colors={['rgba(99, 102, 241, 0.3)', 'rgba(99, 102, 241, 0.1)']}
-              style={StyleSheet.absoluteFillObject}
-            />
-            <Ionicons name="sparkles" size={32} color={theme.colors.status.active} />
-          </View>
-
           <Text style={styles.welcomeTitle}>HOW CAN I HELP?</Text>
           <Text style={styles.welcomeSubtitle}>
-            I can help with training programs, exercise form, nutrition planning, and recovery.
+            Training programs, form corrections, nutrition, recovery — ask anything.
           </Text>
 
-          {/* Suggestion chips */}
           <View style={styles.suggestionsContainer}>
-            {SUGGESTIONS.map((suggestion, index) => (
+            {SUGGESTIONS.map((suggestion) => (
               <Pressable
-                key={index}
-                style={styles.suggestionChip}
+                key={suggestion.label}
+                style={({ pressed }) => [styles.suggestionChip, { opacity: pressed ? 0.7 : 1 }]}
                 onPress={() => handleSuggestionTap(suggestion.prompt)}
               >
-                <View style={[styles.suggestionIcon, { backgroundColor: `${suggestion.color}1A` }]}>
-                  <Ionicons name={suggestion.icon} size={14} color={suggestion.color} />
-                </View>
+                <Ionicons name={suggestion.icon} size={15} color={theme.colors.text.tertiary} />
                 <Text style={styles.suggestionText}>{suggestion.label}</Text>
-                <Ionicons name="arrow-forward" size={12} color={theme.colors.text.tertiary} />
               </Pressable>
             ))}
           </View>
@@ -260,45 +231,25 @@ export default function ChatConversationScreen() {
     </View>
   );
 
-  // Branded typing indicator
+  // Typing indicator
   const renderFooter = () => {
     if (!isSending) return null;
     return (
       <Animated.View entering={FadeInUp.duration(300)} style={styles.typingContainer}>
-        <View style={[styles.typingAvatarSmall, commonStyles.shadow]}>
-          <LinearGradient
-            colors={['rgba(99, 102, 241, 0.3)', 'rgba(99, 102, 241, 0.1)']}
-            style={StyleSheet.absoluteFillObject}
-          />
-          <Ionicons name="sparkles" size={10} color={theme.colors.status.active} />
-        </View>
         <View style={[styles.typingBubble, commonStyles.shadow]}>
           <View style={styles.typingDots}>
             <Animated.View style={[styles.typingDot, dot1Style]} />
             <Animated.View style={[styles.typingDot, dot2Style]} />
             <Animated.View style={[styles.typingDot, dot3Style]} />
           </View>
-          <Text style={styles.typingLabel}>ANALYZING</Text>
+          <Text style={styles.typingLabel}>THINKING</Text>
         </View>
       </Animated.View>
     );
   };
 
-  const headerHeight = insets.top + 60;
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Dual-layer AI gradient */}
-      <LinearGradient
-        colors={['rgba(99, 102, 241, 0.25)', 'rgba(99, 102, 241, 0.08)', 'transparent']}
-        locations={[0, 0.4, 1]}
-        style={StyleSheet.absoluteFillObject}
-      />
-      <LinearGradient
-        colors={['rgba(99, 102, 241, 0.13)', 'transparent']}
-        style={StyleSheet.absoluteFillObject}
-      />
-
       {/* Header */}
       <Animated.View entering={FadeInDown.duration(300)} style={styles.header}>
         <Pressable
@@ -309,24 +260,10 @@ export default function ChatConversationScreen() {
           <Ionicons name="chevron-back" size={22} color={theme.colors.text.primary} />
         </Pressable>
 
-        <View style={styles.headerCenter}>
-          <View style={styles.headerAvatar}>
-            <LinearGradient
-              colors={['rgba(99, 102, 241, 0.25)', 'rgba(99, 102, 241, 0.1)']}
-              style={StyleSheet.absoluteFillObject}
-            />
-            <Ionicons name="sparkles" size={14} color={theme.colors.status.active} />
-          </View>
-          <View style={styles.headerTextBlock}>
-            <Text style={styles.headerTitle}>FORCE AI</Text>
-            <View style={styles.headerStatusRow}>
-              <View style={styles.statusDot} />
-              <Text style={styles.headerStatus}>ONLINE</Text>
-            </View>
-          </View>
-        </View>
+        <Text style={styles.headerTitle}>FORCE AI</Text>
 
-        <View style={styles.headerRight} />
+        {/* Balance back button width */}
+        <View style={styles.headerSpacer} />
       </Animated.View>
 
       <View style={styles.headerDivider} />
@@ -348,7 +285,7 @@ export default function ChatConversationScreen() {
           renderChatEmpty={renderChatEmpty}
           renderFooter={renderFooter}
           // @ts-ignore - placeholder exists at runtime
-          placeholder="Ask Force AI anything..."
+          placeholder="Ask anything..."
           alwaysShowSend
           minInputToolbarHeight={60}
           bottomOffset={insets.bottom}
@@ -368,75 +305,31 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: theme.spacing.m,
     paddingVertical: 12,
   },
-  headerCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.s,
-  },
-  headerAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.ui.primaryBorder,
-    overflow: 'hidden',
-  },
-  headerTextBlock: {
-    gap: 2,
-  },
   headerTitle: {
-    fontSize: 15,
+    flex: 1,
+    textAlign: 'center',
+    fontSize: theme.typography.sizes.label,
     fontWeight: '900',
     fontStyle: 'italic',
+    textTransform: 'uppercase',
+    letterSpacing: theme.typography.tracking.label,
     color: theme.colors.text.primary,
-    letterSpacing: -0.3,
-    textTransform: 'uppercase',
   },
-  headerStatusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: theme.colors.status.success,
-  },
-  headerStatus: {
-    fontSize: 9,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    color: theme.colors.status.success,
-  },
-  headerRight: {
-    width: 40,
+  headerSpacer: {
+    width: 38, // matches backButton width to keep title centered
   },
   headerDivider: {
     height: 1,
     backgroundColor: theme.colors.ui.border,
-    opacity: 0.5,
   },
   chatWrapper: {
     flex: 1,
   },
 
   // Bubble styles
-  aiBubbleWrapper: {
-    paddingLeft: theme.spacing.s,
-    marginBottom: theme.spacing.xs,
-  },
-  userBubbleWrapper: {
-    paddingRight: theme.spacing.s,
-    marginBottom: theme.spacing.xs,
-  },
   bubbleRight: {
     backgroundColor: theme.colors.status.active,
     borderRadius: 22,
@@ -457,30 +350,24 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   markdownWrapper: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: theme.spacing.s,
+    paddingVertical: theme.spacing.xs,
   },
   bubbleTextRight: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '600',
-    lineHeight: 20,
-  },
-  bubbleTextLeft: {
     color: theme.colors.text.primary,
-    fontSize: 15,
-    fontWeight: '400',
-    lineHeight: 20,
+    fontSize: theme.typography.sizes.s,
+    fontWeight: '600',
+    lineHeight: 24,
   },
   timeRight: {
     color: 'rgba(255,255,255,0.6)',
-    fontSize: 10,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '600',
     textTransform: 'uppercase',
   },
   timeLeft: {
     color: theme.colors.text.tertiary,
-    fontSize: 10,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '600',
     textTransform: 'uppercase',
   },
@@ -519,6 +406,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
+    backgroundColor: theme.colors.status.active,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -533,17 +421,6 @@ const styles = StyleSheet.create({
   welcomeContent: {
     alignItems: 'center',
     width: '100%',
-  },
-  welcomeAvatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.ui.primaryBorder,
-    overflow: 'hidden',
-    marginBottom: theme.spacing.m,
   },
   welcomeTitle: {
     fontSize: theme.typography.sizes.h3,
@@ -578,39 +455,18 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.ui.border,
     padding: theme.spacing.m,
   },
-  suggestionIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   suggestionText: {
     flex: 1,
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    color: theme.colors.text.primary,
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: '600',
+    color: theme.colors.text.secondary,
+    letterSpacing: -0.1,
   },
 
   // Typing indicator
   typingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: theme.spacing.m,
     paddingVertical: theme.spacing.s,
-    gap: theme.spacing.s,
-  },
-  typingAvatarSmall: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: theme.colors.ui.primaryLight,
-    borderWidth: 1,
-    borderColor: theme.colors.ui.primaryBorder,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   typingBubble: {
     flexDirection: 'row',
@@ -620,12 +476,13 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.l,
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: theme.spacing.m,
+    paddingVertical: theme.spacing.s,
+    alignSelf: 'flex-start',
   },
   typingDots: {
     flexDirection: 'row',
-    gap: 4,
+    gap: theme.spacing.xs,
   },
   typingDot: {
     width: 6,
@@ -634,10 +491,10 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.status.active,
   },
   typingLabel: {
-    fontSize: 9,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    letterSpacing: theme.typography.tracking.wide,
     color: theme.colors.text.tertiary,
   },
 });
@@ -652,7 +509,7 @@ const markdownStyles = StyleSheet.create({
   },
   heading1: {
     color: theme.colors.text.primary,
-    fontSize: 22,
+    fontSize: theme.typography.sizes.l,
     fontWeight: '900',
     fontStyle: 'italic',
     textTransform: 'uppercase',
@@ -662,7 +519,7 @@ const markdownStyles = StyleSheet.create({
   },
   heading2: {
     color: theme.colors.text.primary,
-    fontSize: 18,
+    fontSize: theme.typography.sizes.m,
     fontWeight: '900',
     fontStyle: 'italic',
     textTransform: 'uppercase',
@@ -671,7 +528,7 @@ const markdownStyles = StyleSheet.create({
   },
   heading3: {
     color: theme.colors.text.primary,
-    fontSize: 16,
+    fontSize: theme.typography.sizes.s,
     fontWeight: '800',
     fontStyle: 'italic',
     marginTop: 12,
@@ -715,13 +572,13 @@ const markdownStyles = StyleSheet.create({
   code_inline: {
     backgroundColor: 'rgba(99, 102, 241, 0.15)',
     color: theme.colors.text.brand,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: theme.typography.fonts.mono,
     fontSize: 13,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     borderWidth: 0.5,
-    borderColor: 'rgba(99, 102, 241, 0.3)',
+    borderColor: theme.colors.ui.primaryBorder,
   },
   fence: {
     backgroundColor: 'rgba(9, 9, 11, 0.95)',
@@ -737,7 +594,7 @@ const markdownStyles = StyleSheet.create({
   },
   code_block: {
     backgroundColor: 'transparent',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: theme.typography.fonts.mono,
     fontSize: 13,
     color: theme.colors.text.primary,
   },

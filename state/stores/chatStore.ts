@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { ChatSession, ChatMessage } from '@/api/types';
 import * as chatApi from '@/api/Chat';
+import { logger } from '@/lib/logger';
 
 export interface ChatState {
   sessions: ChatSession[];
@@ -109,7 +110,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         await get().fetchSessions();
         await get().fetchSession(sessionId);
       } catch (err: any) {
-        console.error('[ChatStore] Failed to refresh sessions after send:', err);
+        logger.error('[ChatStore] Failed to refresh sessions after send', err);
       }
     } catch (err: any) {
       set({ error: err.message || 'Failed to send message', isSending: false });

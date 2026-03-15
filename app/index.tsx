@@ -3,10 +3,11 @@ import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 
 export default function Index() {
   useEffect(() => {
-    console.log('[INDEX] Redirecting to loading screen');
+    logger.debug('[INDEX] Redirecting to loading screen');
     // Use setTimeout to ensure this happens after initial render
     const timer = setTimeout(() => {
       router.replace('/(loading)');

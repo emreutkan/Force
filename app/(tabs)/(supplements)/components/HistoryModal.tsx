@@ -1,6 +1,7 @@
 import { UserSupplement } from '@/api/types';
 import { SwipeAction } from '@/components/shared/SwipeAction';
 import { theme } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { useDeleteSupplementLog, useSupplementLogs } from '@/hooks/useSupplements';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -28,7 +29,7 @@ export default function HistoryModal({ visible, onClose, supplement }: HistoryMo
     try {
       await deleteMutation.mutateAsync(logId);
     } catch (error) {
-      console.error('Failed to delete log:', error);
+      logger.error('Failed to delete log', error);
     }
   };
 

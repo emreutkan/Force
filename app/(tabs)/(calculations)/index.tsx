@@ -1,6 +1,7 @@
 import { BodyMeasurement } from '@/api/types/index';
 import { extractResults } from '@/api/types/pagination';
 import { theme, typographyStyles, commonStyles } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
 import { Stack } from 'expo-router';
@@ -120,7 +121,7 @@ export default function MeasurementsScreen() {
             setModals(prev => ({ ...prev, weight: false }));
             setTempVal('');
         } catch (error) {
-            console.error('Failed to update weight:', error);
+            logger.error('Failed to update weight', error);
         }
     };
 

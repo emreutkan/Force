@@ -1,5 +1,6 @@
 import { useCreateWorkout } from '@/hooks/useWorkout';
 import { theme } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
@@ -203,7 +204,7 @@ export default function WorkoutModal({ visible, onClose, mode, onSuccess }: Work
         } catch {}
       }
       Alert.alert(title, message);
-      console.error(error);
+      logger.error('Failed to create workout from modal', error);
     }
   };
 

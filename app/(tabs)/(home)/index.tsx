@@ -2,6 +2,7 @@ import { CalendarDay, CalendarStats, Workout } from '@/api/types/index';
 import CalendarModal from './components/CalendarModal';
 import WorkoutModal from './components/WorkoutModal';
 import { theme } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { parseLocalDate } from '@/utils/dateTime';
 import { useDateStore } from '@/state/userStore';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -76,7 +77,7 @@ export default function Home() {
             await deleteWorkoutMutation.mutateAsync(id);
             onRefresh();
           } catch (error) {
-            console.error('Error deleting workout:', error);
+            logger.error('Error deleting workout', error);
             Alert.alert('Error', 'Failed to delete workout');
           }
         },
@@ -114,7 +115,7 @@ export default function Home() {
       await createWorkoutMutation.mutateAsync({ title: 'Rest Day', is_rest_day: true });
       onRefresh();
     } catch (error) {
-      console.error('Error creating rest day:', error);
+      logger.error('Error creating rest day', error);
       Alert.alert('Error', 'Failed to create rest day');
     }
   };
@@ -126,7 +127,7 @@ export default function Home() {
         setCalendarData(result.calendar);
       }
     } catch (error) {
-      console.error('Error fetching calendar:', error);
+      logger.error('Error fetching calendar', error);
     }
   };
 
@@ -137,7 +138,7 @@ export default function Home() {
         setCalendarStats(result);
       }
     } catch (error) {
-      console.error('Error fetching calendar stats:', error);
+      logger.error('Error fetching calendar stats', error);
     }
   };
 
@@ -174,7 +175,7 @@ export default function Home() {
                 fetchCalendar(selectedYear, selectedMonth);
                 fetchCalendarStats(selectedYear, selectedMonth);
               } catch (error) {
-                console.error('Error deleting workout:', error);
+                logger.error('Error deleting workout', error);
                 Alert.alert('Error', 'Failed to delete workout');
               }
             },

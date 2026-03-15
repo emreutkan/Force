@@ -12,49 +12,19 @@ import { useChatStore } from '@/state/userStore';
 import { theme, commonStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-  FadeInDown,
-  FadeInUp,
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ChatSession } from '@/api/types';
-
-const CAPABILITIES = [
-  { icon: 'barbell-outline' as const, label: 'PROGRAMMING', color: theme.colors.status.active },
-  { icon: 'body-outline' as const, label: 'FORM TIPS', color: theme.colors.status.success },
-  { icon: 'restaurant-outline' as const, label: 'NUTRITION', color: theme.colors.status.warning },
-  { icon: 'pulse-outline' as const, label: 'RECOVERY', color: theme.colors.status.rest },
-];
 
 export default function ChatHistoryScreen() {
   const insets = useSafeAreaInsets();
   const { sessions, isLoading, fetchSessions, removeSession, clearActiveSession } = useChatStore();
-
-  // FAB pulse animation
-  const pulseValue = useSharedValue(1);
-  useEffect(() => {
-    pulseValue.value = withRepeat(
-      withSequence(withTiming(1.05, { duration: 1500 }), withTiming(1, { duration: 1500 })),
-      -1,
-      true
-    );
-  }, []);
-  const fabPulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseValue.value }],
-  }));
 
   useEffect(() => {
     clearActiveSession();
     fetchSessions();
   }, []);
 
-  // Filter out empty sessions (ghost sessions from old code)
   const activeSessions = sessions.filter((s) => s.messages && s.messages.length > 0);
 
   const handleNewChat = useCallback(() => {
@@ -92,138 +62,68 @@ export default function ChatHistoryScreen() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const renderSessionItem = ({ item, index }: { item: ChatSession; index: number }) => {
-    const messageCount = item.messages?.length || 0;
+  const renderSessionItem = ({ item, index }: { item: ChatSession; index: number }) => (
+    <Animated.View entering={FadeInUp.delay(index * 50).duration(300)}>
+      <Pressable
+        style={({ pressed }) => [styles.sessionCard, { opacity: pressed ? 0.7 : 1 }]}
+        onPress={() => handleOpenSession(item)}
+      >
+        <View style={styles.sessionIconContainer}>
+          <Ionicons name="chatbubble-outline" size={16} color={theme.colors.text.tertiary} />
+        </View>
 
-    return (
-      <Animated.View entering={FadeInUp.delay(index * 50).duration(300)}>
+        <View style={styles.sessionContent}>
+          <Text style={styles.sessionTitle} numberOfLines={1}>
+            {item.title || 'New Chat'}
+          </Text>
+          <Text style={styles.sessionMeta}>
+            {formatDate(item.updated_at || item.created_at)}
+          </Text>
+        </View>
+
         <Pressable
-          style={styles.sessionCard}
-          onPress={() => handleOpenSession(item)}
-          onLongPress={() => handleDeleteSession(item)}
+          onPress={() => handleDeleteSession(item)}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.4 : 0.6 })}
         >
-          <View style={[styles.sessionIconContainer, commonStyles.shadow]}>
-            <LinearGradient
-              colors={['rgba(99, 102, 241, 0.25)', 'rgba(99, 102, 241, 0.1)']}
-              style={StyleSheet.absoluteFillObject}
-            />
-            <Ionicons name="sparkles" size={18} color={theme.colors.status.active} />
-          </View>
-
-          <View style={styles.sessionContent}>
-            <Text style={styles.sessionTitle} numberOfLines={1}>
-              {item.title || 'New Chat'}
-            </Text>
-            <Text style={styles.sessionMeta}>
-              {messageCount > 0 ? `${messageCount} messages` : 'No messages'}
-              {'  ·  '}
-              {formatDate(item.updated_at || item.created_at)}
-            </Text>
-          </View>
-
-          <Ionicons
-            name="chevron-forward"
-            size={16}
-            color={theme.colors.text.tertiary}
-            style={{ opacity: 0.5 }}
-          />
+          <Ionicons name="trash-outline" size={15} color={theme.colors.text.tertiary} />
         </Pressable>
-      </Animated.View>
-    );
-  };
+      </Pressable>
+    </Animated.View>
+  );
 
   const renderEmpty = () => {
     if (isLoading) return null;
     return (
       <Animated.View entering={FadeInUp.delay(200).duration(500)} style={styles.emptyContainer}>
-        {/* Decorative divider */}
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Ionicons name="sparkles" size={10} color={theme.colors.text.tertiary} />
-          <View style={styles.dividerLine} />
-        </View>
-
+        <Ionicons name="chatbubbles-outline" size={36} color={theme.colors.text.tertiary} />
         <Text style={styles.emptyTitle}>YOUR AI COACH</Text>
         <Text style={styles.emptySubtitle}>
           Ask about training programs, form corrections, nutrition, and recovery strategies.
         </Text>
-
-        {/* Capability chips */}
-        <View style={styles.capabilitiesGrid}>
-          {CAPABILITIES.map((cap, i) => (
-            <Animated.View
-              key={cap.label}
-              entering={FadeInUp.delay(300 + i * 80).duration(400)}
-              style={styles.capabilityChip}
-            >
-              <View style={[styles.capabilityIcon, { backgroundColor: `${cap.color}1A` }]}>
-                <Ionicons name={cap.icon} size={14} color={cap.color} />
-              </View>
-              <Text style={styles.capabilityLabel}>{cap.label}</Text>
-            </Animated.View>
-          ))}
-        </View>
       </Animated.View>
     );
   };
 
   const renderHeader = () => (
-    <>
-      {/* Hero section */}
-      <Animated.View entering={FadeInDown.duration(500)} style={styles.heroSection}>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          style={commonStyles.backButton}
-        >
-          <Ionicons name="chevron-back" size={22} color={theme.colors.text.primary} />
-        </Pressable>
+    <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        style={commonStyles.backButton}
+      >
+        <Ionicons name="chevron-back" size={22} color={theme.colors.text.primary} />
+      </Pressable>
 
-        <View style={styles.aiIdentity}>
-          <Animated.View
-            entering={FadeInDown.delay(100).duration(400)}
-            style={styles.aiAvatarLarge}
-          >
-            <LinearGradient
-              colors={['rgba(99, 102, 241, 0.2)', 'rgba(99, 102, 241, 0.08)']}
-              style={StyleSheet.absoluteFillObject}
-            />
-            <Ionicons name="sparkles" size={28} color={theme.colors.status.active} />
-          </Animated.View>
+      <Text style={styles.headerTitle}>AI COACH</Text>
 
-          <Animated.Text entering={FadeInDown.delay(200).duration(400)} style={styles.heroTitle}>
-            FORCE AI
-          </Animated.Text>
-
-          <Animated.Text entering={FadeInDown.delay(300).duration(400)} style={styles.heroTagline}>
-            NEURAL TRAINING ASSISTANT
-          </Animated.Text>
-        </View>
-      </Animated.View>
-
-      {/* Section label */}
-      {activeSessions.length > 0 && (
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>HISTORY</Text>
-        </View>
-      )}
-    </>
+      {/* Balance back button width */}
+      <View style={styles.headerSpacer} />
+    </Animated.View>
   );
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Dual-layer AI gradient */}
-      <LinearGradient
-        colors={['rgba(99, 102, 241, 0.25)', 'rgba(99, 102, 241, 0.08)', 'transparent']}
-        locations={[0, 0.4, 1]}
-        style={StyleSheet.absoluteFillObject}
-      />
-      <LinearGradient
-        colors={['rgba(99, 102, 241, 0.13)', 'transparent']}
-        style={StyleSheet.absoluteFillObject}
-      />
-
-      {/* Session list */}
       {isLoading && sessions.length === 0 ? (
         <>
           {renderHeader()}
@@ -243,19 +143,15 @@ export default function ChatHistoryScreen() {
         />
       )}
 
-      {/* Floating new chat button with pulse */}
       <Animated.View
-        entering={FadeInUp.delay(400).duration(400)}
-        style={[styles.fabContainer, { bottom: insets.bottom + 24 }, fabPulseStyle]}
+        entering={FadeInUp.delay(300).duration(400)}
+        style={[styles.fabContainer, { bottom: insets.bottom + 24 }]}
       >
-        <Pressable style={styles.fab} onPress={handleNewChat}>
-          <LinearGradient
-            colors={[theme.colors.status.active, '#4f46e5']}
-            style={StyleSheet.absoluteFillObject}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          />
-          <Ionicons name="sparkles" size={20} color="#fff" />
+        <Pressable
+          style={({ pressed }) => [styles.fab, { opacity: pressed ? 0.85 : 1 }]}
+          onPress={handleNewChat}
+        >
+          <Ionicons name="add" size={18} color={theme.colors.text.primary} />
           <Text style={styles.fabText}>NEW CHAT</Text>
         </Pressable>
       </Animated.View>
@@ -269,56 +165,25 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
 
-  // Hero
-  heroSection: {
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: theme.spacing.m,
     paddingTop: theme.spacing.m,
     paddingBottom: theme.spacing.xl,
   },
-  aiIdentity: {
-    alignItems: 'center',
-    width: '100%',
-    marginTop: theme.spacing.l,
-    gap: theme.spacing.s,
-  },
-  aiAvatarLarge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.ui.primaryBorder,
-    overflow: 'hidden',
-    marginBottom: theme.spacing.xs,
-  },
-  heroTitle: {
-    fontSize: theme.typography.sizes.h2,
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: theme.typography.sizes.label,
     fontWeight: '900',
-    fontStyle: 'italic',
-    letterSpacing: theme.typography.tracking.h2,
+    textTransform: 'uppercase',
+    letterSpacing: theme.typography.tracking.label,
     color: theme.colors.text.primary,
-    textTransform: 'uppercase',
   },
-  heroTagline: {
-    fontSize: theme.typography.sizes.label,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: theme.typography.tracking.label,
-    color: theme.colors.text.tertiary,
-  },
-
-  // Section header
-  sectionHeader: {
-    paddingHorizontal: theme.spacing.m + theme.spacing.xs,
-    marginBottom: theme.spacing.s,
-  },
-  sectionLabel: {
-    fontSize: theme.typography.sizes.label,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: theme.typography.tracking.label,
-    color: theme.colors.text.tertiary,
+  headerSpacer: {
+    width: 38, // matches backButton width to keep title centered
   },
 
   // List
@@ -334,30 +199,26 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.l,
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
-    padding: theme.spacing.m,
+    paddingVertical: theme.spacing.m,
+    paddingHorizontal: theme.spacing.m,
     marginBottom: theme.spacing.s,
     gap: 12,
   },
   sessionIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: theme.colors.ui.primaryBorder,
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
   },
   sessionContent: {
     flex: 1,
-    gap: 4,
+    gap: theme.spacing.xs,
   },
   sessionTitle: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '600',
     color: theme.colors.text.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: -0.1,
   },
   sessionMeta: {
     fontSize: theme.typography.sizes.xxs,
@@ -370,20 +231,9 @@ const styles = StyleSheet.create({
   // Empty state
   emptyContainer: {
     alignItems: 'center',
-    paddingTop: theme.spacing.xxl,
+    paddingTop: theme.spacing.xxxxl,
     paddingHorizontal: theme.spacing.xl,
     gap: theme.spacing.m,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.m,
-    marginBottom: theme.spacing.s,
-  },
-  dividerLine: {
-    height: 1,
-    width: 32,
-    backgroundColor: theme.colors.ui.border,
   },
   emptyTitle: {
     fontSize: theme.typography.sizes.h3,
@@ -392,6 +242,7 @@ const styles = StyleSheet.create({
     letterSpacing: theme.typography.tracking.h3,
     color: theme.colors.text.primary,
     textTransform: 'uppercase',
+    marginTop: theme.spacing.s,
   },
   emptySubtitle: {
     fontSize: theme.typography.sizes.s,
@@ -400,38 +251,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     maxWidth: 280,
-  },
-  capabilitiesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: theme.spacing.s,
-    marginTop: theme.spacing.m,
-  },
-  capabilityChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: theme.colors.ui.glass,
-    borderRadius: theme.borderRadius.full,
-    borderWidth: 1,
-    borderColor: theme.colors.ui.border,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  capabilityIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  capabilityLabel: {
-    fontSize: theme.typography.sizes.xxs,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    color: theme.colors.text.secondary,
   },
 
   // Loading
@@ -449,23 +268,23 @@ const styles = StyleSheet.create({
   fab: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing.s,
     paddingVertical: 14,
-    paddingHorizontal: 20,
+    paddingHorizontal: theme.spacing.l,
     borderRadius: theme.borderRadius.xxl,
-    overflow: 'hidden',
-    shadowColor: theme.colors.status.active,
-    shadowOffset: { width: 0, height: 8 },
+    backgroundColor: theme.colors.status.active,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 10,
+    shadowRadius: 8,
+    elevation: 8,
   },
   fabText: {
     fontSize: 13,
     fontWeight: '900',
     fontStyle: 'italic',
-    color: '#fff',
-    letterSpacing: 1.5,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.typography.tracking.wide,
     textTransform: 'uppercase',
   },
 });

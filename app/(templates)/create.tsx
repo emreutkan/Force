@@ -2,6 +2,7 @@ import { createTemplateWorkout } from '@/api/Workout';
 import { Exercise } from '@/api/types/workout';
 import ExerciseSearchModal from '@/components/ExerciseSearchModal';
 import { theme } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
@@ -103,7 +104,7 @@ export default function CreateTemplateScreen() {
         Alert.alert('Error', 'Failed to create template.');
       }
     } catch (error) {
-      console.error('Failed to create template:', error);
+      logger.error('Failed to create template', error);
       Alert.alert('Error', 'Failed to create template.');
     } finally {
       setIsCreating(false);

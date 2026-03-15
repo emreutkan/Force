@@ -1,6 +1,7 @@
 import { getWorkout, getWorkoutSummary } from '@/api/Workout';
 import { WorkoutSummaryResponse, Workout, WorkoutDiagnosis } from '@/api/types/index';
 import { theme } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
@@ -171,7 +172,7 @@ const WorkoutSummaryScreen = () => {
       if (wData && !(wData as { error?: unknown }).error) setWorkout(wData);
       if (sData && !(sData as { error?: unknown }).error) setSummary(sData);
     } catch (error: any) {
-      console.error(getErrorMessage(error as Error));
+      logger.error(getErrorMessage(error as Error), error);
     } finally {
       setIsLoading(false);
     }

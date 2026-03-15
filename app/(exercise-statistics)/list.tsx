@@ -2,6 +2,7 @@ import { getExercises } from '@/api/Exercises';
 import { PaginatedResponse } from '@/api/types/pagination';
 import { Exercise } from '@/api/types/index';
 import { theme } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack } from 'expo-router';
@@ -53,7 +54,7 @@ export default function ExerciseListScreen() {
           setHasMore(false);
         }
       } catch (error) {
-        console.error('Failed to load exercises:', error);
+        logger.error('Failed to load exercises', error);
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);

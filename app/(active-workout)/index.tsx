@@ -4,6 +4,7 @@ import SuggestExerciseRow from '@/components/shared/workout/SuggestExerciseRow';
 import LiveCoachBanner from '@/components/shared/workout/LiveCoachBanner';
 import ExcessiveDurationModal from '@/components/shared/workout/ExcessiveDurationModal';
 import { theme } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { useActiveWorkoutStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -76,7 +77,7 @@ export default function ActiveWorkoutScreen() {
       // Validate timestamp is not in the future (handle timezone/clock skew)
       const now = Date.now();
       if (timestamp > now) {
-        console.warn('Rest timer timestamp is in the future, using current time');
+        logger.warn('Rest timer timestamp is in the future, using current time');
         setLastSetTimestamp(now);
       } else {
         setLastSetTimestamp(timestamp);
@@ -119,14 +120,14 @@ export default function ActiveWorkoutScreen() {
           })
           .catch((err) => {
             // Non-blocking — silently ignore errors
-            console.warn('[OptimizationCheck] failed:', err);
+            logger.warn('[OptimizationCheck] failed', { error: err });
           });
       }
 
       // Refresh suggestions after a new exercise is added
       refetchSuggestions();
     } catch (error) {
-      console.error('Failed to add exercise:', error);
+      logger.error('Failed to add exercise', error);
       alert('Failed to add exercise');
     }
   };
@@ -140,7 +141,7 @@ export default function ActiveWorkoutScreen() {
     try {
       await removeExerciseMutation.mutateAsync(workoutExerciseId);
     } catch (error) {
-      console.error('Failed to remove exercise:', error);
+      logger.error('Failed to remove exercise', error);
       alert('Failed to remove exercise');
     }
   };
@@ -205,7 +206,7 @@ export default function ActiveWorkoutScreen() {
     try {
       await deleteSetMutation.mutateAsync(setId);
     } catch (error) {
-      console.error('Failed to delete set:', error);
+      logger.error('Failed to delete set', error);
       alert('Failed to delete set');
     }
   };
@@ -215,7 +216,7 @@ export default function ActiveWorkoutScreen() {
       // Refresh workout from backend to get latest data
       refetchActiveWorkout();
     } catch (error) {
-      console.error('Failed to refresh workout after set update:', error);
+      logger.error('Failed to refresh workout after set update', error);
     }
   };
 
@@ -256,7 +257,7 @@ export default function ActiveWorkoutScreen() {
           return;
         }
 
-        console.error('Failed to complete workout:', error);
+        logger.error('Failed to complete workout', error);
         Alert.alert('Error', 'Failed to complete workout. Please try again.');
       }
     };

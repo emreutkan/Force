@@ -1,15 +1,17 @@
 import { useEffect } from 'react';
 import { useUser } from '@/hooks/useUser';
+import { logger } from '@/lib/logger';
 import { useSettingsStore } from '@/state/userStore';
 import {
   ENTITLEMENT_ID,
-  getCustomerInfo,
   addCustomerInfoUpdateListener,
+  getCustomerInfo,
+  initializeRevenueCat,
   logInRevenueCat,
 } from '@/services/revenueCat';
 
 /**
- * Runs at app root. Syncs RevenueCat subscription status → isPro store.
+ * Runs at app root. Syncs RevenueCat subscription status -> isPro store.
  * Two triggers: initial fetch on mount + real-time listener for purchases/restores.
  */
 export default function RevenueCatSync() {
@@ -18,31 +20,53 @@ export default function RevenueCatSync() {
 
   // Link RC user ID to backend user so webhooks map correctly
   useEffect(() => {
-    if (user?.id) {
-      logInRevenueCat(user.id);
-    }
+    if (!user?.id) return;
+
+    void (async () => {
+      await initializeRevenueCat();
+      await logInRevenueCat(user.id);
+    })();
   }, [user?.id]);
 
   useEffect(() => {
-    // 1. Check current status on mount
-    getCustomerInfo().then((info) => {
-      if (info) {
+    let isCancelled = false;
+    let removeListener: (() => void) | undefined;
+
+    void (async () => {
+      const configured = await initializeRevenueCat();
+      if (!configured || isCancelled) return;
+
+      const info = await getCustomerInfo();
+      if (info && !isCancelled) {
         const active = info.entitlements.active;
         const isPro = !!active[ENTITLEMENT_ID];
-        console.log('[RC] entitlements on mount:', Object.keys(active), '→ isPro:', isPro);
+        logger.info('[RC] RevenueCat entitlements synced on mount', {
+          entitlementKeys: Object.keys(active),
+          isPro,
+        });
         setIsPro(isPro);
       }
-    });
 
-    // 2. Real-time: fires immediately after purchase/restore/expiry
-    const listener = addCustomerInfoUpdateListener((info) => {
-      const active = info.entitlements.active;
-      const isPro = !!active[ENTITLEMENT_ID];
-      console.log('[RC] entitlements updated:', Object.keys(active), '→ isPro:', isPro);
-      setIsPro(isPro);
-    });
+      const listener = addCustomerInfoUpdateListener((updatedInfo) => {
+        const active = updatedInfo.entitlements.active;
+        const isPro = !!active[ENTITLEMENT_ID];
+        logger.info('[RC] RevenueCat entitlements updated', {
+          entitlementKeys: Object.keys(active),
+          isPro,
+        });
+        setIsPro(isPro);
+      });
 
-    return () => listener.remove();
+      removeListener = listener.remove;
+      if (isCancelled) {
+        removeListener();
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+      removeListener?.();
+    };
   }, [setIsPro]);
 
   return null;
