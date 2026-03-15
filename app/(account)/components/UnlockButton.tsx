@@ -29,8 +29,8 @@ export default function UnlockButton({ onPress, isLoading }: UnlockButtonProps) 
           <ActivityIndicator size="small" color="#FFFFFF" />
         ) : (
           <>
-            <Ionicons name="rocket" size={20} color="#FFFFFF" style={styles.icon} />
-            <Text style={styles.text}>UNLOCK PRO ACCESS</Text>
+            <Ionicons name="sparkles" size={20} color="#FFFFFF" style={styles.icon} />
+            <Text style={styles.text}>Choose a Pro plan</Text>
             <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
           </>
         )}
@@ -67,9 +67,8 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 16,
     fontWeight: '900',
-    fontStyle: 'italic',
     textTransform: 'uppercase',
-    letterSpacing: 2,
+    letterSpacing: 1.2,
     color: theme.colors.text.primary,
   },
 });

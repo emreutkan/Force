@@ -1,7 +1,7 @@
 import { theme } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
 import type { PurchasesPackage } from 'react-native-purchases';
-import { Ionicons } from '@expo/vector-icons';
 import {
   getPackageType,
   getPackageLabel,
@@ -25,20 +25,14 @@ export default function PackageSelector({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionLabel}>SELECT PLAN</Text>
+      <Text style={styles.sectionLabel}>Choose a plan</Text>
+      <Text style={styles.sectionText}>Pick the option that fits how you want to try Pro.</Text>
+
       <View style={styles.packagesRow}>
         {sortedPackages.map((pkg) => {
           const isSelected = pkg.identifier === selectedPackage.identifier;
           const packageType = getPackageType(pkg);
           const savings = calculateSavings(packages, pkg);
-
-          // Use actual price values from RevenueCat
-          const priceString = pkg.product.priceString; // e.g., "$4.99"
-          const price = pkg.product.price; // e.g., 4.99
-
-          // Extract currency symbol (everything that's not a digit/decimal)
-          const currencyMatch = priceString.match(/[^\d.,\s]+/);
-          const currency = currencyMatch ? currencyMatch[0] : '$';
 
           return (
             <Pressable
@@ -50,53 +44,42 @@ export default function PackageSelector({
               ]}
               onPress={() => onSelectPackage(pkg)}
             >
-              {/* Best value badge for lifetime */}
               {packageType === 'lifetime' && (
                 <View style={styles.bestValueBadge}>
                   <Ionicons name="star" size={10} color="#FFD700" />
-                  <Text style={styles.bestValueText}>BEST VALUE</Text>
+                  <Text style={styles.bestValueText}>Best value</Text>
                 </View>
               )}
 
-              {/* Savings badge for yearly/lifetime */}
               {savings && savings > 0 && packageType !== 'lifetime' && (
                 <View style={styles.savingsBadge}>
-                  <Text style={styles.savingsText}>SAVE {savings}%</Text>
+                  <Text style={styles.savingsText}>Save {savings}%</Text>
                 </View>
               )}
 
-              {/* Package label */}
-              <Text style={[
-                styles.packageLabel,
-                packageType === 'lifetime' && styles.lifetimeLabel,
-              ]}>
+              <Text
+                style={[styles.packageLabel, packageType === 'lifetime' && styles.lifetimeLabel]}
+              >
                 {getPackageLabel(packageType)}
               </Text>
 
-              {/* Price - show full price with decimals */}
               <View style={styles.priceRow}>
-                <Text style={[
-                  styles.price,
-                  packageType === 'lifetime' && styles.lifetimePrice,
-                ]}>
-                  {priceString}
+                <Text style={[styles.price, packageType === 'lifetime' && styles.lifetimePrice]}>
+                  {pkg.product.priceString}
                 </Text>
               </View>
 
-              {/* Period */}
-              <Text style={[
-                styles.period,
-                packageType === 'lifetime' && styles.lifetimePeriod,
-              ]}>
+              <Text style={[styles.period, packageType === 'lifetime' && styles.lifetimePeriod]}>
                 {getPackagePeriod(packageType)}
               </Text>
 
-              {/* Selected indicator */}
               {isSelected && (
                 <View style={styles.selectedCheck}>
-                  <Ionicons name="checkmark-circle" size={20} color={
-                    packageType === 'lifetime' ? '#FFD700' : theme.colors.status.rest
-                  } />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={20}
+                    color={packageType === 'lifetime' ? '#FFD700' : theme.colors.status.rest}
+                  />
                 </View>
               )}
             </Pressable>
@@ -118,8 +101,15 @@ const styles = StyleSheet.create({
     letterSpacing: 3.6,
     color: theme.colors.text.tertiary,
     textAlign: 'center',
-    marginBottom: theme.spacing.m,
+    marginBottom: theme.spacing.xs,
     marginLeft: 4,
+  },
+  sectionText: {
+    fontSize: theme.typography.sizes.s,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: theme.spacing.m,
   },
   packagesRow: {
     flexDirection: 'row',
@@ -196,7 +186,6 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 28,
     fontWeight: '900',
-    fontStyle: 'italic',
     color: theme.colors.text.primary,
     letterSpacing: -1,
     fontVariant: ['tabular-nums'],

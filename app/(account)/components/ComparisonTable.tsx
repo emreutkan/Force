@@ -6,41 +6,44 @@ interface ComparisonRow {
   feature: string;
   free: string;
   pro: string;
-  isFreePartial?: boolean; // true = free gets something but limited
+  isFreePartial?: boolean;
 }
 
 const ROWS: ComparisonRow[] = [
-  { feature: '1RM HISTORY', free: '30 DAYS', pro: 'FULL', isFreePartial: true },
-  { feature: 'VOLUME ANALYSIS', free: '4 WEEKS', pro: '12 WEEKS', isFreePartial: true },
-  { feature: 'CNS RECOVERY', free: '—', pro: 'YES' },
-  { feature: 'RECOVERY TIPS', free: '—', pro: 'YES' },
-  { feature: 'REST & FREQ. TIPS', free: '—', pro: 'YES' },
-  { feature: 'TRAINING RESEARCH', free: '—', pro: 'YES' },
-  { feature: 'WORKOUT INSIGHTS', free: '—', pro: 'YES' },
+  { feature: '1RM history', free: '30 days', pro: 'Full', isFreePartial: true },
+  { feature: 'Volume analysis', free: '4 weeks', pro: '12 weeks', isFreePartial: true },
+  { feature: 'CNS recovery', free: 'No', pro: 'Yes' },
+  { feature: 'Recovery tips', free: 'No', pro: 'Yes' },
+  { feature: 'Rest and frequency tips', free: 'No', pro: 'Yes' },
+  { feature: 'Training research', free: 'No', pro: 'Yes' },
+  { feature: 'Workout insights', free: 'No', pro: 'Yes' },
 ];
 
 export default function ComparisonTable() {
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionLabel}>FREE VS PRO</Text>
+      <Text style={styles.sectionLabel}>Free vs Pro</Text>
+      <Text style={styles.sectionText}>
+        Start with the free plan for logging. Upgrade only if you want deeper guidance and longer
+        history.
+      </Text>
+
       <View style={styles.card}>
-        {/* Column headers */}
         <View style={styles.headerRow}>
           <View style={styles.featureCol} />
           <View style={styles.valueCol}>
-            <Text style={styles.colHeaderFree}>FREE</Text>
+            <Text style={styles.colHeaderFree}>Free</Text>
           </View>
           <View style={styles.valueCol}>
-            <Text style={styles.colHeaderPro}>PRO</Text>
+            <Text style={styles.colHeaderPro}>Pro</Text>
           </View>
         </View>
 
         <View style={styles.divider} />
 
-        {/* Data rows */}
         {ROWS.map((row, index) => (
           <View
-            key={index}
+            key={row.feature}
             style={[styles.row, index < ROWS.length - 1 && styles.rowBorder]}
           >
             <View style={styles.featureCol}>
@@ -52,7 +55,7 @@ export default function ComparisonTable() {
               </Text>
             </View>
             <View style={[styles.valueCol, styles.proValCol]}>
-              {row.pro === 'YES' ? (
+              {row.pro === 'Yes' ? (
                 <Ionicons
                   name="checkmark-circle"
                   size={18}
@@ -79,8 +82,15 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 3.6,
     color: theme.colors.text.tertiary,
-    marginBottom: theme.spacing.m,
+    marginBottom: theme.spacing.s,
     marginLeft: 4,
+  },
+  sectionText: {
+    fontSize: theme.typography.sizes.s,
+    color: theme.colors.text.secondary,
+    lineHeight: 20,
+    marginBottom: theme.spacing.m,
+    paddingHorizontal: 4,
   },
   card: {
     backgroundColor: theme.colors.ui.glass,
@@ -137,10 +147,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(192, 132, 252, 0.04)',
   },
   featureName: {
-    fontSize: 11,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    fontSize: 12,
+    fontWeight: '700',
     color: theme.colors.text.secondary,
   },
   freeVal: {
@@ -152,7 +160,7 @@ const styles = StyleSheet.create({
   },
   freeValPartial: {
     color: theme.colors.status.warning,
-    opacity: 0.7,
+    opacity: 0.8,
   },
   proVal: {
     fontSize: 11,

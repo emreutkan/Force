@@ -7,7 +7,6 @@ export default function PremiumPreview() {
   return (
     <View style={styles.container}>
       <View style={styles.previewCard}>
-        {/* Mock CNS Recovery Card (Blurred) */}
         <View style={styles.mockCard}>
           <View style={styles.mockHeader}>
             <View style={styles.mockIconBox} />
@@ -19,22 +18,22 @@ export default function PremiumPreview() {
           </View>
         </View>
 
-        {/* Blur Overlay Effect */}
         <LinearGradient
           colors={['rgba(2, 2, 5, 0.95)', 'rgba(2, 2, 5, 0.85)']}
           style={styles.blurOverlay}
         />
 
-        {/* Lock Icon */}
         <View style={styles.lockContainer}>
           <View style={styles.lockIconBox}>
             <Ionicons name="lock-closed" size={32} color={theme.colors.status.rest} />
           </View>
-          <Text style={styles.lockText}>PRO FEATURE</Text>
+          <Text style={styles.lockText}>Preview locked</Text>
         </View>
       </View>
 
-      <Text style={styles.teaser}>SEE YOUR CNS RECOVERY STATUS</Text>
+      <Text style={styles.teaser}>
+        Upgrade when you want CNS recovery guidance directly in the app.
+      </Text>
     </View>
   );
 }
@@ -125,7 +124,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.text.secondary,
     textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    lineHeight: 20,
+    maxWidth: 280,
   },
 });

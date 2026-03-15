@@ -1,22 +1,22 @@
 import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@/hooks/useUser';
 import { logger } from '@/lib/logger';
-import { useSettingsStore } from '@/state/userStore';
 import {
   ENTITLEMENT_ID,
   addCustomerInfoUpdateListener,
-  getCustomerInfo,
   initializeRevenueCat,
   logInRevenueCat,
 } from '@/services/revenueCat';
 
 /**
- * Runs at app root. Syncs RevenueCat subscription status -> isPro store.
- * Two triggers: initial fetch on mount + real-time listener for purchases/restores.
+ * Runs at app root. Links RC identity to the backend user and invalidates
+ * the ['user'] query when RC emits a subscription change — the backend is
+ * the source of truth for is_pro.
  */
 export default function RevenueCatSync() {
   const { data: user } = useUser({ enabled: true });
-  const setIsPro = useSettingsStore((state) => state.setIsPro);
+  const queryClient = useQueryClient();
 
   // Link RC user ID to backend user so webhooks map correctly
   useEffect(() => {
@@ -28,6 +28,7 @@ export default function RevenueCatSync() {
     })();
   }, [user?.id]);
 
+  // Listen for RC entitlement changes and invalidate the backend user cache
   useEffect(() => {
     let isCancelled = false;
     let removeListener: (() => void) | undefined;
@@ -36,25 +37,13 @@ export default function RevenueCatSync() {
       const configured = await initializeRevenueCat();
       if (!configured || isCancelled) return;
 
-      const info = await getCustomerInfo();
-      if (info && !isCancelled) {
-        const active = info.entitlements.active;
-        const isPro = !!active[ENTITLEMENT_ID];
-        logger.info('[RC] RevenueCat entitlements synced on mount', {
-          entitlementKeys: Object.keys(active),
-          isPro,
-        });
-        setIsPro(isPro);
-      }
-
       const listener = addCustomerInfoUpdateListener((updatedInfo) => {
         const active = updatedInfo.entitlements.active;
-        const isPro = !!active[ENTITLEMENT_ID];
-        logger.info('[RC] RevenueCat entitlements updated', {
+        logger.info('[RC] RevenueCat entitlements updated — invalidating user cache', {
           entitlementKeys: Object.keys(active),
-          isPro,
+          isPro: !!active[ENTITLEMENT_ID],
         });
-        setIsPro(isPro);
+        void queryClient.invalidateQueries({ queryKey: ['user'] });
       });
 
       removeListener = listener.remove;
@@ -67,7 +56,7 @@ export default function RevenueCatSync() {
       isCancelled = true;
       removeListener?.();
     };
-  }, [setIsPro]);
+  }, [queryClient]);
 
   return null;
 }

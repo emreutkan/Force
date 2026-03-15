@@ -14,51 +14,55 @@ const FEATURES: Feature[] = [
   {
     icon: 'pulse',
     iconColor: theme.colors.status.rest,
-    title: 'CNS RECOVERY STATUS',
-    benefit: 'Monitor central nervous system fatigue and know exactly when you\'re ready to train hard again.',
+    title: 'CNS RECOVERY',
+    benefit: 'See whether your nervous system is recovered before you push a hard session.',
   },
   {
     icon: 'trophy',
     iconColor: theme.colors.status.warning,
     title: 'FULL 1RM HISTORY',
-    benefit: 'Complete strength history for every exercise. Free users are limited to the last 30 days.',
+    benefit:
+      'Review your full strength history for every exercise instead of only the last 30 days.',
   },
   {
     icon: 'fitness',
     iconColor: theme.colors.status.active,
-    title: 'RECOVERY RECOMMENDATIONS',
-    benefit: 'Science-based recovery tips after each workout — muscle groups, protein synthesis, and optimal timing.',
+    title: 'RECOVERY TIPS',
+    benefit:
+      'Get practical post-workout guidance for muscle recovery, protein timing, and session spacing.',
   },
   {
     icon: 'bar-chart',
     iconColor: theme.colors.status.success,
     title: '12-WEEK VOLUME ANALYSIS',
-    benefit: 'Analyse training load for any period up to 12 weeks. Free plan is limited to 4 weeks.',
+    benefit: 'Compare training load across longer blocks, with up to 12 weeks instead of 4.',
   },
   {
     icon: 'analytics',
     iconColor: theme.colors.status.active,
     title: 'ADVANCED WORKOUT INSIGHTS',
-    benefit: 'See 1RM trends after every session — improved, maintained, or declined — to track real progress.',
+    benefit:
+      'See whether each workout moved performance forward, held steady, or needs adjustment.',
   },
   {
     icon: 'time',
     iconColor: theme.colors.status.rest,
-    title: 'REST & FREQUENCY TIPS',
-    benefit: 'Optimal rest between sets and weekly training frequency recommendations for every exercise type.',
+    title: 'REST AND FREQUENCY TIPS',
+    benefit:
+      'Get clearer rest timing and weekly frequency suggestions for each exercise category.',
   },
   {
     icon: 'book',
     iconColor: theme.colors.status.warning,
     title: 'TRAINING RESEARCH LIBRARY',
-    benefit: 'Browse peer-reviewed research by muscle group, exercise type, and training category.',
+    benefit: 'Browse research by muscle group, exercise type, and training goal in one place.',
   },
 ];
 
 export default function FeatureStack() {
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionLabel}>WHAT YOU GET</Text>
+      <Text style={styles.sectionLabel}>WHAT PRO ADDS</Text>
       {FEATURES.map((feature, index) => (
         <View key={index} style={styles.featureCard}>
           <View style={styles.iconContainer}>
@@ -86,7 +90,7 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.label,
     fontWeight: '900',
     textTransform: 'uppercase',
-    letterSpacing: 3.6,
+    letterSpacing: 2.4,
     color: theme.colors.text.tertiary,
     marginBottom: theme.spacing.m,
     marginLeft: 4,

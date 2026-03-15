@@ -23,21 +23,23 @@ export default function PricingDisplay({ packageInfo }: PricingDisplayProps) {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        {/* Big price */}
         <View style={styles.priceRow}>
           <Text style={styles.price}>{priceString}</Text>
           <Text style={styles.period}>{period}</Text>
         </View>
 
-        <Text style={styles.perDay}>{currency}{perDay} per day • less than a protein shake</Text>
+        <Text style={styles.perDay}>
+          {currency}
+          {perDay} per day, based on a 30-day month
+        </Text>
 
         <View style={styles.divider} />
 
         <Text style={styles.features}>
-          CNS RECOVERY • FULL 1RM HISTORY • RESEARCH LIBRARY
+          Includes CNS recovery guidance, full 1RM history, and the research library.
         </Text>
       </View>
-      <Text style={styles.trust}>Cancel anytime in your App Store settings</Text>
+      <Text style={styles.trust}>You can cancel anytime in your App Store settings.</Text>
     </View>
   );
 }
@@ -65,7 +67,6 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 40,
     fontWeight: '900',
-    fontStyle: 'italic',
     letterSpacing: -1.5,
     color: theme.colors.text.primary,
     fontVariant: ['tabular-nums'],
@@ -89,12 +90,11 @@ const styles = StyleSheet.create({
     marginVertical: theme.spacing.xs,
   },
   features: {
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    color: theme.colors.text.tertiary,
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
+    lineHeight: 18,
   },
   trust: {
     fontSize: 12,

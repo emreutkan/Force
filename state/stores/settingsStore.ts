@@ -7,12 +7,9 @@ export interface SettingsState {
     tutCountdown: number;
     /** Reaction time seconds to subtract when TUT stops (default 2) */
     tutReactionOffset: number;
-    /** Premium subscription status (synced from RevenueCat) */
-    isPro: boolean;
 
     setTutCountdown: (seconds: number) => void;
     setTutReactionOffset: (seconds: number) => void;
-    setIsPro: (isPro: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -20,11 +17,9 @@ export const useSettingsStore = create<SettingsState>()(
         (set) => ({
             tutCountdown: 3,
             tutReactionOffset: 2,
-            isPro: false,
 
             setTutCountdown: (seconds) => set({ tutCountdown: seconds }),
             setTutReactionOffset: (seconds) => set({ tutReactionOffset: seconds }),
-            setIsPro: (isPro) => set({ isPro }),
         }),
         {
             name: 'force-settings',
