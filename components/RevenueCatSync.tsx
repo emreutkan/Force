@@ -1,15 +1,16 @@
 import { useEffect } from 'react';
 import { useUser } from '@/hooks/useUser';
+import { logger } from '@/lib/logger';
 import { useSettingsStore } from '@/state/userStore';
 import {
   ENTITLEMENT_ID,
-  getCustomerInfo,
   addCustomerInfoUpdateListener,
+  getCustomerInfo,
   logInRevenueCat,
 } from '@/services/revenueCat';
 
 /**
- * Runs at app root. Syncs RevenueCat subscription status → isPro store.
+ * Runs at app root. Syncs RevenueCat subscription status -> isPro store.
  * Two triggers: initial fetch on mount + real-time listener for purchases/restores.
  */
 export default function RevenueCatSync() {
@@ -29,7 +30,10 @@ export default function RevenueCatSync() {
       if (info) {
         const active = info.entitlements.active;
         const isPro = !!active[ENTITLEMENT_ID];
-        console.log('[RC] entitlements on mount:', Object.keys(active), '→ isPro:', isPro);
+        logger.info('[RC] RevenueCat entitlements synced on mount', {
+          entitlementKeys: Object.keys(active),
+          isPro,
+        });
         setIsPro(isPro);
       }
     });
@@ -38,7 +42,10 @@ export default function RevenueCatSync() {
     const listener = addCustomerInfoUpdateListener((info) => {
       const active = info.entitlements.active;
       const isPro = !!active[ENTITLEMENT_ID];
-      console.log('[RC] entitlements updated:', Object.keys(active), '→ isPro:', isPro);
+      logger.info('[RC] RevenueCat entitlements updated', {
+        entitlementKeys: Object.keys(active),
+        isPro,
+      });
       setIsPro(isPro);
     });
 

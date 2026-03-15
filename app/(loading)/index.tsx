@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { theme } from '@/constants/theme';
 import * as Sentry from '@sentry/react-native';
+import { logger } from '@/lib/logger';
 
 export default function LoadingScreen() {
   const [minTimeElapsed, setMinTimeElapsed] = React.useState(false);
@@ -37,10 +38,10 @@ export default function LoadingScreen() {
     if (!minTimeElapsed || !sessionChecked) return;
 
     if (hasSession) {
-      console.log('[LOADING] Session found, redirecting to home');
+      logger.info('[LOADING] Session found, redirecting to home');
       router.replace('/(tabs)/(home)');
     } else {
-      console.log('[LOADING] No session, redirecting to auth');
+      logger.info('[LOADING] No session, redirecting to auth');
       router.replace('/(auth)');
     }
   }, [minTimeElapsed, sessionChecked, hasSession]);

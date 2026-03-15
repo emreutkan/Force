@@ -1,4 +1,5 @@
 import { theme } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { useDateStore } from '@/state/userStore';
 import React from 'react';
 import { Alert, StyleSheet, Text, Pressable, View } from 'react-native';
@@ -39,7 +40,7 @@ export default function StartWorkoutMenu({
       });
       onRefresh();
     } catch (error) {
-      console.error('Error creating rest day:', error);
+      logger.error('Error creating rest day', error);
       Alert.alert('Error', 'Failed to create rest day');
     }
   };

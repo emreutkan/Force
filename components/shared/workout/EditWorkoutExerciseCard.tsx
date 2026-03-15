@@ -1,5 +1,6 @@
 import { getExerciseSetHistory, updateSet } from '@/api/Exercises';
 import { theme } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Platform, StyleSheet, Pressable, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -57,7 +58,7 @@ const data = await getExerciseSetHistory(exercise.id) as { results?: unknown[] }
                 setSetHistory(data.slice(0, 5));
             }
         } catch (error) {
-            console.error('Failed to load set history:', error);
+            logger.error('Failed to load set history', error);
         } finally {
             setIsLoadingHistory(false);
         }
@@ -104,7 +105,7 @@ const data = await getExerciseSetHistory(exercise.id) as { results?: unknown[] }
                 Alert.alert('Update Failed', result);
             }
         } catch (error) {
-            console.error('Failed to update set - exception:', error);
+            logger.error('Failed to update set - exception', error);
             Alert.alert('Update Error', 'Failed to update set. Please try again.');
         }
     };

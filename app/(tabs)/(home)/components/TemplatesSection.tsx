@@ -1,6 +1,7 @@
 import { TemplateWorkout } from '@/api/types/index';
 import UpgradeModal from '@/components/UpgradeModal';
 import { theme, typographyStyles } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { useUser } from '@/hooks/useUser';
 import { useSettingsStore } from '@/state/userStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,7 +47,7 @@ export default function TemplatesSection() {
             const res = await startTemplateMutation.mutateAsync({ template_workout_id: template.id });
             if (res?.id) router.push('/(active-workout)');
           } catch (error) {
-            console.error('Error starting template workout:', error);
+            logger.error('Error starting template workout', error);
             Alert.alert('Error', 'Failed to start workout');
           }
         },
@@ -64,7 +65,7 @@ export default function TemplatesSection() {
                 try {
                   await deleteTemplateMutation.mutateAsync(template.id);
                 } catch (error) {
-                  console.error('Error deleting template:', error);
+                  logger.error('Error deleting template', error);
                   Alert.alert('Error', 'Failed to delete template');
                 }
               },

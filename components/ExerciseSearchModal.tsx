@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { logger } from '@/lib/logger';
 
 interface ExerciseSearchModalProps {
     visible: boolean;
@@ -65,7 +66,7 @@ export default function ExerciseSearchModal({
                 setHasMoreExercises(false);
             }
         } catch (error) {
-            console.error("Failed to load exercises:", error);
+            logger.error('Failed to load exercises', error);
         } finally {
             setIsLoadingExercises(false);
             setIsLoadingMoreExercises(false);

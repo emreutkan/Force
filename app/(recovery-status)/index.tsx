@@ -3,6 +3,7 @@ import { MuscleRecoveryItem, RecoveryStatusResponse } from '@/api/types';
 import { CNSRecoveryItem } from '@/api/types/workout';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { theme } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { useSettingsStore } from '@/state/stores/settingsStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -47,7 +48,7 @@ export default function RecoveryStatusScreen() {
         });
       }
     } catch (e) {
-      console.error(e);
+      logger.error('Failed to load recovery status', e);
     } finally {
       setIsLoading(false);
       setRefreshing(false);

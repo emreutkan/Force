@@ -1,4 +1,5 @@
 import type { PurchasesPackage } from 'react-native-purchases';
+import { logger } from '@/lib/logger';
 
 export type PackageType = 'weekly' | 'monthly' | 'yearly' | 'lifetime';
 
@@ -30,7 +31,7 @@ export const getPackageType = (pkg: PurchasesPackage): PackageType => {
   }
 
   // Fallback
-  console.warn(`Could not determine package type for identifier: ${id}, defaulting to monthly`);
+  logger.warn('Could not determine package type for identifier, defaulting to monthly', { id });
   return 'monthly';
 };
 

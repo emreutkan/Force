@@ -2,6 +2,7 @@ import { getExercise1RMHistory, getExerciseSetHistory } from '@/api/Exercises';
 import { Exercise1RMHistory, ExerciseRanking } from '@/api/types/exercise';
 import UpgradeModal from '@/components/UpgradeModal';
 import { theme } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { useExerciseOverloadTrend } from '@/hooks/useExercises';
 import { useUser } from '@/hooks/useUser';
 import { useSettingsStore } from '@/state/userStore';
@@ -37,7 +38,7 @@ export default function ExerciseStatisticsScreen() {
 
   const fetchData = useCallback(async () => {
     if (!exerciseId || isNaN(exerciseId)) {
-      console.warn('[ExerciseStats] Invalid exercise ID:', id);
+      logger.warn('[ExerciseStats] Invalid exercise ID', { id });
       setIsLoading(false);
       return;
     }
@@ -63,7 +64,7 @@ export default function ExerciseStatisticsScreen() {
         setRecentPerformance(sData);
       }
     } catch (error) {
-      console.error('Failed to fetch statistics:', error);
+      logger.error('Failed to fetch statistics', error);
     } finally {
       setIsLoading(false);
     }

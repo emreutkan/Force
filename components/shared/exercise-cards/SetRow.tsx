@@ -3,6 +3,7 @@ import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@/constants/theme';
+import { logger } from '@/lib/logger';
 import { SwipeAction } from '../SwipeAction';
 import { InsightsModal } from '../InsightsModal';
 import {
@@ -152,7 +153,7 @@ export const SetRow = ({
                         isUpdatingRef.current = false;
                     }, 1000);
                 }).catch((error) => {
-                    console.error('Update failed:', error);
+                    logger.error('Update failed', error);
                     const revertedValues = getInitialValues();
                     originalValuesRef.current = revertedValues;
                     currentValuesRef.current = revertedValues;

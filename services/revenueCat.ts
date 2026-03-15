@@ -5,6 +5,7 @@ import Purchases, {
   type PurchasesOffering,
   type PurchasesPackage,
 } from 'react-native-purchases';
+import { logger } from '@/lib/logger';
 
 /* ─── Constants ────────────────────────────────────────────────────── */
 
@@ -28,7 +29,7 @@ export function initializeRevenueCat(): void {
   const apiKey = Platform.OS === 'ios' ? RC_IOS_KEY : RC_ANDROID_KEY;
 
   if (!apiKey) {
-    console.warn('[RC] No RevenueCat API key found for platform:', Platform.OS);
+    logger.warn('[RC] RevenueCat API key missing', { platform: Platform.OS });
     return;
   }
 
@@ -38,7 +39,7 @@ export function initializeRevenueCat(): void {
 
   Purchases.configure({ apiKey });
   isConfigured = true;
-  console.log('[RC] Configured for', Platform.OS);
+  logger.info('[RC] RevenueCat configured', { platform: Platform.OS });
 }
 
 /* ─── User Identity ────────────────────────────────────────────────── */
@@ -51,10 +52,10 @@ export async function logInRevenueCat(userId: string): Promise<CustomerInfo | nu
   if (!isConfigured) return null;
   try {
     const { customerInfo } = await Purchases.logIn(userId);
-    console.log('[RC] Logged in as', userId);
+    logger.info('[RC] RevenueCat login succeeded', { userId });
     return customerInfo;
   } catch (error) {
-    console.error('[RC] logIn error:', error);
+    logger.error('[RC] RevenueCat login failed', error, { userId });
     return null;
   }
 }
@@ -69,7 +70,7 @@ export async function getCustomerInfo(): Promise<CustomerInfo | null> {
   try {
     return await Purchases.getCustomerInfo();
   } catch (error) {
-    console.error('[RC] getCustomerInfo error:', error);
+    logger.error('[RC] Failed to fetch RevenueCat customer info', error);
     return null;
   }
 }
@@ -102,7 +103,7 @@ export async function getOfferings(): Promise<PurchasesOffering | null> {
     const offerings = await Purchases.getOfferings();
     return offerings.current;
   } catch (error) {
-    console.error('[RC] getOfferings error:', error);
+    logger.error('[RC] Failed to fetch RevenueCat offerings', error);
     throw error; // let react-query handle retries
   }
 }

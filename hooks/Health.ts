@@ -1,6 +1,7 @@
 import HealthKitModule, { HealthValue, HealthKitPermissions } from 'react-native-health';
 import { useState, useEffect } from 'react';
 import { NativeModules, Platform } from 'react-native';
+import { logger } from '@/lib/logger';
 
 // react-native-health uses CJS; Metro may expose it as default or as the module
 const PackageExport = (HealthKitModule as any)?.default ?? HealthKitModule;
@@ -47,7 +48,7 @@ export const useHealthKit = () => {
 
     AppleHealthKit.initHealthKit(permissions, (error: string) => {
       if (error) {
-        console.error('Error initializing HealthKit:', error);
+        logger.error('Error initializing HealthKit', error);
         setHasPermission(false);
         return;
       }
@@ -60,7 +61,7 @@ export const useHealthKit = () => {
 
       AppleHealthKit.getStepCount(options, (err: string, result: HealthValue) => {
         if (err) {
-          console.error('Error getting step count:', err);
+          logger.error('Error getting step count', err);
           return;
         }
         setSteps(result.value);
