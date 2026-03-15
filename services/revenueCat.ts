@@ -18,28 +18,65 @@ const RC_ANDROID_KEY = process.env.EXPO_PUBLIC_RC_API_KEY_ANDROID ?? '';
 /* ─── Initialisation ───────────────────────────────────────────────── */
 
 let isConfigured = false;
+type RevenueCatGlobalState = typeof globalThis & {
+  __forceRevenueCatConfigured__?: boolean;
+  __forceRevenueCatConfigurePromise__?: Promise<boolean>;
+};
 
-/**
- * Call once at app start (before any component mounts).
- * Safe to call multiple times — second+ calls are no-ops.
- */
-export function initializeRevenueCat(): void {
-  if (isConfigured) return;
+const revenueCatGlobal = globalThis as RevenueCatGlobalState;
+const RC_NOT_CONFIGURED_ERROR = 'RevenueCat is not configured';
+
+async function ensureRevenueCatConfigured(): Promise<boolean> {
+  if (isConfigured || revenueCatGlobal.__forceRevenueCatConfigured__) {
+    isConfigured = true;
+    return true;
+  }
+
+  if (revenueCatGlobal.__forceRevenueCatConfigurePromise__) {
+    return revenueCatGlobal.__forceRevenueCatConfigurePromise__;
+  }
 
   const apiKey = Platform.OS === 'ios' ? RC_IOS_KEY : RC_ANDROID_KEY;
 
   if (!apiKey) {
     logger.warn('[RC] RevenueCat API key missing', { platform: Platform.OS });
-    return;
+    return false;
   }
 
-  if (__DEV__) {
-    Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-  }
+  revenueCatGlobal.__forceRevenueCatConfigurePromise__ = (async () => {
+    try {
+      const alreadyConfigured = await Purchases.isConfigured().catch(() => false);
 
-  Purchases.configure({ apiKey });
-  isConfigured = true;
-  logger.info('[RC] RevenueCat configured', { platform: Platform.OS });
+      if (!alreadyConfigured) {
+        if (__DEV__) {
+          Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+        }
+
+        Purchases.configure({ apiKey });
+        logger.info('[RC] RevenueCat configured', { platform: Platform.OS });
+      } else {
+        logger.info('[RC] RevenueCat already configured natively', { platform: Platform.OS });
+      }
+
+      isConfigured = true;
+      revenueCatGlobal.__forceRevenueCatConfigured__ = true;
+      return true;
+    } catch (error) {
+      revenueCatGlobal.__forceRevenueCatConfigurePromise__ = undefined;
+      logger.error('[RC] Failed to initialize RevenueCat', error, { platform: Platform.OS });
+      return false;
+    }
+  })();
+
+  return revenueCatGlobal.__forceRevenueCatConfigurePromise__;
+}
+
+/**
+ * Call once at app start (before any component mounts).
+ * Safe to call multiple times — second+ calls are no-ops.
+ */
+export function initializeRevenueCat(): Promise<boolean> {
+  return ensureRevenueCatConfigured();
 }
 
 /* ─── User Identity ────────────────────────────────────────────────── */
@@ -49,8 +86,15 @@ export function initializeRevenueCat(): void {
  * and cross-platform restore work correctly.
  */
 export async function logInRevenueCat(userId: string): Promise<CustomerInfo | null> {
-  if (!isConfigured) return null;
+  if (!(await ensureRevenueCatConfigured())) return null;
   try {
+    const currentAppUserId = await Purchases.getAppUserID();
+
+    if (currentAppUserId === userId) {
+      logger.info('[RC] Skipping RevenueCat login for cached user', { userId });
+      return await Purchases.getCustomerInfo();
+    }
+
     const { customerInfo } = await Purchases.logIn(userId);
     logger.info('[RC] RevenueCat login succeeded', { userId });
     return customerInfo;
@@ -66,7 +110,7 @@ export async function logInRevenueCat(userId: string): Promise<CustomerInfo | nu
  * Returns current customer info (entitlements, active subs, etc.).
  */
 export async function getCustomerInfo(): Promise<CustomerInfo | null> {
-  if (!isConfigured) return null;
+  if (!(await ensureRevenueCatConfigured())) return null;
   try {
     return await Purchases.getCustomerInfo();
   } catch (error) {
@@ -98,7 +142,7 @@ export function addCustomerInfoUpdateListener(listener: (info: CustomerInfo) => 
  * Used by `useOfferings` hook.
  */
 export async function getOfferings(): Promise<PurchasesOffering | null> {
-  if (!isConfigured) return null;
+  if (!(await ensureRevenueCatConfigured())) return null;
   try {
     const offerings = await Purchases.getOfferings();
     return offerings.current;
@@ -115,6 +159,10 @@ export async function getOfferings(): Promise<PurchasesOffering | null> {
  * Returns `CustomerInfo` on success, `null` if the user cancelled.
  */
 export async function purchasePackage(pkg: PurchasesPackage): Promise<CustomerInfo | null> {
+  if (!(await ensureRevenueCatConfigured())) {
+    throw new Error(RC_NOT_CONFIGURED_ERROR);
+  }
+
   try {
     const { customerInfo } = await Purchases.purchasePackage(pkg);
     return customerInfo;
@@ -129,6 +177,10 @@ export async function purchasePackage(pkg: PurchasesPackage): Promise<CustomerIn
  * Restores purchases for the current user (across devices / reinstalls).
  */
 export async function restorePurchases(): Promise<CustomerInfo> {
+  if (!(await ensureRevenueCatConfigured())) {
+    throw new Error(RC_NOT_CONFIGURED_ERROR);
+  }
+
   return Purchases.restorePurchases();
 }
 

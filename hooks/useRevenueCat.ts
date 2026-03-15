@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  initializeRevenueCat,
   getOfferings,
   purchasePackage,
   restorePurchases,
@@ -40,17 +41,33 @@ export const useCustomerInfo = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    // Initial fetch
-    getCustomerInfo().then(setCustomerInfo);
+    let isCancelled = false;
+    let removeListener: (() => void) | undefined;
 
-    // Listen for updates
-    addCustomerInfoUpdateListener((info) => {
-      setCustomerInfo(info);
-      // Invalidate queries to trigger refetch
-      queryClient.invalidateQueries({ queryKey: ['proStatus'] });
-    });
+    void (async () => {
+      const configured = await initializeRevenueCat();
+      if (!configured || isCancelled) return;
 
-    // Note: RevenueCat listener cleanup is handled automatically
+      const info = await getCustomerInfo();
+      if (!isCancelled) {
+        setCustomerInfo(info);
+      }
+
+      const listener = addCustomerInfoUpdateListener((updatedInfo) => {
+        setCustomerInfo(updatedInfo);
+        queryClient.invalidateQueries({ queryKey: ['proStatus'] });
+      });
+
+      removeListener = listener.remove;
+      if (isCancelled) {
+        removeListener();
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+      removeListener?.();
+    };
   }, [queryClient]);
 
   return customerInfo;
