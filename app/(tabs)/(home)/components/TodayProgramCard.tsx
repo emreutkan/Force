@@ -1,14 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { theme } from '@/constants/theme';
-import { useCurrentProgramDay } from '@/hooks/useWorkoutProgram';
+import { useCurrentProgramDay, useStartTodayWorkout } from '@/hooks/useWorkoutProgram';
+import type { StartTodayError } from '@/api/WorkoutProgram';
 
 const MAX_EXERCISES_SHOWN = 3;
 
 export default function TodayProgramCard() {
   const { data, isLoading } = useCurrentProgramDay();
+  const startToday = useStartTodayWorkout();
 
   // No active program — don't render anything
   if (isLoading || !data) return null;
@@ -19,10 +21,25 @@ export default function TodayProgramCard() {
   const visibleExercises = exercises.slice(0, MAX_EXERCISES_SHOWN);
   const overflowCount = exercises.length - MAX_EXERCISES_SHOWN;
 
+  const handleStartToday = () => {
+    startToday.mutate(undefined, {
+      onSuccess: () => {
+        router.push('/(active-workout)');
+      },
+      onError: (err) => {
+        const typedErr = err as Error & { startTodayError?: StartTodayError };
+        if (typedErr.startTodayError?.code === 'ACTIVE_WORKOUT_EXISTS') {
+          // An active workout already exists — navigate to it
+          router.push('/(active-workout)');
+        }
+        // NO_ACTIVE_PROGRAM and UNKNOWN silently fail (shouldn't happen here)
+      },
+    });
+  };
+
   return (
-    <Pressable
+    <View
       style={[styles.card, isRestDay && styles.cardRest]}
-      onPress={() => router.push(`/(workout-program)/${program_id}`)}
     >
       {/* Left accent bar */}
       <View style={[styles.accentBar, isRestDay && styles.accentBarRest]} />
@@ -91,19 +108,41 @@ export default function TodayProgramCard() {
           <Text style={styles.emptyText}>No exercises configured</Text>
         )}
 
-        {/* Footer CTA */}
+        {/* Footer CTAs */}
         <View style={styles.footer}>
-          <Text style={[styles.footerText, isRestDay && styles.footerTextRest]}>
-            VIEW PROGRAM
-          </Text>
-          <Ionicons
-            name="arrow-forward"
-            size={14}
-            color={isRestDay ? theme.colors.status.rest : theme.colors.status.active}
-          />
+          <Pressable
+            style={styles.viewProgramBtn}
+            onPress={() => router.push(`/(workout-program)/${program_id}`)}
+          >
+            <Text style={[styles.footerText, isRestDay && styles.footerTextRest]}>
+              VIEW PROGRAM
+            </Text>
+            <Ionicons
+              name="arrow-forward"
+              size={14}
+              color={isRestDay ? theme.colors.status.rest : theme.colors.status.active}
+            />
+          </Pressable>
+
+          {!isRestDay && (
+            <Pressable
+              style={[styles.startTodayBtn, startToday.isPending && styles.startTodayBtnDisabled]}
+              onPress={handleStartToday}
+              disabled={startToday.isPending}
+            >
+              {startToday.isPending ? (
+                <ActivityIndicator size="small" color={theme.colors.text.primary} />
+              ) : (
+                <>
+                  <Ionicons name="flash" size={12} color={theme.colors.text.primary} />
+                  <Text style={styles.startTodayText}>START</Text>
+                </>
+              )}
+            </Pressable>
+          )}
         </View>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -301,6 +340,11 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  viewProgramBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
   },
   footerText: {
@@ -312,5 +356,26 @@ const styles = StyleSheet.create({
   },
   footerTextRest: {
     color: theme.colors.status.rest,
+  },
+  startTodayBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: theme.colors.status.active,
+    borderRadius: theme.borderRadius.full,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    minWidth: 60,
+    justifyContent: 'center',
+  },
+  startTodayBtnDisabled: {
+    opacity: 0.6,
+  },
+  startTodayText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: theme.colors.text.primary,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
 });

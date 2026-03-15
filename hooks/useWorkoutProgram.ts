@@ -8,6 +8,7 @@ import {
   activateProgram,
   deactivateProgram,
   getCurrentProgramDay,
+  startTodayWorkout,
 } from '@/api/WorkoutProgram';
 import type { CreateWorkoutProgramRequest, RenameProgramRequest } from '@/api/types';
 
@@ -96,6 +97,16 @@ export const useDeactivateProgram = () => {
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: PROGRAMS_KEY });
       queryClient.setQueryData(programKey(updated.id), updated);
+    },
+  });
+};
+
+export const useStartTodayWorkout = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: startTodayWorkout,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['today-status'] });
     },
   });
 };

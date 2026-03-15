@@ -187,7 +187,7 @@ export const getRestTimerState = async (): Promise<
 };
 
 export const stopRestTimer = async (): Promise<RestTimerStopResponse> => {
-  const response = await apiClient.post(REST_TIMER_STOP_URL);
+  const response = await apiClient.get(REST_TIMER_STOP_URL);
   return response.json();
 };
 

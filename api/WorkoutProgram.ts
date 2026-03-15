@@ -13,8 +13,10 @@ import {
   PROGRAM_ACTIVATE_URL,
   PROGRAM_DEACTIVATE_URL,
   PROGRAM_CURRENT_DAY_URL,
+  PROGRAM_START_TODAY_URL,
 } from './types/';
 import type { CurrentProgramDay } from './types/program';
+import type { Workout } from './types/workout';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -83,4 +85,36 @@ export const getCurrentProgramDay = async (): Promise<CurrentProgramDay | null> 
   if (response.status === 404) return null;
   if (!response.ok) throw new Error('Failed to load current program day');
   return response.json();
+};
+
+export type StartTodayError =
+  | { code: 'NO_ACTIVE_PROGRAM' }
+  | { code: 'ACTIVE_WORKOUT_EXISTS'; activeWorkoutId: number }
+  | { code: 'UNKNOWN'; message: string };
+
+export const startTodayWorkout = async (): Promise<Workout> => {
+  const response = await apiClient.post(PROGRAM_START_TODAY_URL, { throwHttpErrors: false });
+  if (response.status === 201) return response.json();
+
+  const body = (await response.json().catch(() => ({}))) as {
+    error?: string;
+    active_workout?: number;
+    message?: string;
+  };
+
+  if (body.error === 'ACTIVE_WORKOUT_EXISTS') {
+    const err = new Error('ACTIVE_WORKOUT_EXISTS') as Error & { startTodayError: StartTodayError };
+    err.startTodayError = { code: 'ACTIVE_WORKOUT_EXISTS', activeWorkoutId: body.active_workout! };
+    throw err;
+  }
+  if (body.error === 'NO_ACTIVE_PROGRAM') {
+    const err = new Error('NO_ACTIVE_PROGRAM') as Error & { startTodayError: StartTodayError };
+    err.startTodayError = { code: 'NO_ACTIVE_PROGRAM' };
+    throw err;
+  }
+  const err = new Error(body.message ?? 'Failed to start today\'s workout') as Error & {
+    startTodayError: StartTodayError;
+  };
+  err.startTodayError = { code: 'UNKNOWN', message: body.message ?? 'Unknown error' };
+  throw err;
 };

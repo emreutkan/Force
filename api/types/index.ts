@@ -110,6 +110,7 @@ export const PROGRAM_DELETE_URL = 'workout/program/:id/delete/';
 export const PROGRAM_ACTIVATE_URL = 'workout/program/:id/activate/';
 export const PROGRAM_DEACTIVATE_URL = 'workout/program/:id/deactivate/';
 export const PROGRAM_CURRENT_DAY_URL = 'workout/program/current-day/';
+export const PROGRAM_START_TODAY_URL = 'workout/program/start-today/';
 
 export const BACKEND_URL = 'http://192.168.1.2:8000/api';
 // export const BACKEND_URL = 'https://forceapi.ieugroup.uk/api';

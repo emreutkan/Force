@@ -3,11 +3,13 @@ import { RestDayCard } from './WorkoutModal';
 import { theme } from '@/constants/theme';
 import { useDateStore } from '@/state/userStore';
 import { useTodayStatus, useWorkoutSummary } from '@/hooks/useWorkout';
+import { useCurrentProgramDay, useStartTodayWorkout } from '@/hooks/useWorkoutProgram';
+import type { StartTodayError } from '@/api/WorkoutProgram';
 import { ActiveSectionSkeleton } from './homeLoadingSkeleton';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, Pressable, View, LayoutAnimation } from 'react-native';
+import { StyleSheet, Text, Pressable, View, LayoutAnimation, ActivityIndicator } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SwipeAction } from '@/components/shared/SwipeAction';
 import Animated, {
@@ -33,6 +35,22 @@ export default function ActiveSection({
 }: ActiveSectionProps) {
   const selectedDate = useDateStore((state) => state.today);
   const { data: todayStatus, isLoading: todayStatusLoading } = useTodayStatus(selectedDate);
+  const { data: programDay } = useCurrentProgramDay();
+  const startFromProgram = useStartTodayWorkout();
+  const hasProgramToday = !!(programDay && !programDay.current_day.is_rest_day);
+
+  const handleStartFromProgram = () => {
+    setIsExpanded(false);
+    startFromProgram.mutate(undefined, {
+      onSuccess: () => router.push('/(active-workout)'),
+      onError: (err) => {
+        const typedErr = err as Error & { startTodayError?: StartTodayError };
+        if (typedErr.startTodayError?.code === 'ACTIVE_WORKOUT_EXISTS') {
+          router.push('/(active-workout)');
+        }
+      },
+    });
+  };
 
   // Derive data from the single checkToday response
   const status = todayStatus?.status ?? 'none';
@@ -131,6 +149,15 @@ export default function ActiveSection({
   });
 
   // Staggered animations for each option
+  const option0Style = useAnimatedStyle(() => {
+    const opacity = interpolate(animationProgress.value, [0, 0.3, 0.6], [0, 0, 1]);
+    const translateY = interpolate(animationProgress.value, [0, 0.6], [-15, 0]);
+    return {
+      opacity,
+      transform: [{ translateY }],
+    };
+  });
+
   const option1Style = useAnimatedStyle(() => {
     const opacity = interpolate(animationProgress.value, [0, 0.4, 0.7], [0, 0, 1]);
     const translateY = interpolate(animationProgress.value, [0, 0.7], [-15, 0]);
@@ -312,12 +339,19 @@ export default function ActiveSection({
         {/* Hidden measurement view for height calculation */}
         <View
           style={styles.measurementContainer}
-          onLayout={(e) => {
-            if (optionsHeight === 0) {
-              setOptionsHeight(e.nativeEvent.layout.height);
-            }
-          }}
+          onLayout={(e) => setOptionsHeight(e.nativeEvent.layout.height)}
         >
+          {hasProgramToday && (
+            <View style={styles.optionRow}>
+              <View style={styles.optionIconWrap}>
+                <Ionicons name="calendar" size={14} color={theme.colors.status.active} />
+              </View>
+              <View style={styles.optionContent}>
+                <Text style={styles.optionText}>Start from Program</Text>
+                <Text style={styles.optionSubtext}>Continue today's plan</Text>
+              </View>
+            </View>
+          )}
           <View style={styles.optionRow}>
             <View style={styles.optionIconWrap}>
               <Ionicons name="flash" size={14} color={theme.colors.status.success} />
@@ -373,6 +407,29 @@ export default function ActiveSection({
               style={[styles.expandedOptions, optionsContainerStyle]}
               pointerEvents={isExpanded ? 'auto' : 'none'}
             >
+              {hasProgramToday && (
+                <Animated.View style={option0Style}>
+                  <Pressable
+                    style={({ pressed }) => [styles.optionRow, pressed && styles.optionRowPressed]}
+                    onPress={handleStartFromProgram}
+                    disabled={startFromProgram.isPending}
+                  >
+                    <View style={[styles.optionIconWrap, styles.optionIconProgram]}>
+                      {startFromProgram.isPending ? (
+                        <ActivityIndicator size="small" color={theme.colors.status.active} />
+                      ) : (
+                        <Ionicons name="calendar" size={14} color={theme.colors.status.active} />
+                      )}
+                    </View>
+                    <View style={styles.optionContent}>
+                      <Text style={styles.optionText}>Start from Program</Text>
+                      <Text style={styles.optionSubtext}>Continue today's plan</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={14} color={theme.colors.text.tertiary} />
+                  </Pressable>
+                </Animated.View>
+              )}
+
               <Animated.View style={option1Style}>
                 <Pressable
                   style={({ pressed }) => [styles.optionRow, pressed && styles.optionRowPressed]}
@@ -627,6 +684,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  optionIconProgram: {
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    borderColor: 'rgba(99, 102, 241, 0.3)',
   },
   optionIconSuccess: {
     backgroundColor: 'rgba(52, 211, 153, 0.1)',

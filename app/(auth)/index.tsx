@@ -1,10 +1,10 @@
-import { supabase } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
 import { theme, typographyStyles } from '@/constants/theme';
+import { logger } from '@/lib/logger';
+import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path } from 'react-native-svg';
-import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+import Svg, { Path } from 'react-native-svg';
 
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
@@ -19,16 +19,16 @@ if (!isExpoGo) {
 import * as Crypto from 'expo-crypto';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
-  Pressable,
   View,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -376,9 +376,7 @@ export default function AuthScreen() {
               FORCE<Text style={{ color: theme.colors.status.rest }}>.</Text>
             </Text>
           </View>
-          <Text style={styles.heroSubtitle}>
-            {currentStep === 'password' ? 'BUILT FOR YOU' : 'BUILT FOR EXCELLENCE'}
-          </Text>
+          <Text style={styles.heroSubtitle}>BUILT FOR EXCELLENCE</Text>
         </View>
 
         <View style={styles.contentContainer}>

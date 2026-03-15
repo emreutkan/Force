@@ -14,7 +14,7 @@ const DECISION_CONFIG: Record<
 > = {
   train: {
     color: theme.colors.status.success,
-    bgColor: 'rgba(52,211,153,0.04)',
+    bgColor: 'rgba(52,211,153,0.04)',   // emerald400 #34d399
     borderColor: 'rgba(52,211,153,0.15)',
     icon: 'flash',
     label: 'COACH',
@@ -22,16 +22,16 @@ const DECISION_CONFIG: Record<
   },
   train_with_modifications: {
     color: theme.colors.status.warning,
-    bgColor: 'rgba(251,146,60,0.04)',
-    borderColor: 'rgba(251,146,60,0.15)',
+    bgColor: 'rgba(255,159,10,0.04)',   // orange400 #ff9f0a
+    borderColor: 'rgba(255,159,10,0.15)',
     icon: 'warning-outline',
     label: 'COACH',
     headline: 'TRAIN WITH CHANGES',
   },
   delay_day: {
     color: theme.colors.status.error,
-    bgColor: 'rgba(239,68,68,0.04)',
-    borderColor: 'rgba(239,68,68,0.15)',
+    bgColor: 'rgba(255,69,58,0.04)',    // red500 #ff453a
+    borderColor: 'rgba(255,69,58,0.15)',
     icon: 'bed-outline',
     label: 'COACH',
     headline: 'REST RECOMMENDED',
@@ -89,11 +89,12 @@ export default function NextWorkoutCoachCard({ data }: NextWorkoutCoachCardProps
         ) : (
           <View style={styles.itemList}>
             {topFindings.map((finding, i) => (
-              <View key={i} style={styles.itemRow}>
+              <View key={finding.code ?? i} style={styles.itemRow}>
                 <Ionicons
                   name={finding.severity === 'error' ? 'alert-circle' : 'warning'}
                   size={12}
                   color={finding.severity === 'error' ? theme.colors.status.error : theme.colors.status.warning}
+                  style={styles.itemIcon}
                 />
                 <Text style={styles.itemText} numberOfLines={2}>
                   {finding.message}
@@ -101,7 +102,7 @@ export default function NextWorkoutCoachCard({ data }: NextWorkoutCoachCardProps
               </View>
             ))}
             {topActions.map((action, i) => (
-              <View key={`action-${i}`} style={styles.itemRow}>
+              <View key={`action-${action.exercise_id ?? i}`} style={styles.itemRow}>
                 <View style={[styles.actionBadge, { backgroundColor: `${ACTION_COLORS[action.action]}20`, borderColor: `${ACTION_COLORS[action.action]}40` }]}>
                   <Text style={[styles.actionBadgeText, { color: ACTION_COLORS[action.action] }]}>
                     {action.action.toUpperCase()}
@@ -129,7 +130,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   accentBar: {
-    width: 4,
+    width: theme.spacing.xs,
   },
   inner: {
     flex: 1,
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: theme.spacing.xs,
   },
   sectionLabel: {
     fontSize: theme.typography.sizes.label,
@@ -160,9 +161,9 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   decisionBadgeText: {
-    fontSize: 9,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '900',
-    letterSpacing: 0.5,
+    letterSpacing: theme.typography.tracking.labelTight,
     textTransform: 'uppercase',
   },
   divider: {
@@ -173,7 +174,7 @@ const styles = StyleSheet.create({
   readyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: theme.spacing.m,
   },
   readyIconWrap: {
     width: 48,
@@ -197,13 +198,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   itemList: {
-    gap: 8,
+    gap: theme.spacing.s,
   },
   itemRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 4,
+    alignItems: 'flex-start',
+    gap: theme.spacing.s,
+    paddingVertical: theme.spacing.xs,
+  },
+  itemIcon: {
+    marginTop: 1,
   },
   itemText: {
     flex: 1,
@@ -218,8 +222,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   actionBadgeText: {
-    fontSize: 8,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '900',
-    letterSpacing: 0.5,
+    letterSpacing: theme.typography.tracking.labelTight,
   },
 });
