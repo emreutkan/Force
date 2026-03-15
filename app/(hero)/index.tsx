@@ -18,7 +18,6 @@ export default function HeroScreen() {
   const slideBottomAnim = React.useRef(new Animated.Value(20)).current;
 
   useEffect(() => {
-    // Top section animation
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -32,7 +31,6 @@ export default function HeroScreen() {
       }),
     ]).start();
 
-    // Bottom section animation with delay
     setTimeout(() => {
       Animated.parallel([
         Animated.timing(fadeAnim, {
@@ -82,7 +80,7 @@ export default function HeroScreen() {
         ]}
       >
         <Ionicons name="pulse" size={16} color={theme.colors.status.active} />
-        <Text style={styles.footerText}>FORCE PERFORMANCE © {new Date().getFullYear()}</Text>
+        <Text style={styles.footerText}>TRAINING LOG {new Date().getFullYear()}</Text>
       </Animated.View>
 
       <Animated.View
@@ -105,14 +103,15 @@ export default function HeroScreen() {
         </View>
 
         <Text style={styles.description}>
-          Track your workouts, monitor your progress, and optimize your training with detailed analytics.
+          Track your workouts, monitor your progress, and optimize your training with detailed
+          analytics.
         </Text>
 
         <View style={styles.featureContainer}>
           <View style={styles.dividerLine} />
           <View style={styles.featureContent}>
             <Ionicons name="server-outline" size={10} color={theme.colors.text.tertiary} />
-            <Text style={styles.featureText}>DETAILED ANALYTICS</Text>
+            <Text style={styles.featureText}>PROGRESS INSIGHTS</Text>
           </View>
           <View style={styles.dividerLine} />
         </View>
@@ -126,11 +125,8 @@ export default function HeroScreen() {
           },
         ]}
       >
-        <Pressable
-          style={styles.primaryButton}
-          onPress={handleStartLogging}
-        >
-          <Text style={styles.primaryButtonText}>START LOGGING</Text>
+        <Pressable style={styles.primaryButton} onPress={handleStartLogging}>
+          <Text style={styles.primaryButtonText}>GET STARTED</Text>
           <Ionicons name="arrow-forward" size={20} color={theme.colors.text.primary} />
         </Pressable>
       </Animated.View>

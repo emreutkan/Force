@@ -18,17 +18,19 @@ export default function HomeHeader({ today, insets }: HomeHeaderProps) {
           <Text style={{ color: theme.colors.status.active }}>.</Text>
         </Text>
         <View style={styles.headerActions}>
-          {/* Settings button */}
           <Pressable
             onPress={() => router.push('/(account)')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={styles.gearButton}
+            style={({ pressed }) => [
+              styles.gearButton,
+              pressed && styles.gearButtonPressed
+            ]}
           >
-            <Ionicons name="settings-outline" size={24} color={theme.colors.text.secondary} />
+            <Ionicons name="settings-outline" size={22} color={theme.colors.text.secondary} />
           </Pressable>
         </View>
       </View>
-      <View style={styles.header}>
+      <View style={styles.dateContainer}>
         <Text style={styles.headerDate}>
           {today.toLocaleDateString('en-US', {
             weekday: 'long',
@@ -44,14 +46,14 @@ export default function HomeHeader({ today, insets }: HomeHeaderProps) {
 const styles = StyleSheet.create({
   forceHeader: {
     alignItems: 'flex-start',
-    marginBottom: theme.spacing.m,
-    marginTop: theme.spacing.s,
+    marginBottom: theme.spacing.l,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
+    paddingRight: theme.spacing.xs,
   },
   headerActions: {
     flexDirection: 'row',
@@ -59,14 +61,23 @@ const styles = StyleSheet.create({
     gap: theme.spacing.s,
   },
   gearButton: {
-    padding: theme.spacing.xs,
+    padding: theme.spacing.s,
+    borderRadius: theme.borderRadius.m,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
-  header: { marginBottom: theme.spacing.s },
+  gearButtonPressed: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    transform: [{ scale: 0.96 }],
+  },
+  dateContainer: { 
+    marginTop: theme.spacing.xs,
+  },
   headerDate: {
+    ...typographyStyles.labelMuted,
     fontSize: theme.typography.sizes.xs,
-    fontWeight: '600',
-    color: theme.colors.text.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: theme.typography.tracking.tight,
+    letterSpacing: theme.typography.tracking.wider,
+    color: theme.colors.text.tertiary,
   },
 });

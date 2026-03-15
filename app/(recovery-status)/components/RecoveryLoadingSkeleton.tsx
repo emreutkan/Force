@@ -108,7 +108,8 @@ const styles = StyleSheet.create({
 
   // Scroll Content
   scrollContent: {
-    padding: theme.spacing.m,
+    paddingHorizontal: theme.spacing.m,
+    paddingTop: theme.spacing.m,
   },
 
   // CNS Card
@@ -116,7 +117,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.ui.glass,
     borderRadius: theme.borderRadius.xl,
     padding: theme.spacing.l,
-    marginHorizontal: theme.spacing.l,
     marginBottom: theme.spacing.xl,
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   cnsHeaderText: {
     flex: 1,
@@ -140,13 +140,13 @@ const styles = StyleSheet.create({
   cnsTitleSkeleton: {
     width: 140,
     height: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 4,
   },
   cnsSubtitleSkeleton: {
     width: 100,
     height: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 4,
   },
   cnsContent: {
@@ -155,13 +155,13 @@ const styles = StyleSheet.create({
   cnsPercentageSkeleton: {
     width: '40%',
     height: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 8,
   },
   cnsTextSkeleton: {
     width: '70%',
     height: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 4,
   },
 
@@ -172,7 +172,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.ui.glass,
     borderRadius: 4,
     marginBottom: theme.spacing.m,
-    marginHorizontal: theme.spacing.l,
   },
 
   // Muscle Cards
@@ -182,7 +181,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.ui.glass,
     borderRadius: theme.borderRadius.l,
     padding: theme.spacing.m,
-    marginHorizontal: theme.spacing.l,
     marginBottom: theme.spacing.s,
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
@@ -191,7 +189,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     marginRight: theme.spacing.m,
   },
   muscleInfo: {
@@ -201,19 +199,19 @@ const styles = StyleSheet.create({
   muscleNameSkeleton: {
     width: 100,
     height: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 4,
   },
   muscleTimeSkeleton: {
     width: 80,
     height: 11,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 4,
   },
   musclePercentageSkeleton: {
     width: 50,
     height: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 6,
   },
 });

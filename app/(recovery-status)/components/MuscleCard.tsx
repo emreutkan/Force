@@ -1,5 +1,6 @@
+import React from 'react';
 import { MuscleRecoveryItem } from '@/api/types';
-import { theme } from '@/constants/theme';
+import { theme, typographyStyles } from '@/constants/theme';
 import { StyleSheet, Text, View } from 'react-native';
 import { formatTimeRemaining, getStatusColor } from '@/utils/recoveryStatusHelpers';
 
@@ -18,31 +19,36 @@ export default function MuscleCard({ muscle, data }: MuscleCardProps) {
   const label = muscle.replace(/_/g, ' ').toUpperCase();
 
   const badgeBg = isReady
-    ? 'rgba(48,209,88,0.12)'
+    ? 'rgba(48,209,88,0.1)'
     : pct >= 50
-      ? 'rgba(255,159,10,0.12)'
-      : 'rgba(255,69,58,0.12)';
+      ? 'rgba(255,159,10,0.1)'
+      : 'rgba(255,69,58,0.1)';
+
+  const accentColor = isReady ? theme.colors.status.success : color;
 
   return (
-    <View style={[styles.card, { borderLeftColor: color }]}>
+    <View style={styles.card}>
       <View style={styles.row}>
         <View style={styles.left}>
           <Text style={styles.muscleName}>{label}</Text>
           {sets > 0 && (
-            <Text style={styles.setsLabel}>{sets} SETS</Text>
+            <Text style={styles.setsLabel}>{sets} SETS LOGGED</Text>
           )}
         </View>
         <View style={styles.right}>
-          <Text style={[styles.pct, { color }]}>
-            {pct.toFixed(0)}<Text style={styles.pctUnit}>%</Text>
-          </Text>
-          <View style={[styles.badge, { backgroundColor: badgeBg }]}>
-            <Text style={[styles.badgeText, { color }]}>{timeDisplay}</Text>
+          <View style={styles.pctRow}>
+            <Text style={[styles.pct, { color: accentColor }]}>{pct.toFixed(0)}</Text>
+            <Text style={[styles.pctUnit, { color: accentColor }]}>%</Text>
           </View>
+          {!isReady && (
+            <View style={[styles.badge, { backgroundColor: badgeBg, borderColor: `${accentColor}25` }]}>
+              <Text style={[styles.badgeText, { color: accentColor }]}>{timeDisplay}</Text>
+            </View>
+          )}
         </View>
       </View>
       <View style={styles.track}>
-        <View style={[styles.fill, { width: `${pct}%`, backgroundColor: color }]} />
+        <View style={[styles.fill, { width: `${pct}%`, backgroundColor: accentColor }]} />
       </View>
     </View>
   );
@@ -52,7 +58,6 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: theme.colors.ui.glass,
     borderWidth: 1,
-    borderLeftWidth: 3,
     borderColor: theme.colors.ui.border,
     borderRadius: theme.borderRadius.l,
     padding: theme.spacing.m,
@@ -61,60 +66,63 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
   left: {
     flex: 1,
     gap: 4,
   },
   muscleName: {
-    fontSize: 13,
-    fontWeight: '800',
+    ...typographyStyles.label,
+    fontSize: 14,
     color: theme.colors.text.primary,
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
   },
   setsLabel: {
+    ...typographyStyles.label,
     fontSize: 10,
-    fontWeight: '700',
     color: theme.colors.text.tertiary,
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
   },
   right: {
     alignItems: 'flex-end',
     gap: 4,
   },
+  pctRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
   pct: {
-    fontSize: 24,
-    fontWeight: '900',
-    fontStyle: 'italic',
+    ...typographyStyles.data,
+    fontSize: 22,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.5,
   },
   pctUnit: {
-    fontSize: 14,
-    fontWeight: '700',
-    fontStyle: 'normal',
+    ...typographyStyles.label,
+    fontSize: 12,
+    marginLeft: 1,
   },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: theme.borderRadius.full,
+    borderRadius: 6,
+    borderWidth: 1,
   },
   badgeText: {
-    fontSize: 9,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    ...typographyStyles.label,
+    fontSize: 8,
+    letterSpacing: 0.5,
   },
   track: {
-    height: 5,
-    backgroundColor: theme.colors.ui.progressBg,
-    borderRadius: 3,
+    height: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 2,
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 2,
   },
 });

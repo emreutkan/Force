@@ -211,17 +211,23 @@ export default function ActiveSection({
         enableTrackpadTwoFingerGesture
         rightThreshold={40}
       >
-        <Pressable style={styles.card} onPress={() => router.push('/(active-workout)')}>
+        <Pressable 
+          style={({ pressed }) => [
+            styles.card,
+            pressed && { transform: [{ scale: 0.985 }], opacity: 0.95 }
+          ]} 
+          onPress={() => router.push('/(active-workout)')}
+        >
           <View style={styles.upperSection}>
             <View style={styles.upperLeft}>
               <View style={styles.intensityHeader}>
                 <View style={styles.intensityBars}>
-                  {[1, 1, 1].map((opacity, index) => (
+                  {[1, 1, 1].map((_, index) => (
                     <View
                       key={index}
                       style={[
                         styles.bar,
-                        { opacity, backgroundColor: theme.colors.status.success },
+                        { backgroundColor: theme.colors.status.success },
                       ]}
                     />
                   ))}
@@ -241,19 +247,19 @@ export default function ActiveSection({
               style={[
                 styles.intensityIcon,
                 {
-                  borderColor: 'rgba(52, 211, 153, 0.3)',
+                  borderColor: 'rgba(52, 211, 153, 0.25)',
                   backgroundColor: 'rgba(52, 211, 153, 0.1)',
                 },
               ]}
             >
-              <Ionicons name="play" size={24} color={theme.colors.status.success} />
+              <Ionicons name="play" size={22} color={theme.colors.status.success} />
             </View>
           </View>
 
           <View style={styles.lowerSection}>
             <View style={styles.metricItem}>
-              <View style={[styles.metricIcon, { backgroundColor: 'rgba(99, 102, 241, 0.1)' }]}>
-                <Ionicons name="fitness" size={20} color={theme.colors.status.active} />
+              <View style={[styles.metricIcon, { backgroundColor: 'rgba(99, 102, 241, 0.08)' }]}>
+                <Ionicons name="fitness" size={18} color={theme.colors.status.active} />
               </View>
               <View style={styles.metricContent}>
                 <Text style={styles.metricLabel}>EXERCISES</Text>
@@ -262,8 +268,8 @@ export default function ActiveSection({
             </View>
 
             <View style={styles.metricItem}>
-              <View style={[styles.metricIcon, { backgroundColor: 'rgba(168, 85, 247, 0.1)' }]}>
-                <Ionicons name="list" size={20} color={theme.colors.status.rest} />
+              <View style={[styles.metricIcon, { backgroundColor: 'rgba(168, 85, 247, 0.08)' }]}>
+                <Ionicons name="list" size={18} color={theme.colors.status.rest} />
               </View>
               <View style={styles.metricContent}>
                 <Text style={styles.metricLabel}>TOTAL SETS</Text>

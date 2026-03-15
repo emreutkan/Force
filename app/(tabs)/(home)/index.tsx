@@ -292,5 +292,5 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  scrollContent: { padding: theme.spacing.s, paddingTop: theme.spacing.xl, paddingBottom: 100 },
+  scrollContent: { paddingHorizontal: theme.spacing.m, paddingTop: theme.spacing.xl, paddingBottom: 100 },
 });

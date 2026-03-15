@@ -362,7 +362,7 @@ export default function AuthScreen() {
         {/* Header */}
         <View style={styles.topSection}>
           <Ionicons name="pulse" size={16} color={theme.colors.status.rest} />
-          <Text style={styles.footerText}>FORCE PERFORMANCE V2.0</Text>
+          <Text style={styles.footerText}>TRAINING LOG</Text>
         </View>
 
         <View style={styles.middleSection}>
@@ -376,7 +376,7 @@ export default function AuthScreen() {
               FORCE<Text style={{ color: theme.colors.status.rest }}>.</Text>
             </Text>
           </View>
-          <Text style={styles.heroSubtitle}>BUILT FOR EXCELLENCE</Text>
+          <Text style={styles.heroSubtitle}>Track your training</Text>
         </View>
 
         <View style={styles.contentContainer}>

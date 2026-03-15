@@ -64,7 +64,13 @@ export default function CalendarStrip({ onPress }: CalendarStripProps) {
 
   return (
     <View style={styles.calendarStrip}>
-      <Pressable style={styles.calendarHeader} onPress={onPress}>
+      <Pressable 
+        style={({ pressed }) => [
+          styles.calendarHeader,
+          pressed && { opacity: 0.7 }
+        ]} 
+        onPress={onPress}
+      >
         <Text style={typographyStyles.labelMuted}>OVERVIEW</Text>
         <Text style={styles.calendarWeek}>
           {currentMonth}, WEEK {weekNumber.toString().padStart(2, '0')}
@@ -84,10 +90,11 @@ export default function CalendarStrip({ onPress }: CalendarStripProps) {
           return (
             <Pressable
               key={i}
-              style={[
+              style={({ pressed }) => [
                 styles.dayCell,
                 isSelected && styles.dayCellActive,
-                isCalendarToday && styles.dayCellTodayBorder,
+                isCalendarToday && !isSelected && styles.dayCellToday,
+                pressed && styles.dayCellPressed,
               ]}
               onPress={() => setSelectedDate(new Date(d.getFullYear(), d.getMonth(), d.getDate()))}
             >
@@ -121,61 +128,70 @@ export default function CalendarStrip({ onPress }: CalendarStripProps) {
 
 const styles = StyleSheet.create({
   calendarStrip: {
-    marginVertical: theme.spacing.l,
+    marginVertical: theme.spacing.xl,
   },
   calendarHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: theme.spacing.m,
+    paddingHorizontal: 2,
   },
   calendarWeek: {
-    fontSize: theme.typography.sizes.s,
-    fontWeight: '700',
-    color: theme.colors.status.rest,
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: '800',
+    color: theme.colors.status.active,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   calendarRow: {
     flexDirection: 'row',
-    gap: theme.spacing.xs,
+    gap: theme.spacing.s,
   },
   dayCell: {
     alignItems: 'center',
     flex: 1,
     paddingVertical: theme.spacing.m,
-    borderRadius: theme.borderRadius.xxl,
+    borderRadius: theme.borderRadius.l,
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   dayCellActive: {
-    backgroundColor: theme.colors.status.rest,
+    backgroundColor: theme.colors.status.active,
+    borderColor: theme.colors.ui.primaryBorder,
   },
-  dayCellTodayBorder: {
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
+  dayCellToday: {
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  dayCellPressed: {
+    transform: [{ scale: 0.94 }],
+    opacity: 0.8,
   },
   dayName: {
-    fontSize: theme.typography.sizes.label,
-    color: theme.colors.text.secondary,
-    marginBottom: theme.spacing.s,
+    fontSize: 9,
+    color: theme.colors.text.tertiary,
+    marginBottom: theme.spacing.xs,
     textTransform: 'uppercase',
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   dayNameActive: {
-    color: theme.colors.text.primary,
-    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   dayDate: {
-    fontSize: theme.typography.sizes.xl,
+    fontSize: theme.typography.sizes.m,
     color: theme.colors.text.secondary,
-    fontWeight: '600',
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
   },
   dayDateActive: {
     color: theme.colors.text.primary,
-    fontWeight: '700',
   },
   dayDotContainer: {
-    marginTop: theme.spacing.xs,
-    height: 6,
+    marginTop: 6,
+    height: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -188,9 +204,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.text.primary,
   },
   dayDotWorkout: {
-    backgroundColor: theme.colors.status.rest,
+    backgroundColor: theme.colors.status.active,
   },
   dayDotRest: {
-    backgroundColor: theme.colors.text.tertiary,
+    backgroundColor: theme.colors.status.rest,
   },
 });

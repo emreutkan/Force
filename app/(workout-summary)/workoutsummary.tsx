@@ -37,7 +37,7 @@ const DIAGNOSIS_CONFIG = {
   fatigue_accumulation: {
     icon: 'moon' as const,
     color: '#ff9f0a',
-    label: 'FATIGUE DETECTED',
+    label: 'NEEDS RECOVERY',
   },
   performance_drop: {
     icon: 'warning' as const,
@@ -344,7 +344,7 @@ const WorkoutSummaryScreen = () => {
                   {summary.positives && Object.values(summary.positives).length > 0 && (
                     <View style={styles.analysisCard}>
                       <Text style={[styles.analysisHeader, { color: theme.colors.status.rest }]}>
-                        OPTIMIZED
+                        WHAT WENT WELL
                       </Text>
                       {Object.values(summary.positives).map((item: any, i) => (
                         <AnalysisRow key={i} message={item.message} type="positive" />
@@ -355,7 +355,7 @@ const WorkoutSummaryScreen = () => {
                   {summary.negatives && Object.values(summary.negatives).length > 0 && (
                     <View style={styles.analysisCard}>
                       <Text style={[styles.analysisHeader, { color: theme.colors.status.error }]}>
-                        CRITICAL
+                        NEEDS WORK
                       </Text>
                       {Object.values(summary.negatives).map((item: any, i) => (
                         <AnalysisRow key={i} message={item.message} type="negative" />
@@ -366,7 +366,7 @@ const WorkoutSummaryScreen = () => {
                   {summary.neutrals && Object.values(summary.neutrals).length > 0 && (
                     <View style={styles.analysisCard}>
                       <Text style={[styles.analysisHeader, { color: theme.colors.text.secondary }]}>
-                        NEUTRAL
+                        NOTES
                       </Text>
                       {Object.values(summary.neutrals).map((item: any, i) => (
                         <AnalysisRow key={i} message={item.message} type="neutral" />

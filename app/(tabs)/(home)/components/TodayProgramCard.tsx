@@ -111,7 +111,10 @@ export default function TodayProgramCard() {
         {/* Footer CTAs */}
         <View style={styles.footer}>
           <Pressable
-            style={styles.viewProgramBtn}
+            style={({ pressed }) => [
+              styles.viewProgramBtn,
+              pressed && { opacity: 0.6 }
+            ]}
             onPress={() => router.push(`/(workout-program)/${program_id}`)}
           >
             <Text style={[styles.footerText, isRestDay && styles.footerTextRest]}>
@@ -126,7 +129,11 @@ export default function TodayProgramCard() {
 
           {!isRestDay && (
             <Pressable
-              style={[styles.startTodayBtn, startToday.isPending && styles.startTodayBtnDisabled]}
+              style={({ pressed }) => [
+                styles.startTodayBtn,
+                startToday.isPending && styles.startTodayBtnDisabled,
+                pressed && !startToday.isPending && styles.startTodayBtnPressed
+              ]}
               onPress={handleStartToday}
               disabled={startToday.isPending}
             >
@@ -150,15 +157,15 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     backgroundColor: theme.colors.ui.glass,
-    borderRadius: theme.borderRadius.xxl,
+    borderRadius: theme.borderRadius.xl,
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
     marginBottom: theme.spacing.m,
     overflow: 'hidden',
   },
   cardRest: {
-    backgroundColor: 'rgba(192,132,252,0.04)',
-    borderColor: 'rgba(192,132,252,0.12)',
+    backgroundColor: 'rgba(192, 132, 252, 0.03)',
+    borderColor: 'rgba(192, 132, 252, 0.1)',
   },
   accentBar: {
     width: 3,
@@ -169,8 +176,8 @@ const styles = StyleSheet.create({
   },
   inner: {
     flex: 1,
-    padding: theme.spacing.xxl,
-    paddingLeft: theme.spacing.l,
+    padding: theme.spacing.xl,
+    paddingLeft: theme.spacing.m,
   },
 
   // Header
@@ -183,29 +190,29 @@ const styles = StyleSheet.create({
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
   },
   sectionLabel: {
-    fontSize: theme.typography.sizes.label,
+    fontSize: 10,
     fontWeight: '900',
     textTransform: 'uppercase',
-    letterSpacing: theme.typography.tracking.label,
+    letterSpacing: 0.5,
     color: theme.colors.status.active,
   },
   sectionLabelRest: {
     color: theme.colors.status.rest,
   },
   dayBadge: {
-    backgroundColor: theme.colors.ui.brandSurface,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
     borderWidth: 1,
-    borderColor: theme.colors.ui.primaryBorder,
+    borderColor: 'rgba(99, 102, 241, 0.2)',
     borderRadius: theme.borderRadius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   dayBadgeRest: {
-    backgroundColor: 'rgba(192,132,252,0.1)',
-    borderColor: 'rgba(192,132,252,0.3)',
+    backgroundColor: 'rgba(192, 132, 252, 0.1)',
+    borderColor: 'rgba(192, 132, 252, 0.2)',
   },
   dayBadgeText: {
     fontSize: 9,
@@ -221,19 +228,19 @@ const styles = StyleSheet.create({
 
   // Titles
   programName: {
-    fontSize: theme.typography.sizes.xs,
+    fontSize: 11,
     fontWeight: '700',
     color: theme.colors.text.tertiary,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
-    marginBottom: 3,
+    marginBottom: 2,
   },
   dayName: {
-    fontSize: theme.typography.sizes.h3,
+    fontSize: theme.typography.sizes.l,
     fontWeight: '900',
     fontStyle: 'italic',
     color: theme.colors.text.primary,
-    letterSpacing: theme.typography.tracking.h3,
+    letterSpacing: 0.2,
   },
   dayNameRest: {
     color: theme.colors.status.rest,
@@ -243,6 +250,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: theme.colors.ui.border,
     marginVertical: theme.spacing.m,
+    opacity: 0.5,
   },
 
   // Exercise list
@@ -256,50 +264,52 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   exerciseDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: theme.colors.status.active,
-    opacity: 0.7,
+    opacity: 0.6,
   },
   exerciseName: {
     flex: 1,
-    fontSize: theme.typography.sizes.xs,
+    fontSize: 12,
     fontWeight: '800',
     fontStyle: 'italic',
     color: theme.colors.text.primary,
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   setsChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 1,
-    backgroundColor: theme.colors.ui.glassStrong,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   setsChipText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '900',
     fontStyle: 'italic',
     color: theme.colors.text.primary,
     fontVariant: ['tabular-nums'],
   },
   setsChipLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: theme.colors.text.tertiary,
   },
   overflowText: {
-    fontSize: theme.typography.sizes.xs,
+    fontSize: 11,
     color: theme.colors.text.tertiary,
     fontStyle: 'italic',
-    marginTop: 2,
-    marginLeft: 15,
+    marginTop: 1,
+    marginLeft: 14,
   },
   emptyText: {
-    fontSize: theme.typography.sizes.xs,
+    fontSize: 11,
     color: theme.colors.text.tertiary,
     fontStyle: 'italic',
     marginBottom: theme.spacing.m,
@@ -309,16 +319,16 @@ const styles = StyleSheet.create({
   restContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 12,
     marginBottom: theme.spacing.m,
   },
   restIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(192,132,252,0.1)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(192, 132, 252, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(192,132,252,0.25)',
+    borderColor: 'rgba(192, 132, 252, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -327,13 +337,13 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontStyle: 'italic',
     color: theme.colors.status.rest,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
     textTransform: 'uppercase',
   },
   restSubtitle: {
-    fontSize: theme.typography.sizes.xs,
+    fontSize: 11,
     color: theme.colors.text.tertiary,
-    marginTop: 2,
+    marginTop: 1,
   },
 
   // Footer
@@ -341,17 +351,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: theme.spacing.s,
   },
   viewProgramBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    paddingVertical: 4,
   },
   footerText: {
-    fontSize: theme.typography.sizes.xs,
+    fontSize: 11,
     fontWeight: '900',
     color: theme.colors.status.active,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   footerTextRest: {
@@ -360,13 +372,23 @@ const styles = StyleSheet.create({
   startTodayBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     backgroundColor: theme.colors.status.active,
     borderRadius: theme.borderRadius.full,
     paddingHorizontal: 14,
-    paddingVertical: 7,
-    minWidth: 60,
+    paddingVertical: 8,
+    minWidth: 70,
     justifyContent: 'center',
+    elevation: 2,
+    shadowColor: theme.colors.status.active,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  startTodayBtnPressed: {
+    transform: [{ scale: 0.96 }],
+    backgroundColor: theme.colors.status.active,
+    opacity: 0.9,
   },
   startTodayBtnDisabled: {
     opacity: 0.6,

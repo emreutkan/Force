@@ -20,7 +20,10 @@ export default function ProgramsSection() {
           <Text style={styles.sectionTitle}>MY PROGRAMS</Text>
         </View>
         <Pressable
-          style={styles.manageBtn}
+          style={({ pressed }) => [
+            styles.manageBtn,
+            pressed && { transform: [{ scale: 0.96 }], opacity: 0.8 }
+          ]}
           onPress={() => router.push('/(workout-program)/')}
         >
           <Ionicons name="settings-outline" size={13} color={theme.colors.status.active} />
@@ -30,7 +33,13 @@ export default function ProgramsSection() {
 
       {programs.length === 0 ? (
         /* Empty state — single card CTA */
-        <Pressable style={styles.emptyCard} onPress={() => router.push('/(workout-program)/create/step1')}>
+        <Pressable 
+          style={({ pressed }) => [
+            styles.emptyCard,
+            pressed && { transform: [{ scale: 0.985 }], opacity: 0.9 }
+          ]} 
+          onPress={() => router.push('/(workout-program)/create/step1')}
+        >
           <View style={styles.emptyIconWrap}>
             <Ionicons name="add" size={20} color={theme.colors.status.active} />
           </View>
@@ -52,7 +61,10 @@ export default function ProgramsSection() {
           renderItem={({ item }) => <ProgramCard program={item} />}
           ListFooterComponent={
             <Pressable
-              style={styles.addCard}
+              style={({ pressed }) => [
+                styles.addCard,
+                pressed && { transform: [{ scale: 0.96 }], opacity: 0.8 }
+              ]}
               onPress={() => router.push('/(workout-program)/create/step1')}
             >
               <View style={styles.addCardIcon}>
@@ -73,7 +85,11 @@ function ProgramCard({ program }: { program: WorkoutProgram }) {
 
   return (
     <Pressable
-      style={[styles.programCard, program.is_active && styles.programCardActive]}
+      style={({ pressed }) => [
+        styles.programCard, 
+        program.is_active && styles.programCardActive,
+        pressed && { transform: [{ scale: 0.98 }], opacity: 0.9 }
+      ]}
       onPress={() => router.push(`/(workout-program)/${program.id}`)}
     >
       {program.is_active && <View style={styles.programActiveBar} />}
@@ -124,7 +140,7 @@ function ProgramCard({ program }: { program: WorkoutProgram }) {
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: theme.spacing.m,
+    marginVertical: theme.spacing.xl,
   },
 
   sectionHeader: {
@@ -132,7 +148,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: theme.spacing.m,
-    paddingHorizontal: theme.spacing.xs,
+    paddingHorizontal: 2,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -153,9 +169,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: theme.colors.ui.glassStrong,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderWidth: 1,
-    borderColor: theme.colors.ui.border,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -178,7 +194,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.ui.primaryBorder,
     borderRadius: theme.borderRadius.l,
     padding: theme.spacing.m,
-    marginHorizontal: theme.spacing.xs,
+    marginHorizontal: 2,
   },
   emptyIconWrap: {
     width: 44,
@@ -206,7 +222,7 @@ const styles = StyleSheet.create({
 
   // Program cards list
   listContent: {
-    paddingHorizontal: theme.spacing.xs,
+    paddingHorizontal: 2,
     gap: theme.spacing.m,
     paddingBottom: 4,
   },
@@ -221,8 +237,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   programCardActive: {
-    backgroundColor: 'rgba(99,102,241,0.06)',
-    borderColor: 'rgba(99,102,241,0.2)',
+    backgroundColor: 'rgba(99, 102, 241, 0.04)',
+    borderColor: 'rgba(99, 102, 241, 0.15)',
   },
   programActiveBar: {
     width: 3,
@@ -243,9 +259,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: theme.colors.ui.glassStrong,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderWidth: 1,
-    borderColor: theme.colors.ui.border,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -270,13 +286,13 @@ const styles = StyleSheet.create({
   },
 
   programName: {
-    fontSize: theme.typography.sizes.s,
+    fontSize: 14,
     fontWeight: '900',
     fontStyle: 'italic',
     color: theme.colors.text.primary,
     letterSpacing: 0.3,
     marginBottom: theme.spacing.m,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   programNameActive: {
     color: theme.colors.status.active,
@@ -293,11 +309,12 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    height: 24,
+    height: 20,
     backgroundColor: theme.colors.ui.border,
+    opacity: 0.5,
   },
   statValue: {
-    fontSize: theme.typography.sizes.m,
+    fontSize: 16,
     fontWeight: '900',
     fontStyle: 'italic',
     color: theme.colors.text.primary,
@@ -316,7 +333,7 @@ const styles = StyleSheet.create({
 
   // Add new program card
   addCard: {
-    width: 120,
+    width: 110,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
@@ -325,6 +342,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
     padding: theme.spacing.l,
+    borderStyle: 'dashed',
   },
   addCardIcon: {
     width: 40,

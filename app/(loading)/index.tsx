@@ -58,7 +58,7 @@ export default function LoadingScreen() {
           <Text style={styles.logo}>FORCE</Text>
           <View style={styles.dot} />
         </View>
-        <Text style={styles.tagline}>WORKOUT TRACKING</Text>
+        <Text style={styles.tagline}>Track your training</Text>
       </View>
     </View>
   );

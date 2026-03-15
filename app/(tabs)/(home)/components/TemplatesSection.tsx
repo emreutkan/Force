@@ -14,7 +14,6 @@ import { TemplatesSectionSkeleton } from './homeLoadingSkeleton';
 const FREE_TEMPLATE_LIMIT = 3;
 
 export default function TemplatesSection() {
-  const { data: user } = useUser();
   const { isPro } = useSettingsStore();
   const { data: templatesData, refetch, isLoading: templatesLoading } = useTemplateWorkouts();
   const deleteTemplateMutation = useDeleteTemplateWorkout();
@@ -89,10 +88,14 @@ export default function TemplatesSection() {
           <Text style={styles.sectionTitle}>WORKOUT TEMPLATES</Text>
         </View>
         <Pressable
-          style={[styles.createButton, !canCreateTemplate && styles.createButtonDisabled]}
+          style={({ pressed }) => [
+            styles.createButton,
+            !canCreateTemplate && styles.createButtonDisabled,
+            pressed && canCreateTemplate && { transform: [{ scale: 0.96 }], opacity: 0.8 }
+          ]}
           onPress={handleCreatePress}
         >
-          <Ionicons name="add" size={20} color="#FFFFFF" />
+          <Ionicons name="add" size={18} color="#FFFFFF" />
           <Text style={styles.createButtonText}>NEW</Text>
           {!isPro && (
             <View style={styles.limitBadge}>
@@ -110,11 +113,14 @@ export default function TemplatesSection() {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.templateList}
-        snapToInterval={280 + theme.spacing.m}
+        snapToInterval={260 + theme.spacing.m}
         decelerationRate="fast"
         renderItem={({ item: tpl }) => (
           <Pressable
-            style={styles.templateCard}
+            style={({ pressed }) => [
+              styles.templateCard,
+              pressed && { transform: [{ scale: 0.985 }], opacity: 0.9 }
+            ]}
             onPress={() => handleTemplatePress(tpl)}
           >
             <View style={styles.cardHeader}>
@@ -143,7 +149,7 @@ export default function TemplatesSection() {
         )}
         ListEmptyComponent={
           <View style={styles.emptyCard}>
-            <Ionicons name="duplicate-outline" size={32} color={theme.colors.text.zinc700} />
+            <Ionicons name="duplicate-outline" size={32} color={theme.colors.text.zinc800} />
             <Text style={styles.emptyText}>NO TEMPLATES YET</Text>
           </View>
         }
@@ -161,14 +167,14 @@ export default function TemplatesSection() {
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: theme.spacing.m,
+    marginVertical: theme.spacing.xl,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: theme.spacing.m,
-    paddingHorizontal: theme.spacing.xs,
+    paddingHorizontal: 2,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -193,7 +199,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: theme.colors.ui.border,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
     gap: 4,
   },
   createButtonDisabled: {
@@ -204,6 +210,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#FFFFFF',
     fontStyle: 'italic',
+    letterSpacing: 0.5,
   },
   limitBadge: {
     backgroundColor: theme.colors.status.warning,
@@ -218,12 +225,12 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   templateList: {
-    paddingHorizontal: theme.spacing.xs,
+    paddingHorizontal: 2,
     gap: theme.spacing.m,
     paddingBottom: 8,
   },
   templateCard: {
-    width: 280,
+    width: 260,
     backgroundColor: theme.colors.ui.glass,
     borderRadius: theme.borderRadius.xl,
     padding: theme.spacing.l,
@@ -237,30 +244,31 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.l,
   },
   templateIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(99, 102, 241, 0.03)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.2)',
+    borderColor: 'rgba(99, 102, 241, 0.05)',
   },
   headerInfo: {
     flex: 1,
   },
   templateName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '900',
     color: '#FFFFFF',
     fontStyle: 'italic',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   templateSubtitle: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: theme.colors.text.tertiary,
     letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   cardFooter: {
     flexDirection: 'row',
@@ -273,10 +281,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   metricText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    color: theme.colors.text.secondary,
+    color: theme.colors.text.tertiary,
     letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   startButton: {
     flexDirection: 'row',
@@ -284,18 +293,19 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.status.active,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 10,
     gap: 4,
   },
   startButtonText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '900',
     color: '#FFFFFF',
     fontStyle: 'italic',
+    letterSpacing: 0.5,
   },
   emptyCard: {
-    width: 280,
-    height: 110,
+    width: 260,
+    height: 100,
     backgroundColor: theme.colors.ui.glass,
     borderRadius: theme.borderRadius.xl,
     borderWidth: 1,
@@ -308,7 +318,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 10,
     fontWeight: '800',
-    color: theme.colors.text.zinc700,
+    color: theme.colors.text.zinc800,
     letterSpacing: 1,
   },
 });
