@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   dayName: {
-    fontSize: 9,
+    fontSize: theme.typography.sizes.xxs,
     color: theme.colors.text.tertiary,
     marginBottom: theme.spacing.xs,
     textTransform: 'uppercase',

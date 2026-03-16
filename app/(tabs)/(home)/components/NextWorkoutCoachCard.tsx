@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   decisionBadgeText: {
-    fontSize: 9,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '900',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
   },
   actionBadgeText: {
-    fontSize: 8,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '900',
     letterSpacing: 0.5,
   },

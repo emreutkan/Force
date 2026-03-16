@@ -82,7 +82,9 @@ const TabButton = ({ tab, isActive, onPress }: TabButtonProps) => {
 
     return {
       width: interpolate(activeProgress.value, [0, 1], [48, expandedWidth]),
-      backgroundColor: `rgba(255, 255, 255, ${activeProgress.value})`,
+      backgroundColor: `rgba(99, 102, 241, ${interpolate(activeProgress.value, [0, 1], [0, 0.2])})`,
+      borderWidth: interpolate(activeProgress.value, [0, 1], [0, 1]),
+      borderColor: `rgba(99, 102, 241, ${interpolate(activeProgress.value, [0, 1], [0, 0.35])})`,
     };
   });
 
@@ -110,14 +112,14 @@ const TabButton = ({ tab, isActive, onPress }: TabButtonProps) => {
           <Animated.View style={animatedIconStyle}>
             {tab.icon({
               size: isActive ? 24 : 20,
-              color: isActive ? theme.colors.status.active : theme.colors.text.secondary,
+              color: isActive ? theme.colors.text.primary : theme.colors.text.secondary,
             })}
           </Animated.View>
 
           <Animated.View style={[styles.textContainer, animatedTextStyle]}>
             <Text
               numberOfLines={1}
-              style={[styles.tabLabel, isActive && { color: theme.colors.status.active }]}
+              style={[styles.tabLabel, isActive && { color: theme.colors.text.primary }]}
               onLayout={handleTextLayout}
             >
               {tab.label}

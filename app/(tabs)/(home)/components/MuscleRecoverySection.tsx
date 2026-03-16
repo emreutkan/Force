@@ -216,11 +216,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   pctText: {
-    fontSize: 16,
+    fontSize: theme.typography.sizes.s,
     fontWeight: '900',
     fontStyle: 'italic',
+    fontFamily: theme.typography.fonts.mono,
     color: theme.colors.text.primary,
-    fontVariant: ['tabular-nums'],
   },
   progressBar: {
     width: 70,

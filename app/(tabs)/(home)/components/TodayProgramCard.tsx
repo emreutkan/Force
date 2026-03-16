@@ -219,12 +219,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(192, 132, 252, 0.2)',
   },
   dayBadgeText: {
-    fontSize: 9,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '900',
+    fontFamily: theme.typography.fonts.mono,
     color: theme.colors.status.active,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    fontVariant: ['tabular-nums'],
   },
   dayBadgeTextRest: {
     color: theme.colors.status.rest,
@@ -294,14 +294,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   setsChipText: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '900',
-    fontStyle: 'italic',
+    fontFamily: theme.typography.fonts.mono,
     color: theme.colors.text.primary,
-    fontVariant: ['tabular-nums'],
   },
   setsChipLabel: {
-    fontSize: 9,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '700',
     color: theme.colors.text.tertiary,
   },

@@ -130,6 +130,8 @@ const styles = StyleSheet.create({
   intensityValue: {
     fontSize: theme.typography.sizes.xxxl,
     fontWeight: '900',
+    fontStyle: 'italic',
+    fontFamily: theme.typography.fonts.mono,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.xs,
   },
@@ -185,6 +187,8 @@ const styles = StyleSheet.create({
   metricValue: {
     fontSize: theme.typography.sizes.l,
     fontWeight: '900',
+    fontStyle: 'italic',
+    fontFamily: theme.typography.fonts.mono,
     color: theme.colors.text.primary,
   },
 });

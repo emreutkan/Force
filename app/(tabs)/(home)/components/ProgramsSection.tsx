@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   activeBadgeText: {
-    fontSize: 8,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '900',
     color: theme.colors.status.active,
     letterSpacing: 1,
@@ -329,17 +329,17 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   statValue: {
-    fontSize: 16,
+    fontSize: theme.typography.sizes.s,
     fontWeight: '900',
     fontStyle: 'italic',
+    fontFamily: theme.typography.fonts.mono,
     color: theme.colors.text.primary,
-    fontVariant: ['tabular-nums'],
   },
   statValueRest: {
     color: theme.colors.status.rest,
   },
   statLabel: {
-    fontSize: 8,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addCardText: {
-    fontSize: 9,
+    fontSize: theme.typography.sizes.xxs,
     fontWeight: '900',
     color: theme.colors.status.active,
     letterSpacing: 0.8,
