@@ -215,9 +215,14 @@ export default function WorkoutExerciseDetailsView({
                                 showsVerticalScrollIndicator={false}
                                 contentContainerStyle={{ paddingBottom: hasSets && isActive ? 200 : 120 }}
                                 onDragEnd={async ({ data }: { data: any }) => {
+                                    const previousExercises = exercises;
                                     setExercises(data);
                                     const exerciseOrders = data.map((item: any, index: number) => ({ id: item.id, order: index + 1 }));
-                                    await updateExerciseOrder(workout.id, exerciseOrders);
+                                    try {
+                                        await updateExerciseOrder(workout.id, exerciseOrders);
+                                    } catch {
+                                        setExercises(previousExercises);
+                                    }
                                 }}
                                 keyExtractor={(item) => item.id.toString()}
                                 renderItem={renderItems}

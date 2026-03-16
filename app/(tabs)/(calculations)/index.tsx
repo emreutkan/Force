@@ -1,472 +1,1128 @@
-import { BodyMeasurement } from '@/api/types/index';
+import type { BodyMeasurement, WeightHistoryEntry } from '@/api/types';
 import { extractResults } from '@/api/types/pagination';
-import { theme, typographyStyles, commonStyles } from '@/constants/theme';
-import { logger } from '@/lib/logger';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
-import { Stack } from 'expo-router';
-import { useMemo, useState, useEffect } from 'react';
-import {
-    FlatList,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    Pressable,
-    View,
-    Share
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useMeasurements } from '@/hooks/useMeasurements';
-import { useUser, useWeightHistory, useUpdateWeight } from '@/hooks/useUser';
 import { MiniTrendGraph } from '@/components/calculations/MiniTrendGraph';
 import { NeuralTrendChart } from '@/components/calculations/NeuralTrendChart';
+import { commonStyles, theme, typographyStyles } from '@/constants/theme';
+import { useMeasurements } from '@/hooks/useMeasurements';
+import { useUpdateWeight, useUser, useWeightHistory } from '@/hooks/useUser';
+import { logger } from '@/lib/logger';
+import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
+import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
+import { Stack } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// ============================================================================
-// MAIN SCREEN COMPONENT
-// ============================================================================
+type ActiveTab = 'biometrics' | 'calculator';
+
+const REP_PERCENTAGES = [95, 90, 85, 80, 75, 70] as const;
+
+const parseNumericValue = (value: number | string | null | undefined) => {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = typeof value === 'number' ? value : parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const formatMetricValue = (
+  value: number | string | null | undefined,
+  fallback: string,
+  fractionDigits: number = 1
+) => {
+  const parsed = parseNumericValue(value);
+  return parsed === null ? fallback : parsed.toFixed(fractionDigits);
+};
+
+const formatHistoryDate = (date: string) =>
+  new Date(date)
+    .toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+    .toUpperCase();
 
 export default function MeasurementsScreen() {
-    const insets = useSafeAreaInsets();
-    const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
+  const { width: viewportWidth } = useWindowDimensions();
 
-    // UI Navigation
-    const [activeTab, setActiveTab] = useState<'biometrics' | 'calculator'>('biometrics');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('biometrics');
+  const [calcWeight, setCalcWeight] = useState('');
+  const [calcReps, setCalcReps] = useState('');
+  const [calculatedMax, setCalculatedMax] = useState<number | null>(null);
+  const [modals, setModals] = useState({ weight: false, bodyFat: false });
+  const [tempVal, setTempVal] = useState('');
 
-    // TanStack Query hooks
-    const { data: measurementsData } = useMeasurements();
-    const { data: userData } = useUser();
-    const { data: weightHistoryData } = useWeightHistory();
-    const updateWeightMutation = useUpdateWeight();
+  const { data: measurementsData } = useMeasurements();
+  const { data: userData } = useUser();
+  const { data: weightHistoryData } = useWeightHistory();
+  const updateWeightMutation = useUpdateWeight();
 
-    // Refresh handler
-    const handleRefresh = () => {
-        queryClient.invalidateQueries({ queryKey: ['measurements'] });
-        queryClient.invalidateQueries({ queryKey: ['user'] });
-        queryClient.invalidateQueries({ queryKey: ['weight-history'] });
-    };
+  const measurements = useMemo(() => {
+    if (!measurementsData) return [];
+    return extractResults(measurementsData) as BodyMeasurement[];
+  }, [measurementsData]);
 
-    // 1RM Calculator State
-    const [calcWeight, setCalcWeight] = useState('');
-    const [calcReps, setCalcReps] = useState('');
-    const [calculatedMax, setCalculatedMax] = useState<number | null>(null);
+  const weightHistory = useMemo(() => weightHistoryData?.results || [], [weightHistoryData]);
 
-    // Modals & Forms
-    const [modals, setModals] = useState({ weight: false, bodyFat: false });
-    const [tempVal, setTempVal] = useState('');
+  const measurementsAsc = useMemo(
+    () =>
+      [...measurements].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      ),
+    [measurements]
+  );
 
-    // Extract data from queries
-    const measurements = useMemo(() => {
-        if (!measurementsData) return [];
-        return extractResults(measurementsData) as BodyMeasurement[];
-    }, [measurementsData]);
+  const sortedHistory = useMemo(
+    () =>
+      [...weightHistory].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [weightHistory]
+  );
 
-    const weightHistory = useMemo(() => {
-        return weightHistoryData?.results || [];
-    }, [weightHistoryData]);
+  const historyAsc = useMemo(() => [...sortedHistory].reverse(), [sortedHistory]);
 
-    const currentWeight = userData?.weight || null;
+  const latestBodyFat = useMemo(() => {
+    const latestMeasurement = measurementsAsc[measurementsAsc.length - 1];
+    return parseNumericValue(latestMeasurement?.body_fat_percentage);
+  }, [measurementsAsc]);
 
-    // Derived Data for Biometrics
-    const latestBodyFat = useMemo(() => {
-        if (measurements.length === 0) return null;
-        return measurements.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.body_fat_percentage;
-    }, [measurements]);
+  const bodyFatSeries = useMemo(
+    () =>
+      measurementsAsc
+        .map((entry) => parseNumericValue(entry.body_fat_percentage))
+        .filter((value): value is number => value !== null),
+    [measurementsAsc]
+  );
 
-    const weightGraphData = useMemo(() => weightHistory.slice(0, 10).reverse().map(item => item.weight), [weightHistory]);
-    const bodyFatGraphData = useMemo(() => measurements.filter(m => m.body_fat_percentage).slice(0, 10).reverse().map(m => parseFloat(m.body_fat_percentage as any)), [measurements]);
-    const weightMiniData = useMemo(() => weightHistory.slice(0, 7).reverse().map(item => item.weight), [weightHistory]);
-    const bodyFatMiniData = useMemo(() => measurements.filter(m => m.body_fat_percentage).slice(0, 7).reverse().map(m => parseFloat(m.body_fat_percentage as any)), [measurements]);
+  const weightGraphData = useMemo(
+    () => historyAsc.slice(-10).map((item) => item.weight),
+    [historyAsc]
+  );
+  const weightMiniData = useMemo(
+    () => historyAsc.slice(-7).map((item) => item.weight),
+    [historyAsc]
+  );
+  const bodyFatGraphData = useMemo(() => bodyFatSeries.slice(-10), [bodyFatSeries]);
+  const bodyFatMiniData = useMemo(() => bodyFatSeries.slice(-7), [bodyFatSeries]);
 
-    const [cardWidth, setCardWidth] = useState(0);
+  const currentWeight = userData?.weight ?? null;
 
-    const sortedHistory = useMemo(() => [...weightHistory].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [weightHistory]);
+  const sectionWidth = Math.min(Math.max(viewportWidth - theme.spacing.m * 2, 0), 720);
+  const isCompactCards = sectionWidth < 420;
+  const biometricCardWidth = isCompactCards ? sectionWidth : (sectionWidth - theme.spacing.m) / 2;
+  const miniGraphWidth = Math.max(biometricCardWidth - theme.spacing.xl * 2, 0);
+  const trendChartWidth = Math.max(sectionWidth - theme.spacing.xl * 2, 0);
+  const percentageColumns = sectionWidth >= 540 ? 3 : 2;
+  const percentageItemWidth =
+    (sectionWidth - theme.spacing.s * (percentageColumns - 1)) / percentageColumns;
+  const useCompactHistory = sectionWidth < 390;
 
-    // 1RM Calculation Logic
-    useEffect(() => {
-        const w = parseFloat(calcWeight);
-        const r = parseInt(calcReps);
-        if (w > 0 && r > 0) {
-            // Brzycki Formula: w * (36 / (37 - r))
-            if (r === 1) setCalculatedMax(w);
-            else if (r >= 37) setCalculatedMax(null); // Formula breaks down
-            else setCalculatedMax(w * (36 / (37 - r)));
-        } else {
-            setCalculatedMax(null);
-        }
-    }, [calcWeight, calcReps]);
+  useEffect(() => {
+    const weight = parseNumericValue(calcWeight);
+    const reps = parseInt(calcReps, 10);
 
-    const handleShareMax = () => {
-        if (!calculatedMax) return;
-        Share.share({
-            message: `My estimated 1-Rep Max is ${calculatedMax.toFixed(1)}kg! Calculated with FORCE.`,
-        });
-    };
+    if (weight === null || weight <= 0 || Number.isNaN(reps) || reps <= 0) {
+      setCalculatedMax(null);
+      return;
+    }
 
-    const openWeightModal = () => {
-        setTempVal(currentWeight?.toString() || '');
-        setModals(prev => ({ ...prev, weight: true }));
-    };
+    if (reps === 1) {
+      setCalculatedMax(weight);
+      return;
+    }
 
-    const handleSaveWeight = async () => {
-        const weight = parseFloat(tempVal);
-        if (!weight || isNaN(weight)) return;
+    if (reps >= 37) {
+      setCalculatedMax(null);
+      return;
+    }
 
-        try {
-            await updateWeightMutation.mutateAsync(weight);
-            setModals(prev => ({ ...prev, weight: false }));
-            setTempVal('');
-        } catch (error) {
-            logger.error('Failed to update weight', error);
-        }
-    };
+    setCalculatedMax(weight * (36 / (37 - reps)));
+  }, [calcWeight, calcReps]);
 
-    const openBodyFatModal = () => { setModals(prev => ({ ...prev, bodyFat: true })); };
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['measurements'] });
+    queryClient.invalidateQueries({ queryKey: ['user'] });
+    queryClient.invalidateQueries({ queryKey: ['weight-history'] });
+  };
 
-    const renderBiometrics = () => (
-        <>
-            <View style={styles.cardsRow}>
-                <Pressable style={[styles.biometricCard, { width: cardWidth }]} onPress={openWeightModal}>
-                    <View style={styles.cardHeader}>
-                        <View style={styles.cardHeaderLeft}><Ionicons name="scale-outline" size={16} color={theme.colors.text.brand} /><Text style={styles.cardLabel}>WEIGHT</Text></View>
-                        <Ionicons name="remove-outline" size={18} color={theme.colors.text.tertiary} />
-                    </View>
-                    <View style={styles.cardValueRow}><Text style={styles.cardValue}>{currentWeight ? currentWeight.toFixed(1) : '--'}</Text><Text style={styles.cardUnit}>KG</Text></View>
-                    <View style={styles.cardGraphWrapper}><MiniTrendGraph data={weightMiniData} color={theme.colors.text.brand} width={cardWidth} /></View>
-                </Pressable>
-                <Pressable style={[styles.biometricCard, { width: cardWidth }]} onPress={openBodyFatModal}>
-                    <View style={styles.cardHeader}>
-                        <View style={styles.cardHeaderLeft}><Ionicons name="body-outline" size={16} color={theme.colors.status.rest} /><Text style={styles.cardLabel}>BODY FAT</Text></View>
-                        <Ionicons name="pulse" size={18} color={theme.colors.status.rest} />
-                    </View>
-                    <View style={styles.cardValueRow}><Text style={styles.cardValue}>{latestBodyFat ? parseFloat(latestBodyFat.toString()).toFixed(1) : '--'}</Text><Text style={styles.cardUnit}>%</Text></View>
-                    <View style={styles.cardGraphWrapper}><MiniTrendGraph data={bodyFatMiniData} color={theme.colors.status.rest} width={cardWidth} /></View>
-                </Pressable>
+  const handleShareMax = () => {
+    if (!calculatedMax) return;
+
+    Share.share({
+      message: `My estimated 1RM is ${calculatedMax.toFixed(1)} kg on FORCE.`,
+    });
+  };
+
+  const openWeightModal = () => {
+    setTempVal(currentWeight?.toString() || '');
+    setModals((prev) => ({ ...prev, weight: true }));
+  };
+
+  const closeWeightModal = () => {
+    setModals((prev) => ({ ...prev, weight: false }));
+    setTempVal('');
+  };
+
+  const handleSaveWeight = async () => {
+    const weight = parseNumericValue(tempVal);
+    if (weight === null || weight <= 0) return;
+
+    try {
+      await updateWeightMutation.mutateAsync(weight);
+      closeWeightModal();
+    } catch (error) {
+      logger.error('Failed to update weight', error);
+    }
+  };
+
+  const biometricsHeader = (
+    <>
+      <View style={[styles.sectionShell, styles.cardsRow]}>
+        <Pressable
+          style={[styles.biometricCard, { width: biometricCardWidth }]}
+          onPress={openWeightModal}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderLeft}>
+              <Ionicons name="scale-outline" size={16} color={theme.colors.text.brand} />
+              <Text style={styles.cardLabel}>Body weight</Text>
             </View>
+            <Ionicons name="create-outline" size={18} color={theme.colors.text.secondary} />
+          </View>
 
-            <View style={styles.neuralTrendSection}>
-                <View style={styles.graphCard}>
-                    <View style={styles.neuralTrendHeader}>
-                        <View style={styles.neuralTrendHeaderMain}>
-                            <View style={styles.neuralTrendIconContainer}><Ionicons name="stats-chart" size={20} color={theme.colors.text.brand} /></View>
-                            <View><Text style={styles.neuralTrendTitle}>PROGRESS TREND</Text><Text style={styles.neuralTrendSubtitle}>BODY COMPOSITION</Text></View>
-                        </View>
-                        <View style={styles.legendContainer}>
-                            <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: theme.colors.text.brand }]} /><Text style={styles.legendText}>MASS</Text></View>
-                            <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: theme.colors.status.rest }]} /><Text style={styles.legendText}>FAT %</Text></View>
-                        </View>
-                    </View>
-                    <NeuralTrendChart weightData={weightGraphData} bodyFatData={bodyFatGraphData} />
-                </View>
-            </View>
+          <View style={styles.cardValueRow}>
+            <Text style={styles.cardValue}>{formatMetricValue(currentWeight, '--')}</Text>
+            <Text style={styles.cardUnit}>kg</Text>
+          </View>
 
-            <View style={styles.historySection}>
-                <View style={styles.historyHeader}><Text style={styles.historySectionTitle}>HISTORY</Text><Pressable onPress={handleRefresh}><Ionicons name="refresh" size={16} color={theme.colors.text.secondary} /></Pressable></View>
-                {sortedHistory.length > 0 ? (
-                    <View style={styles.historyContainer}>
-                        {sortedHistory.map((item) => (
-                            <Pressable key={item.date} style={styles.historyItem}>
-                                <View style={styles.historyContent}>
-                                    <Text style={styles.historyDate}>{new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}</Text>
-                                    <View style={styles.historyMetricsContainer}>
-                                        <View style={styles.historyMetric}><Text style={styles.historyValue}>{item.weight}</Text><Text style={styles.historyUnit}>KG</Text></View>
-                                        <View style={styles.historySeparator} />
-                                        <View style={styles.historyMetric}><Text style={styles.historyBfValue}>{item.bodyfat ? parseFloat(item.bodyfat.toString()).toFixed(1) : '--.-'}</Text><Text style={styles.historyBfUnit}>%</Text></View>
-                                    </View>
-                                </View>
-                                <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />
-                            </Pressable>
-                        ))}
-                    </View>
-                ) : (
-                    <View style={styles.emptyState}><Ionicons name="list" size={48} color={theme.colors.text.secondary} /><Text style={styles.emptyText}>No logs recorded yet.</Text></View>
-                )}
-            </View>
-        </>
-    );
-
-    const renderCalculator = () => (
-        <View style={styles.calcContainer}>
-            <View style={styles.calcCard}>
-                <View style={styles.sectionHeader}>
-                    <View style={styles.neuralTrendIconContainer}><Ionicons name="calculator" size={20} color={theme.colors.text.brand} /></View>
-                    <View><Text style={styles.neuralTrendTitle}>1RM CALCULATOR</Text><Text style={styles.neuralTrendSubtitle}>BRZYCKI METHOD</Text></View>
-                </View>
-
-                <View style={styles.inputStack}>
-                    <View style={styles.inputGroupFull}>
-                        <Text style={styles.inputLabel}>WEIGHT LIFTED</Text>
-                        <View style={styles.inputWrapper}>
-                            <Ionicons name="barbell-outline" size={18} color={theme.colors.text.tertiary} style={styles.inputIcon} />
-                            <TextInput style={styles.input} value={calcWeight} onChangeText={setCalcWeight} keyboardType="numeric" placeholder="000.0" placeholderTextColor={theme.colors.text.tertiary} />
-                            <Text style={styles.inputSuffix}>KG</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.inputGroupFull}>
-                        <Text style={styles.inputLabel}>REPETITIONS</Text>
-                        <View style={styles.inputWrapper}>
-                            <Ionicons name="repeat-outline" size={18} color={theme.colors.text.tertiary} style={styles.inputIcon} />
-                            <TextInput style={styles.input} value={calcReps} onChangeText={setCalcReps} keyboardType="numeric" placeholder="00" placeholderTextColor={theme.colors.text.tertiary} />
-                            <Text style={styles.inputSuffix}>REPS</Text>
-                        </View>
-                    </View>
-                </View>
-
-                <View style={styles.resultContainer}>
-                    <View style={styles.resultHeader}>
-                        <Text style={styles.resultLabel}>ESTIMATED 1-REP MAX</Text>
-                    </View>
-                    <View style={styles.resultValueRow}>
-                        <Text style={[styles.resultValue, !calculatedMax && { color: theme.colors.text.tertiary, opacity: 0.3 }]}>
-                            {calculatedMax ? calculatedMax.toFixed(1) : '000.0'}
-                        </Text>
-                        <Text style={styles.resultUnit}>KG</Text>
-                    </View>
-                    {calculatedMax && (
-                        <Pressable style={styles.shareBtn} onPress={handleShareMax}>
-                            <Ionicons name="share-outline" size={16} color={theme.colors.text.brand} />
-                            <Text style={styles.shareBtnText}>SHARE PERFORMANCE</Text>
-                        </Pressable>
-                    )}
-                </View>
-            </View>
-
-            {calculatedMax && (
-                <View style={styles.percentageCard}>
-                    <Text style={styles.sectionTitle}>PERCENTAGE BREAKDOWN</Text>
-                    <View style={styles.percentageGrid}>
-                        {[95, 90, 85, 80, 75, 70].map((pct) => (
-                            <View key={pct} style={styles.pctItem}>
-                                <Text style={styles.pctLabel}>{pct}%</Text>
-                                <Text style={styles.pctValue}>{(calculatedMax * (pct/100)).toFixed(1)}<Text style={styles.pctUnit}>kg</Text></Text>
-                            </View>
-                        ))}
-                    </View>
-                </View>
-            )}
-
-            <View style={styles.infoCard}>
-                <Ionicons name="information-circle-outline" size={20} color={theme.colors.text.tertiary} />
-                <Text style={styles.infoText}>
-                    The Brzycki formula is most accurate for reps under 10. For higher rep counts, calculations are estimates only.
-                </Text>
-            </View>
-        </View>
-    );
-
-    return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <Stack.Screen options={{ headerShown: false }} />
-            <ExpoLinearGradient colors={['rgba(99, 101, 241, 0.13)', 'transparent']} style={styles.gradientBg} />
-
-            <View style={styles.tabHeader}>
-                <Pressable
-                    style={[styles.tabItem, activeTab === 'biometrics' && styles.tabItemActive]}
-                    onPress={() => setActiveTab('biometrics')}
-                >
-                    <Text style={[styles.tabText, activeTab === 'biometrics' && styles.tabTextActive]}>BODY METRICS</Text>
-                </Pressable>
-                <Pressable
-                    style={[styles.tabItem, activeTab === 'calculator' && styles.tabItemActive]}
-                    onPress={() => setActiveTab('calculator')}
-                >
-                    <Text style={[styles.tabText, activeTab === 'calculator' && styles.tabTextActive]}>1RM CALC</Text>
-                </Pressable>
-            </View>
-
-            {activeTab === 'biometrics' ? (
-                <FlatList
-                    data={sortedHistory}
-                    keyExtractor={(item: { date: string }, index: number) => `history-${index}`}
-                    contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    ListHeaderComponent={
-                        <>
-                            <View style={styles.cardsRow}>
-                                <Pressable style={[styles.biometricCard, { width: cardWidth }]} onPress={openWeightModal}>
-                                    <View style={styles.cardHeader}>
-                                        <View style={styles.cardHeaderLeft}><Ionicons name="scale-outline" size={16} color={theme.colors.text.brand} /><Text style={styles.cardLabel}>WEIGHT</Text></View>
-                                        <Ionicons name="remove-outline" size={18} color={theme.colors.text.tertiary} />
-                                    </View>
-                                    <View style={styles.cardValueRow}><Text style={styles.cardValue}>{currentWeight ? currentWeight.toFixed(1) : '--'}</Text><Text style={styles.cardUnit}>KG</Text></View>
-                                    <View style={styles.cardGraphWrapper}><MiniTrendGraph data={weightMiniData} color={theme.colors.text.brand} width={cardWidth} /></View>
-                                </Pressable>
-                                <Pressable style={[styles.biometricCard, { width: cardWidth }]} onPress={openBodyFatModal}>
-                                    <View style={styles.cardHeader}>
-                                        <View style={styles.cardHeaderLeft}><Ionicons name="body-outline" size={16} color={theme.colors.status.rest} /><Text style={styles.cardLabel}>BODY FAT</Text></View>
-                                        <Ionicons name="pulse" size={18} color={theme.colors.status.rest} />
-                                    </View>
-                                    <View style={styles.cardValueRow}><Text style={styles.cardValue}>{latestBodyFat ? parseFloat(latestBodyFat.toString()).toFixed(1) : '--'}</Text><Text style={styles.cardUnit}>%</Text></View>
-                                    <View style={styles.cardGraphWrapper}><MiniTrendGraph data={bodyFatMiniData} color={theme.colors.status.rest} width={cardWidth} /></View>
-                                </Pressable>
-                            </View>
-
-                            <View style={styles.neuralTrendSection}>
-                                <View style={styles.graphCard}>
-                                    <View style={styles.neuralTrendHeader}>
-                                        <View style={styles.neuralTrendHeaderMain}>
-                                            <View style={styles.neuralTrendIconContainer}><Ionicons name="stats-chart" size={20} color={theme.colors.text.brand} /></View>
-                                            <View><Text style={styles.neuralTrendTitle}>PROGRESS TREND</Text><Text style={styles.neuralTrendSubtitle}>BODY COMPOSITION</Text></View>
-                                        </View>
-                                        <View style={styles.legendContainer}>
-                                            <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: theme.colors.text.brand }]} /><Text style={styles.legendText}>MASS</Text></View>
-                                            <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: theme.colors.status.rest }]} /><Text style={styles.legendText}>FAT %</Text></View>
-                                        </View>
-                                    </View>
-                                    <NeuralTrendChart weightData={weightGraphData} bodyFatData={bodyFatGraphData} />
-                                </View>
-                            </View>
-
-                            <View style={styles.historySection}>
-                                <View style={styles.historyHeader}><Text style={styles.historySectionTitle}>HISTORY</Text><Pressable onPress={handleRefresh}><Ionicons name="refresh" size={16} color={theme.colors.text.secondary} /></Pressable></View>
-                            </View>
-                        </>
-                    }
-                    renderItem={({ item }) => (
-                        <Pressable key={item.date} style={styles.historyItem}>
-                            <View style={styles.historyContent}>
-                                <Text style={styles.historyDate}>{new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}</Text>
-                                <View style={styles.historyMetricsContainer}>
-                                    <View style={styles.historyMetric}><Text style={styles.historyValue}>{item.weight}</Text><Text style={styles.historyUnit}>KG</Text></View>
-                                    <View style={styles.historySeparator} />
-                                    <View style={styles.historyMetric}><Text style={styles.historyBfValue}>{item.bodyfat ? parseFloat(item.bodyfat.toString()).toFixed(1) : '--.-'}</Text><Text style={styles.historyBfUnit}>%</Text></View>
-                                </View>
-                            </View>
-                            <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />
-                        </Pressable>
-                    )}
-                    ListEmptyComponent={
-                        <View style={styles.emptyState}><Ionicons name="list" size={48} color={theme.colors.text.secondary} /><Text style={styles.emptyText}>No logs recorded yet.</Text></View>
-                    }
-                />
+          <View style={styles.cardTrendArea}>
+            {weightMiniData.length >= 2 ? (
+              <MiniTrendGraph
+                data={weightMiniData}
+                color={theme.colors.text.brand}
+                width={miniGraphWidth}
+              />
             ) : (
-                <ScrollView
-                    contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                >
-                    {renderCalculator()}
-                </ScrollView>
+              <Text style={styles.cardHint}>Add one more weight entry to unlock the trend.</Text>
             )}
+          </View>
+        </Pressable>
 
-            <Modal visible={modals.weight} transparent animationType="fade" presentationStyle="overFullScreen">
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-                    <View style={styles.modalCard}>
-                        <Text style={styles.modalTitle}>Update Weight</Text>
-                        <View style={styles.bigInputWrapper}>
-                            <TextInput style={styles.bigInput} value={tempVal} onChangeText={setTempVal} keyboardType="numeric" autoFocus placeholderTextColor={theme.colors.text.secondary} />
-                            <Text style={styles.bigInputSuffix}>kg</Text>
-                        </View>
-                        <View style={styles.modalActions}>
-                            <Pressable style={styles.btnCancel} onPress={() => setModals(prev => ({ ...prev, weight: false }))}><Text style={styles.btnText}>Cancel</Text></Pressable>
-                            <Pressable style={styles.btnSave} onPress={handleSaveWeight}><Text style={styles.btnText}>Save</Text></Pressable>
-                        </View>
-                    </View>
-                </KeyboardAvoidingView>
-            </Modal>
+        <Pressable
+          style={[styles.biometricCard, { width: biometricCardWidth }]}
+          onPress={() => setModals((prev) => ({ ...prev, bodyFat: true }))}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderLeft}>
+              <Ionicons name="body-outline" size={16} color={theme.colors.status.rest} />
+              <Text style={styles.cardLabel}>Body fat</Text>
+            </View>
+            <Ionicons
+              name="information-circle-outline"
+              size={18}
+              color={theme.colors.status.rest}
+            />
+          </View>
+
+          <View style={styles.cardValueRow}>
+            <Text style={styles.cardValue}>{formatMetricValue(latestBodyFat, '--')}</Text>
+            <Text style={styles.cardUnit}>%</Text>
+          </View>
+
+          <View style={styles.cardTrendArea}>
+            {bodyFatMiniData.length >= 2 ? (
+              <MiniTrendGraph
+                data={bodyFatMiniData}
+                color={theme.colors.status.rest}
+                width={miniGraphWidth}
+              />
+            ) : (
+              <Text style={styles.cardHint}>
+                Your latest saved body-fat estimate will appear here.
+              </Text>
+            )}
+          </View>
+        </Pressable>
+      </View>
+
+      <View style={styles.sectionShell}>
+        <View style={styles.graphCard}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.sectionHeaderMain}>
+              <View style={styles.sectionIcon}>
+                <Ionicons name="stats-chart" size={20} color={theme.colors.text.brand} />
+              </View>
+              <View style={styles.sectionHeaderText}>
+                <Text style={styles.sectionTitle}>Progress trend</Text>
+                <Text style={styles.sectionSubtitle}>Weight and body-fat history</Text>
+              </View>
+            </View>
+
+            <View style={styles.legendContainer}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, styles.legendDotBrand]} />
+                <Text style={styles.legendText}>Weight</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, styles.legendDotRest]} />
+                <Text style={styles.legendText}>Body fat</Text>
+              </View>
+            </View>
+          </View>
+
+          <NeuralTrendChart
+            width={trendChartWidth}
+            weightData={weightGraphData}
+            bodyFatData={bodyFatGraphData}
+          />
         </View>
-    );
+      </View>
+
+      <View style={[styles.sectionShell, styles.historyHeader]}>
+        <View>
+          <Text style={styles.historySectionTitle}>History</Text>
+          <Text style={styles.historySectionSubtitle}>Newest entries first.</Text>
+        </View>
+        <Pressable style={styles.refreshButton} onPress={handleRefresh}>
+          <Ionicons name="refresh" size={16} color={theme.colors.text.secondary} />
+          <Text style={styles.refreshText}>Refresh</Text>
+        </Pressable>
+      </View>
+    </>
+  );
+
+  const renderHistoryItem = ({ item }: { item: WeightHistoryEntry }) => (
+    <View style={styles.sectionShell}>
+      <View style={[styles.historyItem, useCompactHistory && styles.historyItemCompact]}>
+        <View style={styles.historyContent}>
+          <Text style={styles.historyDate}>{formatHistoryDate(item.date)}</Text>
+
+          <View
+            style={[
+              styles.historyMetricsContainer,
+              useCompactHistory && styles.historyMetricsContainerCompact,
+            ]}
+          >
+            <View style={styles.historyMetric}>
+              <Text style={styles.historyMetricLabel}>Weight</Text>
+              <View style={styles.historyMetricValueRow}>
+                <Text style={styles.historyValue}>{formatMetricValue(item.weight, '--')}</Text>
+                <Text style={styles.historyUnit}>kg</Text>
+              </View>
+            </View>
+
+            <View style={styles.historySeparator} />
+
+            <View style={styles.historyMetric}>
+              <Text style={styles.historyMetricLabel}>Body fat</Text>
+              <View style={styles.historyMetricValueRow}>
+                <Text style={styles.historyBfValue}>{formatMetricValue(item.bodyfat, '--.-')}</Text>
+                <Text style={styles.historyBfUnit}>%</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderCalculator = () => (
+    <View style={[styles.sectionShell, styles.calcContainer]}>
+      <View style={styles.calcCard}>
+        <View style={styles.sectionHeaderRow}>
+          <View style={styles.sectionHeaderMain}>
+            <View style={styles.sectionIcon}>
+              <Ionicons name="calculator" size={20} color={theme.colors.text.brand} />
+            </View>
+            <View style={styles.sectionHeaderText}>
+              <Text style={styles.sectionTitle}>1RM calculator</Text>
+              <Text style={styles.sectionSubtitle}>Brzycki estimate</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.inputStack}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Weight lifted</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="barbell-outline"
+                size={18}
+                color={theme.colors.text.tertiary}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                value={calcWeight}
+                onChangeText={setCalcWeight}
+                keyboardType="decimal-pad"
+                placeholder="100.0"
+                placeholderTextColor={theme.colors.text.tertiary}
+              />
+              <Text style={styles.inputSuffix}>kg</Text>
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Reps completed</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="repeat-outline"
+                size={18}
+                color={theme.colors.text.tertiary}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                value={calcReps}
+                onChangeText={setCalcReps}
+                keyboardType="number-pad"
+                placeholder="5"
+                placeholderTextColor={theme.colors.text.tertiary}
+              />
+              <Text style={styles.inputSuffix}>reps</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.resultContainer}>
+          <Text style={styles.resultLabel}>Estimated 1-rep max</Text>
+          <View style={styles.resultValueRow}>
+            <Text style={[styles.resultValue, !calculatedMax && styles.resultValueMuted]}>
+              {calculatedMax ? calculatedMax.toFixed(1) : '--.-'}
+            </Text>
+            <Text style={styles.resultUnit}>kg</Text>
+          </View>
+
+          {calculatedMax && (
+            <Pressable style={styles.shareButton} onPress={handleShareMax}>
+              <Ionicons name="share-outline" size={16} color={theme.colors.text.brand} />
+              <Text style={styles.shareButtonText}>Share estimate</Text>
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      {calculatedMax && (
+        <View style={styles.percentageCard}>
+          <Text style={styles.historySectionTitle}>Training weight guide</Text>
+          <Text style={styles.percentageSubtitle}>Use these percentages for working sets.</Text>
+
+          <View style={styles.percentageGrid}>
+            {REP_PERCENTAGES.map((pct) => (
+              <View key={pct} style={[styles.pctItem, { width: percentageItemWidth }]}>
+                <Text style={styles.pctLabel}>{pct}%</Text>
+                <Text style={styles.pctValue}>
+                  {(calculatedMax * (pct / 100)).toFixed(1)}
+                  <Text style={styles.pctUnit}> kg</Text>
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      <View style={styles.infoCard}>
+        <Ionicons name="information-circle-outline" size={20} color={theme.colors.text.secondary} />
+        <Text style={styles.infoText}>
+          Best for hard sets of 10 reps or fewer. Higher rep sets produce a rough estimate.
+        </Text>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ExpoLinearGradient
+        colors={['rgba(99, 101, 241, 0.13)', 'transparent']}
+        style={styles.gradientBg}
+      />
+
+      <View style={[styles.sectionShell, styles.tabHeader]}>
+        <Pressable
+          style={[styles.tabItem, activeTab === 'biometrics' && styles.tabItemActive]}
+          onPress={() => setActiveTab('biometrics')}
+        >
+          <Text style={[styles.tabText, activeTab === 'biometrics' && styles.tabTextActive]}>
+            Body metrics
+          </Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.tabItem, activeTab === 'calculator' && styles.tabItemActive]}
+          onPress={() => setActiveTab('calculator')}
+        >
+          <Text style={[styles.tabText, activeTab === 'calculator' && styles.tabTextActive]}>
+            1RM calculator
+          </Text>
+        </Pressable>
+      </View>
+
+      {activeTab === 'biometrics' ? (
+        <FlatList
+          data={sortedHistory}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: insets.bottom + theme.spacing.navHeight + theme.spacing.l },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={biometricsHeader}
+          renderItem={renderHistoryItem}
+          ListEmptyComponent={
+            <View style={[styles.sectionShell, styles.emptyState]}>
+              <Ionicons name="scale-outline" size={36} color={theme.colors.text.secondary} />
+              <Text style={styles.emptyTitle}>No measurement history yet</Text>
+              <Text style={styles.emptyText}>
+                Save your weight to start tracking changes over time.
+              </Text>
+            </View>
+          }
+        />
+      ) : (
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: insets.bottom + theme.spacing.navHeight + theme.spacing.l },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {renderCalculator()}
+        </ScrollView>
+      )}
+
+      <Modal
+        visible={modals.weight}
+        transparent
+        animationType="fade"
+        presentationStyle="overFullScreen"
+        onRequestClose={closeWeightModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeWeightModal} />
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Update body weight</Text>
+            <Text style={styles.modalDescription}>
+              Save your current body weight. This adds a new entry to your progress history.
+            </Text>
+
+            <View style={styles.bigInputWrapper}>
+              <TextInput
+                style={styles.bigInput}
+                value={tempVal}
+                onChangeText={setTempVal}
+                keyboardType="decimal-pad"
+                autoFocus
+                placeholder="80.0"
+                placeholderTextColor={theme.colors.text.secondary}
+              />
+              <Text style={styles.bigInputSuffix}>kg</Text>
+            </View>
+
+            <View style={styles.modalActions}>
+              <Pressable style={styles.btnCancel} onPress={closeWeightModal}>
+                <Text style={styles.btnCancelText}>Cancel</Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.btnSave,
+                  (updateWeightMutation.isPending ||
+                    parseNumericValue(tempVal) === null ||
+                    parseNumericValue(tempVal) === 0) &&
+                    styles.btnSaveDisabled,
+                ]}
+                onPress={handleSaveWeight}
+                disabled={
+                  updateWeightMutation.isPending ||
+                  parseNumericValue(tempVal) === null ||
+                  parseNumericValue(tempVal) === 0
+                }
+              >
+                <Text style={styles.btnSaveText}>
+                  {updateWeightMutation.isPending ? 'Saving...' : 'Save weight'}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal
+        visible={modals.bodyFat}
+        transparent
+        animationType="fade"
+        presentationStyle="overFullScreen"
+        onRequestClose={() => setModals((prev) => ({ ...prev, bodyFat: false }))}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setModals((prev) => ({ ...prev, bodyFat: false }))}
+          />
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>About body-fat data</Text>
+            <Text style={styles.modalDescription}>
+              This screen shows your latest saved body-fat estimate. It is read-only here, so the
+              value updates only when a measurement entry with body-fat data is added to your
+              account.
+            </Text>
+            <Pressable
+              style={styles.modalSingleAction}
+              onPress={() => setModals((prev) => ({ ...prev, bodyFat: false }))}
+            >
+              <Text style={styles.btnSaveText}>Got it</Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.colors.background },
-    gradientBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-    scrollContent: { padding: theme.spacing.m },
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  gradientBg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  scrollContent: {
+    padding: theme.spacing.m,
+    gap: theme.spacing.m,
+  },
+  sectionShell: {
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+  },
 
-    // Tabs
-    tabHeader: { flexDirection: 'row', paddingHorizontal: 20, marginTop: 10, gap: 10 },
-    tabItem: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 12, backgroundColor: theme.colors.ui.glass, borderWidth: 1, borderColor: theme.colors.ui.border },
-    tabItemActive: { backgroundColor: theme.colors.text.brand, borderColor: theme.colors.text.brand },
-    tabText: { fontSize: 11, fontWeight: '900', color: theme.colors.text.secondary, letterSpacing: 0.5 },
-    tabTextActive: { color: '#FFF' },
+  tabHeader: {
+    flexDirection: 'row',
+    gap: theme.spacing.s,
+    marginTop: theme.spacing.s,
+    marginBottom: theme.spacing.s,
+  },
+  tabItem: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: theme.borderRadius.l,
+    backgroundColor: theme.colors.ui.glass,
+    borderWidth: 1,
+    borderColor: theme.colors.ui.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.m,
+  },
+  tabItemActive: {
+    backgroundColor: theme.colors.ui.brandSurface,
+    borderColor: theme.colors.ui.primaryBorder,
+  },
+  tabText: {
+    ...typographyStyles.labelTight,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+  },
+  tabTextActive: {
+    color: theme.colors.text.primary,
+  },
 
-    // Biometrics specific
-    cardsRow: { flexDirection: 'row', gap: theme.spacing.m, marginBottom: theme.spacing.xl, marginTop: 10 },
-    biometricCard: { flex: 1, backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.xl, paddingTop: theme.spacing.m, borderWidth: 1, borderColor: theme.colors.ui.border, overflow: 'hidden' },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: theme.spacing.m, marginBottom: theme.spacing.m },
-    cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
-    cardLabel: { ...typographyStyles.labelTight, color: theme.colors.text.secondary, letterSpacing: 1 },
-    cardValueRow: { flexDirection: 'row', alignItems: 'baseline', paddingHorizontal: theme.spacing.m, marginBottom: theme.spacing.s },
-    cardValue: { ...typographyStyles.h2, color: '#FFFFFF', fontWeight: '900', fontSize: 38 },
-    cardUnit: { ...typographyStyles.labelTight, color: theme.colors.text.tertiary, marginLeft: 4, fontWeight: '900', fontSize: 14, opacity: 0.5 },
-    cardGraphWrapper: { marginTop: 'auto', width: '100%', bottom: -5 },
+  cardsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.m,
+    marginBottom: theme.spacing.m,
+  },
+  biometricCard: {
+    ...commonStyles.glassPanel,
+    minHeight: 220,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.xl,
+    justifyContent: 'space-between',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: theme.spacing.s,
+  },
+  cardHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    flexShrink: 1,
+  },
+  cardLabel: {
+    ...typographyStyles.labelTight,
+    color: theme.colors.text.secondary,
+  },
+  cardValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginTop: theme.spacing.l,
+  },
+  cardValue: {
+    ...typographyStyles.h2,
+  },
+  cardUnit: {
+    ...typographyStyles.labelTight,
+    color: theme.colors.text.tertiary,
+    marginLeft: theme.spacing.xs,
+    opacity: 0.8,
+  },
+  cardTrendArea: {
+    minHeight: 60,
+    justifyContent: 'flex-end',
+    marginTop: theme.spacing.l,
+  },
+  cardHint: {
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.sizes.xs,
+    lineHeight: 18,
+  },
 
-    neuralTrendSection: { marginBottom: theme.spacing.xl },
-    neuralTrendHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: theme.spacing.l },
-    neuralTrendHeaderMain: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.m },
-    neuralTrendIconContainer: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(99, 102, 241, 0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(99, 102, 241, 0.2)' },
-    neuralTrendTitle: { fontSize: 16, fontWeight: '900', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.5 },
-    neuralTrendSubtitle: { fontSize: 10, fontWeight: '700', color: theme.colors.text.tertiary, textTransform: 'uppercase', letterSpacing: 1 },
-    legendContainer: { flexDirection: 'row', gap: theme.spacing.m, marginTop: 4 },
-    legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    legendDot: { width: 8, height: 8, borderRadius: 4 },
-    legendText: { fontSize: 10, fontWeight: '800', color: theme.colors.text.secondary, textTransform: 'uppercase' },
-    graphCard: { backgroundColor: theme.colors.ui.glass, borderRadius: 40, padding: 24, borderWidth: 1, borderColor: theme.colors.ui.border, overflow: 'hidden' },
+  graphCard: {
+    ...commonStyles.glassPanel,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.xxl,
+    marginBottom: theme.spacing.m,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: theme.spacing.m,
+    marginBottom: theme.spacing.l,
+  },
+  sectionHeaderMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.m,
+    flex: 1,
+  },
+  sectionHeaderText: {
+    flexShrink: 1,
+  },
+  sectionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.ui.brandSurface,
+    borderWidth: 1,
+    borderColor: theme.colors.ui.primaryBorder,
+  },
+  sectionTitle: {
+    ...typographyStyles.h4,
+    fontSize: theme.typography.sizes.l,
+  },
+  sectionSubtitle: {
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.sizes.xs,
+    lineHeight: 16,
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.m,
+    marginTop: theme.spacing.xs,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendDotBrand: {
+    backgroundColor: theme.colors.text.brand,
+  },
+  legendDotRest: {
+    backgroundColor: theme.colors.status.rest,
+  },
+  legendText: {
+    ...typographyStyles.labelTight,
+    color: theme.colors.text.secondary,
+  },
 
-    historySection: { marginTop: theme.spacing.m },
-    historyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.m },
-    historySectionTitle: { ...typographyStyles.labelMuted },
-    historyContainer: { gap: theme.spacing.m },
-    historyItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.ui.glass, borderRadius: 35, padding: 24, borderWidth: 1, borderColor: theme.colors.ui.border },
-    historyCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.ui.glass, borderRadius: 35, padding: 24, borderWidth: 1, borderColor: theme.colors.ui.border },
-    historyContent: { flex: 1 },
-    historyDate: { fontSize: 11, fontWeight: '800', color: theme.colors.text.tertiary, marginBottom: 12, letterSpacing: 1 },
-    historyMetricsContainer: { flexDirection: 'row', alignItems: 'center' },
-    historyMetric: { flexDirection: 'row', alignItems: 'baseline' },
-    historySeparator: { width: 1, height: 24, backgroundColor: theme.colors.ui.border, marginHorizontal: 20, opacity: 0.5 },
-    historyValue: { fontSize: 28, color: theme.colors.text.primary, fontWeight: '900', fontStyle: 'italic' },
-    historyUnit: { fontSize: 12, color: theme.colors.text.tertiary, marginLeft: 4, fontWeight: '900' },
-    historyBfValue: { fontSize: 28, color: theme.colors.status.rest, fontWeight: '900', fontStyle: 'italic' },
-    historyBfUnit: { fontSize: 12, color: theme.colors.status.rest, marginLeft: 4, fontWeight: '900', opacity: 0.7 },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: theme.spacing.m,
+    marginBottom: theme.spacing.xs,
+  },
+  historySectionTitle: {
+    ...typographyStyles.labelMuted,
+    color: theme.colors.text.secondary,
+  },
+  historySectionSubtitle: {
+    color: theme.colors.text.tertiary,
+    fontSize: theme.typography.sizes.xs,
+    marginTop: 4,
+  },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.m,
+    paddingVertical: theme.spacing.s,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: theme.colors.ui.glass,
+    borderWidth: 1,
+    borderColor: theme.colors.ui.border,
+  },
+  refreshText: {
+    ...typographyStyles.labelTight,
+    color: theme.colors.text.secondary,
+  },
+  historyItem: {
+    ...commonStyles.glassPanel,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.xl,
+    marginBottom: theme.spacing.s,
+  },
+  historyItemCompact: {
+    paddingVertical: theme.spacing.l,
+  },
+  historyContent: {
+    gap: theme.spacing.m,
+  },
+  historyDate: {
+    ...typographyStyles.labelTight,
+    color: theme.colors.text.tertiary,
+  },
+  historyMetricsContainer: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  historyMetricsContainerCompact: {
+    flexDirection: 'column',
+    gap: theme.spacing.m,
+  },
+  historyMetric: {
+    flex: 1,
+    gap: theme.spacing.xs,
+  },
+  historyMetricLabel: {
+    ...typographyStyles.labelTight,
+    color: theme.colors.text.secondary,
+  },
+  historyMetricValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  historySeparator: {
+    width: 1,
+    marginHorizontal: theme.spacing.l,
+    backgroundColor: theme.colors.ui.border,
+  },
+  historyValue: {
+    ...typographyStyles.h3,
+    fontSize: theme.typography.sizes.xl,
+  },
+  historyUnit: {
+    color: theme.colors.text.tertiary,
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: '900',
+    marginLeft: theme.spacing.xs,
+  },
+  historyBfValue: {
+    ...typographyStyles.h3,
+    fontSize: theme.typography.sizes.xl,
+    color: theme.colors.status.rest,
+  },
+  historyBfUnit: {
+    color: theme.colors.status.rest,
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: '900',
+    marginLeft: theme.spacing.xs,
+    opacity: 0.8,
+  },
 
-    // Calculator specific
-    calcContainer: { marginTop: 10 },
-    calcCard: { ...commonStyles.glassPanel, padding: 24, borderRadius: 40 },
-    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
-    inputStack: { gap: 20, marginBottom: 30 },
-    inputGroupFull: { width: '100%' },
-    inputLabel: { fontSize: 10, fontWeight: '800', color: theme.colors.text.tertiary, marginBottom: 8, letterSpacing: 1 },
-    inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.background, borderWidth: 1, borderColor: theme.colors.ui.border, borderRadius: 16, paddingHorizontal: 16, height: 56 },
-    inputIcon: { marginRight: 12 },
-    input: { flex: 1, color: '#FFF', fontSize: 18, fontWeight: '700' },
-    inputSuffix: { fontSize: 12, fontWeight: '900', color: theme.colors.text.tertiary },
-    resultContainer: { alignItems: 'center', paddingVertical: 20, backgroundColor: 'rgba(99, 102, 241, 0.05)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(99, 102, 241, 0.1)' },
-    resultHeader: { marginBottom: 10 },
-    resultLabel: { fontSize: 10, fontWeight: '900', color: theme.colors.text.secondary, letterSpacing: 1 },
-    resultValueRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 15 },
-    resultValue: { fontSize: 48, fontWeight: '900', color: theme.colors.text.brand, fontStyle: 'italic' },
-    resultUnit: { fontSize: 20, fontWeight: '900', color: theme.colors.text.brand, marginLeft: 6, opacity: 0.6 },
-    shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: 12 },
-    shareBtnText: { fontSize: 10, fontWeight: '900', color: theme.colors.text.brand, letterSpacing: 0.5 },
+  calcContainer: {
+    gap: theme.spacing.m,
+  },
+  calcCard: {
+    ...commonStyles.glassPanel,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.xxl,
+  },
+  inputStack: {
+    gap: theme.spacing.m,
+    marginBottom: theme.spacing.xl,
+  },
+  inputGroup: {
+    width: '100%',
+  },
+  inputLabel: {
+    ...typographyStyles.labelTight,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.s,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 56,
+    paddingHorizontal: theme.spacing.m,
+    borderRadius: theme.borderRadius.l,
+    borderWidth: 1,
+    borderColor: theme.colors.ui.border,
+    backgroundColor: theme.colors.background,
+  },
+  inputIcon: {
+    marginRight: theme.spacing.s,
+  },
+  input: {
+    flex: 1,
+    color: theme.colors.text.primary,
+    fontSize: theme.typography.sizes.m,
+    fontWeight: '700',
+  },
+  inputSuffix: {
+    ...typographyStyles.labelTight,
+    color: theme.colors.text.tertiary,
+  },
+  resultContainer: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.l,
+    borderRadius: theme.borderRadius.l,
+    backgroundColor: theme.colors.ui.brandSurface,
+    borderWidth: 1,
+    borderColor: theme.colors.ui.primaryBorder,
+  },
+  resultLabel: {
+    ...typographyStyles.labelTight,
+    color: theme.colors.text.secondary,
+  },
+  resultValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginTop: theme.spacing.s,
+    marginBottom: theme.spacing.m,
+  },
+  resultValue: {
+    ...typographyStyles.h1,
+    color: theme.colors.text.brand,
+  },
+  resultValueMuted: {
+    color: theme.colors.text.tertiary,
+    opacity: 0.45,
+  },
+  resultUnit: {
+    ...typographyStyles.label,
+    color: theme.colors.text.brand,
+    marginLeft: theme.spacing.xs,
+    opacity: 0.7,
+  },
+  shareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.m,
+    paddingVertical: theme.spacing.s,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: theme.colors.ui.glass,
+    borderWidth: 1,
+    borderColor: theme.colors.ui.primaryBorder,
+  },
+  shareButtonText: {
+    ...typographyStyles.labelTight,
+    color: theme.colors.text.brand,
+  },
 
-    percentageCard: { marginTop: 30, paddingHorizontal: 4 },
-    sectionTitle: { fontSize: 11, fontWeight: '800', color: theme.colors.text.tertiary, marginBottom: 15, letterSpacing: 1 },
-    percentageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    pctItem: { flexBasis: '31%', backgroundColor: theme.colors.ui.glass, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.ui.border, alignItems: 'center' },
-    pctLabel: { fontSize: 10, fontWeight: '900', color: theme.colors.text.secondary, marginBottom: 4 },
-    pctValue: { fontSize: 16, fontWeight: '900', color: '#FFF' },
-    pctUnit: { fontSize: 10, color: theme.colors.text.tertiary, marginLeft: 2 },
+  percentageCard: {
+    ...commonStyles.glassPanel,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.xxl,
+  },
+  percentageSubtitle: {
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.sizes.xs,
+    marginTop: 4,
+    marginBottom: theme.spacing.m,
+  },
+  percentageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.s,
+  },
+  pctItem: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.l,
+    borderWidth: 1,
+    borderColor: theme.colors.ui.border,
+    paddingVertical: theme.spacing.m,
+    paddingHorizontal: theme.spacing.s,
+    alignItems: 'center',
+  },
+  pctLabel: {
+    ...typographyStyles.labelTight,
+    color: theme.colors.text.secondary,
+    marginBottom: 4,
+  },
+  pctValue: {
+    ...typographyStyles.data,
+    fontSize: theme.typography.sizes.l,
+  },
+  pctUnit: {
+    color: theme.colors.text.tertiary,
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: '700',
+  },
 
-    infoCard: { flexDirection: 'row', gap: 12, backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 16, marginTop: 30, alignItems: 'center' },
-    infoText: { flex: 1, fontSize: 12, color: theme.colors.text.tertiary, lineHeight: 18 },
+  infoCard: {
+    ...commonStyles.glassPanel,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.s,
+    padding: theme.spacing.l,
+    borderRadius: theme.borderRadius.l,
+  },
+  infoText: {
+    flex: 1,
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.sizes.xs,
+    lineHeight: 18,
+  },
 
-    emptyState: { alignItems: 'center', justifyContent: 'center', padding: theme.spacing.xl },
-    emptyText: { color: theme.colors.text.secondary, marginTop: 8 },
+  emptyState: {
+    ...commonStyles.glassPanel,
+    alignItems: 'center',
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.xl,
+    gap: theme.spacing.s,
+  },
+  emptyTitle: {
+    ...typographyStyles.h4,
+    fontSize: theme.typography.sizes.l,
+    textAlign: 'center',
+  },
+  emptyText: {
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.sizes.xs,
+    lineHeight: 18,
+    textAlign: 'center',
+    maxWidth: 320,
+  },
 
-    modalOverlay: { flex: 1, backgroundColor: theme.colors.background, justifyContent: 'center', padding: theme.spacing.l },
-    modalCard: { backgroundColor: theme.colors.ui.glass, borderRadius: theme.borderRadius.xl, padding: theme.spacing.xl, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.ui.border },
-    modalTitle: { ...typographyStyles.h4, color: theme.colors.text.primary, marginBottom: theme.spacing.l },
-    bigInputWrapper: { flexDirection: 'row', alignItems: 'baseline', marginBottom: theme.spacing.xl },
-    bigInput: { ...typographyStyles.h3, color: theme.colors.status.rest, minWidth: 60, textAlign: 'center' },
-    bigInputSuffix: { ...typographyStyles.labelTight, color: theme.colors.text.secondary, marginLeft: 8 },
-    modalActions: { flexDirection: 'row', gap: theme.spacing.m, width: '100%' },
-    btnCancel: { flex: 1, backgroundColor: theme.colors.ui.border, padding: theme.spacing.m, borderRadius: theme.borderRadius.xl, alignItems: 'center' },
-    btnSave: { flex: 1, backgroundColor: theme.colors.status.rest, padding: theme.spacing.m, borderRadius: theme.borderRadius.xl, alignItems: 'center' },
-    btnText: { ...typographyStyles.labelTight, color: theme.colors.text.primary },
+  modalOverlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.l,
+    backgroundColor: 'rgba(2, 2, 5, 0.82)',
+  },
+  modalCard: {
+    ...commonStyles.glassStrong,
+    width: '100%',
+    maxWidth: 420,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.xxl,
+  },
+  modalTitle: {
+    ...typographyStyles.h4,
+    marginBottom: theme.spacing.s,
+  },
+  modalDescription: {
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.sizes.s,
+    lineHeight: 24,
+    marginBottom: theme.spacing.xl,
+  },
+  bigInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.l,
+    paddingHorizontal: theme.spacing.m,
+    borderRadius: theme.borderRadius.l,
+    borderWidth: 1,
+    borderColor: theme.colors.ui.border,
+    backgroundColor: theme.colors.background,
+    marginBottom: theme.spacing.xl,
+  },
+  bigInput: {
+    ...typographyStyles.h2,
+    minWidth: 100,
+    textAlign: 'center',
+  },
+  bigInputSuffix: {
+    ...typographyStyles.label,
+    color: theme.colors.text.secondary,
+    marginLeft: theme.spacing.s,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.s,
+  },
+  btnCancel: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: theme.colors.ui.glass,
+    borderWidth: 1,
+    borderColor: theme.colors.ui.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnCancelText: {
+    ...typographyStyles.labelTight,
+    color: theme.colors.text.secondary,
+  },
+  btnSave: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: theme.colors.status.active,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnSaveDisabled: {
+    opacity: 0.45,
+  },
+  btnSaveText: {
+    ...typographyStyles.labelTight,
+    color: theme.colors.text.primary,
+  },
+  modalSingleAction: {
+    minHeight: 48,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: theme.colors.status.active,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

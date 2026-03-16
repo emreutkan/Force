@@ -316,7 +316,7 @@ export const SetRow = ({
                             placeholderTextColor={theme.colors.text.tertiary}
                         />
                     ) : (
-                        <Text style={styles.setText}>{String(set.reps)}</Text>
+                        <Text style={styles.setText}>{set.reps != null ? String(set.reps) : '-'}</Text>
                     )}
                     {isEditable ? (
                         <TextInput

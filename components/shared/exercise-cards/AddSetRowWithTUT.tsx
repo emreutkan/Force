@@ -40,6 +40,7 @@ export const AddSetRowWithTUT = ({
     const [currentTUT, setCurrentTUT] = useState(0);
     const [hasStopped, setHasStopped] = useState(false);
     const [capturedRestTime, setCapturedRestTime] = useState<number | null>(null);
+    const isSubmittingRef = React.useRef(false);
 
     const { lastSetTimestamp, lastExerciseCategory } = useActiveWorkoutStore();
     const { tutCountdown, tutReactionOffset } = useSettingsStore();
@@ -109,6 +110,8 @@ export const AddSetRowWithTUT = ({
     };
 
     const handleStartSet = async () => {
+        if (isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
         try {
             const finalRest = inputs.restTime ? parseRestTime(inputs.restTime) : elapsedSeconds;
             setCapturedRestTime(finalRest);
@@ -126,6 +129,8 @@ export const AddSetRowWithTUT = ({
             }
         } catch (error) {
             logger.error('Failed to stop rest timer', error);
+        } finally {
+            isSubmittingRef.current = false;
         }
     };
 
@@ -146,6 +151,8 @@ export const AddSetRowWithTUT = ({
     };
 
     const handleAdd = async () => {
+        if (isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
         const setData = {
             weight: parseFloat(inputs.weight) || (lastSet?.weight ? Number(lastSet.weight) : 0),
             reps: inputs.reps ? parseInt(inputs.reps) : 0,
@@ -157,6 +164,7 @@ export const AddSetRowWithTUT = ({
 
         const validation = validateSetData(setData);
         if (!validation.isValid) {
+            isSubmittingRef.current = false;
             Alert.alert('Validation Error', validation.errors.join('\n'));
             return;
         }
@@ -168,6 +176,7 @@ export const AddSetRowWithTUT = ({
         setHasStopped(false);
         setCapturedRestTime(null);
         onTrackingChange?.(false);
+        isSubmittingRef.current = false;
     };
 
     if (isLocked) return null;
@@ -195,7 +204,7 @@ export const AddSetRowWithTUT = ({
                     <Text style={styles.trackingTimer}>{formatTUT(currentTUT)}</Text>
                 </View>
                 <Pressable style={styles.stopButton} onPress={handleStopSet}>
-                    <Ionicons name="stop" size={18} color="white" style={{ marginRight: 8 }} />
+                    <Ionicons name="stop" size={18} color={theme.colors.text.primary} style={{ marginRight: 8 }} />
                     <Text style={styles.buttonText}>STOP SET</Text>
                 </Pressable>
             </View>
@@ -320,7 +329,7 @@ export const AddSetRowWithTUT = ({
                     onPress={handleAdd}
                     disabled={!inputs.reps}
                 >
-                    <Ionicons name="checkmark" size={18} color="white" style={{ marginRight: 8 }} />
+                    <Ionicons name="checkmark" size={18} color={theme.colors.text.primary} style={{ marginRight: 8 }} />
                     <Text style={styles.buttonText}>LOG SET</Text>
                 </Pressable>
             </View>
@@ -393,7 +402,7 @@ export const AddSetRowWithTUT = ({
             </View>
 
             <Pressable style={styles.startButton} onPress={handleStartSet}>
-                <Ionicons name="play" size={18} color="white" style={{ marginRight: 8 }} />
+                <Ionicons name="play" size={18} color={theme.colors.text.primary} style={{ marginRight: 8 }} />
                 <Text style={styles.buttonText}>START SET</Text>
             </Pressable>
         </>
@@ -429,9 +438,9 @@ const styles = StyleSheet.create({
     },
     setNumberTextInitial: {
         color: theme.colors.text.tertiary,
-        fontSize: 15,
-        fontWeight: '500',
-        fontVariant: ['tabular-nums'],
+        fontSize: theme.typography.sizes.s,
+        fontWeight: '700',
+        fontFamily: theme.typography.fonts.mono,
     },
     initialFieldWrapper: {
         flex: 1,
@@ -439,8 +448,8 @@ const styles = StyleSheet.create({
     },
     initialFieldLabel: {
         color: theme.colors.text.tertiary,
-        fontSize: 9,
-        fontWeight: '800',
+        fontSize: theme.typography.sizes.xxs,
+        fontWeight: '900',
         letterSpacing: 1.5,
         marginBottom: 4,
     },
@@ -449,8 +458,8 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         textAlignVertical: 'center',
         color: theme.colors.text.primary,
-        fontSize: 16,
-        fontVariant: ['tabular-nums'],
+        fontSize: theme.typography.sizes.s,
+        fontFamily: theme.typography.fonts.mono,
         backgroundColor: theme.colors.ui.glassStrong,
         borderBottomWidth: 1.5,
         borderBottomColor: theme.colors.ui.border,
@@ -494,22 +503,22 @@ const styles = StyleSheet.create({
         fontSize: 64,
         fontWeight: '900',
         fontStyle: 'italic',
-        fontVariant: ['tabular-nums'],
+        fontFamily: theme.typography.fonts.mono,
         letterSpacing: -2,
     },
     cancelButton: {
         marginTop: 16,
         paddingHorizontal: 20,
         paddingVertical: 8,
-        borderRadius: 8,
+        borderRadius: theme.borderRadius.m,
         backgroundColor: theme.colors.ui.glass,
         borderWidth: 1,
         borderColor: theme.colors.ui.border,
     },
     cancelButtonText: {
         color: theme.colors.text.secondary,
-        fontSize: 11,
-        fontWeight: '800',
+        fontSize: theme.typography.sizes.xs,
+        fontWeight: '900',
         letterSpacing: 1,
     },
 
@@ -541,10 +550,10 @@ const styles = StyleSheet.create({
     },
     trackingTimer: {
         color: theme.colors.status.error,
-        fontSize: 48,
+        fontSize: theme.typography.sizes.xxxl,
         fontWeight: '900',
         fontStyle: 'italic',
-        fontVariant: ['tabular-nums'],
+        fontFamily: theme.typography.fonts.mono,
         letterSpacing: -2,
     },
     stopButton: {
@@ -567,8 +576,8 @@ const styles = StyleSheet.create({
     // ── Stopped State ──
     stoppedContainer: {
         marginTop: theme.spacing.xl,
-        backgroundColor: 'rgba(99, 102, 241, 0.05)',
-        borderRadius: 14,
+        backgroundColor: theme.colors.ui.primaryLight,
+        borderRadius: theme.borderRadius.m,
         padding: 14,
         borderWidth: 1.5,
         borderColor: theme.colors.status.active,
@@ -593,8 +602,8 @@ const styles = StyleSheet.create({
     },
     setNumberText: {
         color: theme.colors.text.secondary,
-        fontSize: 11,
-        fontWeight: '800',
+        fontSize: theme.typography.sizes.xs,
+        fontWeight: '900',
         letterSpacing: 1,
     },
     resetButton: {
@@ -615,8 +624,8 @@ const styles = StyleSheet.create({
     },
     fieldLabel: {
         color: theme.colors.text.tertiary,
-        fontSize: 9,
-        fontWeight: '800',
+        fontSize: theme.typography.sizes.xxs,
+        fontWeight: '900',
         letterSpacing: 1.5,
         marginBottom: 6,
     },
@@ -625,11 +634,11 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         textAlignVertical: 'center',
         color: theme.colors.text.primary,
-        fontSize: 18,
+        fontSize: theme.typography.sizes.m,
         fontWeight: '700',
-        fontVariant: ['tabular-nums'],
+        fontFamily: theme.typography.fonts.mono,
         backgroundColor: theme.colors.ui.glassStrong,
-        borderRadius: 8,
+        borderRadius: theme.borderRadius.m,
         borderWidth: 1,
         borderColor: theme.colors.ui.border,
         paddingVertical: 10,
@@ -641,7 +650,7 @@ const styles = StyleSheet.create({
     },
     tutSuffix: {
         color: theme.colors.text.tertiary,
-        fontSize: 9,
+        fontSize: theme.typography.sizes.xxs,
         fontWeight: '700',
         marginTop: 3,
         letterSpacing: 0.5,
@@ -660,8 +669,8 @@ const styles = StyleSheet.create({
 
     // ── Shared ──
     buttonText: {
-        color: '#FFFFFF',
-        fontSize: 12,
+        color: theme.colors.text.primary,
+        fontSize: theme.typography.sizes.xs,
         fontWeight: '900',
         fontStyle: 'italic',
         letterSpacing: 1,

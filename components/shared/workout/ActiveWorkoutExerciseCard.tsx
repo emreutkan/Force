@@ -3,7 +3,7 @@ import type { OptimizationCheckResponse } from '@/api/types/workout';
 import { theme } from '@/constants/theme';
 import { logger } from '@/lib/logger';
 import React, { useEffect, useState } from 'react';
-import { Alert, Platform, StyleSheet, Pressable, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Pressable, Text, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SwipeAction } from '@/components/shared/SwipeAction';
 import { validateSetData, formatValidationErrors } from '@/components/shared/ExerciseCardUtils';
@@ -53,8 +53,10 @@ export const ActiveWorkoutExerciseCard = ({
     const [showHistory, setShowHistory] = useState<boolean>(false);
     const [setHistory, setSetHistory] = useState<any[]>([]);
     const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
+    const [historyLoadError, setHistoryLoadError] = useState<boolean>(false);
     useEffect(() => {
         if (!showHistory || !exercise) return;
+        setHistoryLoadError(false);
         const loadHistory = async () => {
             setIsLoadingHistory(true);
             try {
@@ -66,6 +68,7 @@ export const ActiveWorkoutExerciseCard = ({
                 }
             } catch (error) {
                 logger.error('Failed to load set history', error);
+                setHistoryLoadError(true);
             } finally {
                 setIsLoadingHistory(false);
             }
@@ -163,10 +166,14 @@ export const ActiveWorkoutExerciseCard = ({
                 </Pressable>
 
                 {showHistory && (
-                    <HistorySection
-                        setHistory={setHistory}
-                        isLoadingHistory={isLoadingHistory}
-                    />
+                    historyLoadError ? (
+                        <Text style={styles.historyError}>Failed to load history</Text>
+                    ) : (
+                        <HistorySection
+                            setHistory={setHistory}
+                            isLoadingHistory={isLoadingHistory}
+                        />
+                    )
                 )}
 
                 {/* Optimization warning — shown after exercise is added, non-blocking */}
@@ -229,7 +236,11 @@ export const ActiveWorkoutExerciseCard = ({
                 onDeleteAllSets={async () => {
                     for (const set of sets) {
                         if (set.id) {
-                            await onDeleteSet(set.id);
+                            try {
+                                await onDeleteSet(set.id);
+                            } catch (error) {
+                                logger.error('Failed to delete set during delete-all', error);
+                            }
                         }
                     }
                 }}
@@ -241,6 +252,13 @@ export const ActiveWorkoutExerciseCard = ({
 };
 
 const styles = StyleSheet.create({
+    historyError: {
+        color: theme.colors.status.error,
+        fontSize: 12,
+        fontWeight: '600',
+        textAlign: 'center',
+        paddingVertical: 10,
+    },
     card: {
         backgroundColor: theme.colors.ui.glass,
         borderRadius: theme.borderRadius.l,

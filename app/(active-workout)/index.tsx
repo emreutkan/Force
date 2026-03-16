@@ -128,7 +128,7 @@ export default function ActiveWorkoutScreen() {
       refetchSuggestions();
     } catch (error) {
       logger.error('Failed to add exercise', error);
-      alert('Failed to add exercise');
+      Alert.alert('Error', 'Failed to add exercise');
     }
   };
 
@@ -142,7 +142,7 @@ export default function ActiveWorkoutScreen() {
       await removeExerciseMutation.mutateAsync(workoutExerciseId);
     } catch (error) {
       logger.error('Failed to remove exercise', error);
-      alert('Failed to remove exercise');
+      Alert.alert('Error', 'Failed to remove exercise');
     }
   };
 
@@ -207,7 +207,7 @@ export default function ActiveWorkoutScreen() {
       await deleteSetMutation.mutateAsync(setId);
     } catch (error) {
       logger.error('Failed to delete set', error);
-      alert('Failed to delete set');
+      Alert.alert('Error', 'Failed to delete set');
     }
   };
 
@@ -229,7 +229,7 @@ export default function ActiveWorkoutScreen() {
     // Extract duration logic
     const now = new Date().getTime();
     const startTime = new Date(activeWorkout.created_at).getTime();
-    const durationSeconds = Math.floor(Math.max(0, now - startTime) / 1000);
+    const durationSeconds = isNaN(startTime) ? 0 : Math.floor(Math.max(0, now - startTime) / 1000);
 
     const executeCompletion = async (completionOptions?: {
       normalize_duration?: boolean;
@@ -284,6 +284,11 @@ export default function ActiveWorkoutScreen() {
     // Explicitly check if activeWorkout exists and has created_at
     if (activeWorkout && activeWorkout.created_at) {
       const startTime = new Date(activeWorkout.created_at).getTime();
+
+      if (isNaN(startTime)) {
+        setElapsedTime('00:00:00');
+        return;
+      }
 
       const updateTimer = () => {
         const now = new Date().getTime();
@@ -410,12 +415,16 @@ export default function ActiveWorkoutScreen() {
 
       {/* Footer */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
-        <Pressable style={styles.finishButton} onPress={() => handleFinishWorkout()}>
-          <Ionicons name="checkmark-done" size={18} color="white" />
-          <Text style={styles.finishButtonText}>FINISH</Text>
+        <Pressable
+          style={[styles.finishButton, completeWorkoutMutation.isPending && { opacity: 0.5 }]}
+          onPress={() => handleFinishWorkout()}
+          disabled={completeWorkoutMutation.isPending}
+        >
+          <Ionicons name="checkmark-done" size={18} color={theme.colors.text.primary} />
+          <Text style={styles.finishButtonText}>{completeWorkoutMutation.isPending ? 'SAVING...' : 'FINISH'}</Text>
         </Pressable>
         <Pressable onPress={() => setIsModalVisible(true)} style={styles.addFab}>
-          <Ionicons name="add" size={26} color="white" />
+          <Ionicons name="add" size={26} color={theme.colors.text.primary} />
         </Pressable>
       </View>
     </View>
@@ -444,7 +453,7 @@ const styles = StyleSheet.create({
   backButton: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: theme.borderRadius.full,
     backgroundColor: theme.colors.ui.glass,
     borderWidth: 1,
     borderColor: theme.colors.ui.border,
@@ -465,19 +474,20 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.ui.border,
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: theme.borderRadius.full,
   },
   liveDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
-    backgroundColor: '#22c55e',
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: theme.colors.status.success,
   },
   timerText: {
     color: theme.colors.text.primary,
-    fontSize: 15,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
+    fontSize: theme.typography.sizes.s,
+    fontWeight: '900',
+    fontStyle: 'italic',
+    fontFamily: theme.typography.fonts.mono,
     letterSpacing: 1,
   },
   headerStats: {
@@ -487,13 +497,14 @@ const styles = StyleSheet.create({
   },
   headerStatValue: {
     color: theme.colors.text.primary,
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: '900',
+    fontFamily: theme.typography.fonts.mono,
   },
   headerStatLabel: {
     color: theme.colors.text.tertiary,
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: theme.typography.sizes.xxs,
+    fontWeight: '900',
     letterSpacing: 0.5,
   },
   headerStatDot: {
@@ -509,8 +520,9 @@ const styles = StyleSheet.create({
   },
   workoutTitle: {
     color: theme.colors.text.secondary,
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: '900',
+    fontStyle: 'italic',
     letterSpacing: 1,
   },
   suggestContainer: {
@@ -535,7 +547,7 @@ const styles = StyleSheet.create({
   finishButton: {
     flex: 1,
     height: 50,
-    borderRadius: 25,
+    borderRadius: theme.borderRadius.full,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -548,15 +560,16 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   finishButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+    color: theme.colors.text.primary,
+    fontSize: theme.typography.sizes.xs,
     fontWeight: '900',
-    letterSpacing: 1.5,
+    fontStyle: 'italic',
+    letterSpacing: theme.typography.tracking.wide,
   },
   addFab: {
     width: 50,
     height: 50,
-    borderRadius: 25,
+    borderRadius: theme.borderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.ui.glassStrong,
