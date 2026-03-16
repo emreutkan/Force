@@ -1,7 +1,7 @@
 import { theme, typographyStyles } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, Pressable, View } from 'react-native';
 
 interface HomeHeaderProps {
@@ -9,7 +9,12 @@ interface HomeHeaderProps {
   insets: { top: number };
 }
 
-export default function HomeHeader({ today, insets }: HomeHeaderProps) {
+const HomeHeader = React.memo(function HomeHeader({ today, insets }: HomeHeaderProps) {
+  const dateString = useMemo(
+    () => today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+    [today],
+  );
+
   return (
     <View style={[styles.forceHeader, { paddingTop: insets.top }]}>
       <View style={styles.titleRow}>
@@ -31,17 +36,13 @@ export default function HomeHeader({ today, insets }: HomeHeaderProps) {
         </View>
       </View>
       <View style={styles.dateContainer}>
-        <Text style={styles.headerDate}>
-          {today.toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </Text>
+        <Text style={styles.headerDate}>{dateString}</Text>
       </View>
     </View>
   );
-}
+});
+
+export default HomeHeader;
 
 const styles = StyleSheet.create({
   forceHeader: {

@@ -1,15 +1,26 @@
+import React from 'react';
 import { theme } from '@/constants/theme';
 import { useBackendStore } from '@/state/stores/backendStore';
+import { checkBackendHealth } from '@/services/backendHealth';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function MaintenanceOverlay() {
-  const { isDown, setDown, failureCount } = useBackendStore();
+  const { isDown } = useBackendStore();
   const insets = useSafeAreaInsets();
+  const [isRetrying, setIsRetrying] = React.useState(false);
 
   if (!isDown) return null;
+
+  const handleRetry = async () => {
+    if (isRetrying) return;
+
+    setIsRetrying(true);
+    await checkBackendHealth();
+    setIsRetrying(false);
+  };
 
   return (
     <View style={[styles.overlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -28,11 +39,12 @@ export default function MaintenanceOverlay() {
         </Text>
 
         <Pressable
-          style={styles.retryButton}
-          onPress={() => setDown(false)}
+          style={[styles.retryButton, isRetrying && styles.retryButtonDisabled]}
+          onPress={handleRetry}
+          disabled={isRetrying}
         >
           <Ionicons name="refresh" size={16} color={theme.colors.text.primary} />
-          <Text style={styles.retryText}>TRY AGAIN</Text>
+          <Text style={styles.retryText}>{isRetrying ? 'CHECKING...' : 'TRY AGAIN'}</Text>
         </Pressable>
       </View>
     </View>
@@ -88,6 +100,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 28,
     marginTop: 8,
+  },
+  retryButtonDisabled: {
+    opacity: 0.7,
   },
   retryText: {
     fontSize: 14,

@@ -6,11 +6,15 @@ import { supabase } from '@/lib/supabase';
 import { theme } from '@/constants/theme';
 import * as Sentry from '@sentry/react-native';
 import { logger } from '@/lib/logger';
+import { checkBackendHealth } from '@/services/backendHealth';
+import { useBackendStore } from '@/state/stores/backendStore';
 
 export default function LoadingScreen() {
   const [minTimeElapsed, setMinTimeElapsed] = React.useState(false);
   const [sessionChecked, setSessionChecked] = React.useState(false);
   const [hasSession, setHasSession] = React.useState(false);
+  const [backendChecked, setBackendChecked] = React.useState(false);
+  const isBackendDown = useBackendStore((state) => state.isDown);
 
   // Minimum display time to prevent flashing
   useEffect(() => {
@@ -33,9 +37,26 @@ export default function LoadingScreen() {
     checkSession();
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const runBackendCheck = async () => {
+      await checkBackendHealth();
+      if (!isMounted) return;
+
+      setBackendChecked(true);
+    };
+
+    runBackendCheck();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Navigate once both checks pass
   useEffect(() => {
-    if (!minTimeElapsed || !sessionChecked) return;
+    if (!minTimeElapsed || !sessionChecked || !backendChecked || isBackendDown) return;
 
     if (hasSession) {
       logger.info('[LOADING] Session found, redirecting to home');
@@ -44,7 +65,7 @@ export default function LoadingScreen() {
       logger.info('[LOADING] No session, redirecting to auth');
       router.replace('/(auth)');
     }
-  }, [minTimeElapsed, sessionChecked, hasSession]);
+  }, [backendChecked, hasSession, isBackendDown, minTimeElapsed, sessionChecked]);
 
   return (
     <View style={styles.container}>
@@ -58,7 +79,9 @@ export default function LoadingScreen() {
           <Text style={styles.logo}>FORCE</Text>
           <View style={styles.dot} />
         </View>
-        <Text style={styles.tagline}>Track your training</Text>
+        <Text style={styles.tagline}>
+          {backendChecked && isBackendDown ? 'Checking server availability' : 'Track your training'}
+        </Text>
       </View>
     </View>
   );

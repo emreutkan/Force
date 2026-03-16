@@ -10,16 +10,12 @@ import {
   COMPLETE_WORKOUT_URL,
   CREATE_WORKOUT_URL,
   DELETE_WORKOUT_URL,
-  FREQUENCY_RECOMMENDATIONS_URL,
   GET_ACTIVE_WORKOUT_URL,
   GET_WORKOUT_URL,
   GET_WORKOUTS_URL,
   NEXT_WORKOUT_COACH_URL,
   OPTIMIZATION_CHECK_URL,
-  RECOVERY_RECOMMENDATIONS_URL,
   RECOVERY_STATUS_URL,
-  REST_RECOMMENDATIONS_URL,
-  REST_TIMER_RESUME_URL,
   REST_TIMER_STOP_URL,
   REST_TIMER_URL,
   SUGGEST_EXERCISE_URL,
@@ -27,7 +23,6 @@ import {
   TEMPLATE_DELETE_URL,
   TEMPLATE_LIST_URL,
   TEMPLATE_START_URL,
-  TRAINING_RESEARCH_URL,
   UPDATE_WORKOUT_URL,
   USER_STATS_URL,
   WORKOUT_COACH_REVIEW_URL,
@@ -191,11 +186,6 @@ export const stopRestTimer = async (): Promise<RestTimerStopResponse> => {
   return response.json();
 };
 
-export const resumeRestTimer = async (): Promise<RestTimerStopResponse> => {
-  const response = await apiClient.post(REST_TIMER_RESUME_URL);
-  return response.json();
-};
-
 // Calendar API Functions
 export const getCalendar = async (
   year: number,
@@ -242,38 +232,6 @@ export const checkToday = async (date?: Date): Promise<CheckTodayResponse | any>
 
 export const getRecoveryStatus = async (): Promise<RecoveryStatusResponse | any> => {
   const response = await apiClient.get(RECOVERY_STATUS_URL);
-  return response.json();
-};
-
-export const getRecoveryRecommendations = async (): Promise<any> => {
-  const response = await apiClient.get(RECOVERY_RECOMMENDATIONS_URL);
-  return response.json();
-};
-
-export const getFrequencyRecommendations = async (): Promise<any> => {
-  const response = await apiClient.get(FREQUENCY_RECOMMENDATIONS_URL);
-  return response.json();
-};
-
-export const getRestRecommendations = async (workoutExerciseId: number): Promise<any> => {
-  const url = REST_RECOMMENDATIONS_URL.replace(
-    ':workout_exercise_id',
-    workoutExerciseId.toString()
-  );
-  const response = await apiClient.get(url);
-  return response.json();
-};
-
-export const getTrainingResearch = async (
-  muscleGroup?: string,
-  category?: string
-): Promise<any> => {
-  const searchParams: Record<string, string> = {};
-  if (muscleGroup) searchParams.muscle_group = muscleGroup;
-  if (category) searchParams.category = category;
-  const response = await apiClient.get(TRAINING_RESEARCH_URL, {
-    searchParams: Object.keys(searchParams).length ? searchParams : undefined,
-  });
   return response.json();
 };
 

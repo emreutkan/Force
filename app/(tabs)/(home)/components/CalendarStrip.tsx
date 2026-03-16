@@ -5,9 +5,17 @@ import { logger } from '@/lib/logger';
 import { useDateStore } from '@/state/userStore';
 import { useSetSelectedDate } from '@/hooks/useWorkout';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text, Pressable, View } from 'react-native';
 import { CalendarStripSkeleton } from './homeLoadingSkeleton';
+
+const MONTH_NAMES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+function getWeekNumber(d: Date) {
+  const start = new Date(d.getFullYear(), 0, 1);
+  const days = Math.floor((d.getTime() - start.getTime()) / 86400000);
+  return Math.ceil((days + start.getDay() + 1) / 7);
+}
 
 interface CalendarStripProps {
   onPress: () => void;
@@ -19,17 +27,11 @@ export default function CalendarStrip({ onPress }: CalendarStripProps) {
   const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const getCurrentWeekNumber = (d: Date) => {
-    const start = new Date(d.getFullYear(), 0, 1);
-    const days = Math.floor((d.getTime() - start.getTime()) / 86400000);
-    return Math.ceil((days + start.getDay() + 1) / 7);
-  };
-
   const fetchCalendarData = useCallback(async () => {
     setLoading(true);
     try {
       const now = new Date();
-      const currentWeek = getCurrentWeekNumber(now);
+      const currentWeek = getWeekNumber(now);
       const result = await getCalendar(now.getFullYear(), undefined, currentWeek);
 
       if (result?.calendar) {
@@ -48,12 +50,21 @@ export default function CalendarStrip({ onPress }: CalendarStripProps) {
     }, [fetchCalendarData])
   );
 
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Start on Monday
+  const startOfWeek = useMemo(() => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Start on Monday
+    return d;
+  }, [today]);
 
-  // Get current week number and month
-  const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  const currentMonth = monthNames[today.getMonth()];
+  const calendarMap = useMemo(() => {
+    const map: Record<string, CalendarDay> = {};
+    for (const day of calendarData) {
+      map[day.date] = day;
+    }
+    return map;
+  }, [calendarData]);
+
+  const currentMonth = MONTH_NAMES[today.getMonth()];
   const weekNumber = Math.ceil(
     (today.getDate() + new Date(today.getFullYear(), today.getMonth(), 1).getDay()) / 7
   );
@@ -84,7 +95,7 @@ export default function CalendarStrip({ onPress }: CalendarStripProps) {
           const isSelected = d.toDateString() === today.toDateString();
           const isCalendarToday = d.toDateString() === new Date().toDateString();
           const dateStr = d.toISOString().split('T')[0];
-          const dayData = calendarData.find((cd) => cd.date === dateStr);
+          const dayData = calendarMap[dateStr];
           const hasActivity = dayData?.has_workout || dayData?.is_rest_day;
 
           return (

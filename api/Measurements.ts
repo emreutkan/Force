@@ -1,36 +1,7 @@
 import apiClient from './APIClient';
-import type {
-  BodyMeasurement,
-  CreateBodyMeasurementRequest,
-  BodyFatMenRequest,
-  BodyFatWomenRequest,
-  BodyFatResponse,
-} from './types';
-import {
-  MEASUREMENTS_URL,
-  MEASUREMENTS_CREATE_URL,
-  MEASUREMENTS_BODYFAT_MEN_URL,
-  MEASUREMENTS_BODYFAT_WOMEN_URL,
-} from './types';
+import type { BodyMeasurement } from './types';
+import { MEASUREMENTS_URL } from './types';
 import { isPaginatedResponse, type PaginatedResponse } from './types/pagination';
-
-export const createMeasurement = async (
-  request: CreateBodyMeasurementRequest
-): Promise<BodyMeasurement> => {
-  return apiClient.post(MEASUREMENTS_CREATE_URL, { json: request }).json();
-};
-
-export const calculateBodyFatMen = async (
-  request: BodyFatMenRequest
-): Promise<BodyFatResponse> => {
-  return apiClient.post(MEASUREMENTS_BODYFAT_MEN_URL, { json: request }).json();
-};
-
-export const calculateBodyFatWomen = async (
-  request: BodyFatWomenRequest
-): Promise<BodyFatResponse> => {
-  return apiClient.post(MEASUREMENTS_BODYFAT_WOMEN_URL, { json: request }).json();
-};
 
 export const getMeasurements = async (
   page?: number,

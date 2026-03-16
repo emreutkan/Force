@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -12,16 +12,18 @@ export default function TodayProgramCard() {
   const { data, isLoading } = useCurrentProgramDay();
   const startToday = useStartTodayWorkout();
 
-  // No active program — don't render anything
-  if (isLoading || !data) return null;
+  // No active program — don't render anything (after hooks)
+  const { program_id, program_name, cycle_length, current_day_number, current_day } = data ?? {};
+  const isRestDay = current_day?.is_rest_day ?? false;
 
-  const { program_id, program_name, cycle_length, current_day_number, current_day } = data;
-  const isRestDay = current_day.is_rest_day;
-  const exercises = current_day.exercises.slice().sort((a, b) => a.order - b.order);
-  const visibleExercises = exercises.slice(0, MAX_EXERCISES_SHOWN);
+  const exercises = useMemo(
+    () => current_day?.exercises.slice().sort((a, b) => a.order - b.order) ?? [],
+    [current_day?.exercises],
+  );
+  const visibleExercises = useMemo(() => exercises.slice(0, MAX_EXERCISES_SHOWN), [exercises]);
   const overflowCount = exercises.length - MAX_EXERCISES_SHOWN;
 
-  const handleStartToday = () => {
+  const handleStartToday = useCallback(() => {
     startToday.mutate(undefined, {
       onSuccess: () => {
         router.push('/(active-workout)');
@@ -35,7 +37,9 @@ export default function TodayProgramCard() {
         // NO_ACTIVE_PROGRAM and UNKNOWN silently fail (shouldn't happen here)
       },
     });
-  };
+  }, [startToday]);
+
+  if (isLoading || !data) return null;
 
   return (
     <View
@@ -88,7 +92,7 @@ export default function TodayProgramCard() {
           </View>
         ) : exercises.length > 0 ? (
           <View style={styles.exerciseList}>
-            {visibleExercises.map((ex, idx) => (
+            {visibleExercises.map((ex) => (
               <View key={ex.id} style={styles.exerciseRow}>
                 <View style={styles.exerciseDot} />
                 <Text style={styles.exerciseName} numberOfLines={1}>

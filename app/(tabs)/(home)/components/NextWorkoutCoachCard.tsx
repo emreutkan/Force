@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme, typographyStyles } from '@/constants/theme';
@@ -57,14 +57,15 @@ const ACTION_COLORS: Record<ExerciseActionType, string> = {
   swap: theme.colors.status.warning,
 };
 
-export default function NextWorkoutCoachCard({ data }: NextWorkoutCoachCardProps) {
-  if (!data) return null;
+const NextWorkoutCoachCard = React.memo(function NextWorkoutCoachCard({ data }: NextWorkoutCoachCardProps) {
+  const config = data ? DECISION_CONFIG[data.session_decision] : null;
+  const topFindings = useMemo(
+    () => data?.findings.filter((f) => f.severity === 'error' || f.severity === 'warning').slice(0, 2) ?? [],
+    [data?.findings],
+  );
+  const topActions = useMemo(() => data?.exercise_actions.slice(0, 2) ?? [], [data?.exercise_actions]);
 
-  const config = DECISION_CONFIG[data.session_decision];
-  const topFindings = data.findings
-    .filter((f) => f.severity === 'error' || f.severity === 'warning')
-    .slice(0, 2);
-  const topActions = data.exercise_actions.slice(0, 2);
+  if (!data || !config) return null;
 
   return (
     <View
@@ -164,7 +165,9 @@ export default function NextWorkoutCoachCard({ data }: NextWorkoutCoachCardProps
       </View>
     </View>
   );
-}
+});
+
+export default NextWorkoutCoachCard;
 
 const styles = StyleSheet.create({
   card: {

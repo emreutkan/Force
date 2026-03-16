@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { MuscleRecoveryItem } from '@/api/types/index';
 import { theme, typographyStyles } from '@/constants/theme';
 import { useFocusEffect } from 'expo-router';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, Pressable, View } from 'react-native';
 import { useRecoveryStatus } from '@/hooks/useWorkout';
 import { MuscleRecoverySkeleton } from './homeLoadingSkeleton';
@@ -11,23 +11,27 @@ interface MuscleRecoverySectionProps {
   onPress?: () => void;
 }
 
-const MuscleRecoveryCard = ({
+const MuscleRecoveryCard = React.memo(function MuscleRecoveryCard({
   muscle,
   status,
 }: {
   muscle: string;
   status: MuscleRecoveryItem;
-}) => {
+}) {
   const pct = Number(status.recovery_percentage);
   const hoursLeft = Number(status.hours_until_recovery);
   const isReady = status.is_recovered || pct >= 90;
 
   const timeText = isReady ? 'Ready' : `${Math.round(hoursLeft)}H TO 100%`;
-  const displayName = muscle
-    .replace(/_/g, ' ')
-    .split(' ')
-    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(' ');
+  const displayName = useMemo(
+    () =>
+      muscle
+        .replace(/_/g, ' ')
+        .split(' ')
+        .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' '),
+    [muscle],
+  );
 
   return (
     <View style={styles.card}>
@@ -57,7 +61,7 @@ const MuscleRecoveryCard = ({
       </View>
     </View>
   );
-};
+});
 
 export default function MuscleRecoverySection({ onPress }: MuscleRecoverySectionProps) {
   const { data: recoveryData, refetch, isLoading } = useRecoveryStatus();
@@ -73,17 +77,21 @@ export default function MuscleRecoverySection({ onPress }: MuscleRecoverySection
     }, [refetch])
   );
 
+  const recovering = useMemo(
+    () =>
+      Object.entries(recoveryStatus)
+        .filter(([_, s]) => {
+          const pct = Number(s.recovery_percentage);
+          return pct < 100 && Number(s.hours_until_recovery) > 0;
+        })
+        .sort((a, b) => a[1].hours_until_recovery - b[1].hours_until_recovery)
+        .slice(0, 3),
+    [recoveryStatus],
+  );
+
   if (isLoading) {
     return <MuscleRecoverySkeleton />;
   }
-
-  const recovering = Object.entries(recoveryStatus)
-    .filter(([_, s]) => {
-      const pct = Number(s.recovery_percentage);
-      return pct < 100 && Number(s.hours_until_recovery) > 0;
-    })
-    .sort((a, b) => a[1].hours_until_recovery - b[1].hours_until_recovery)
-    .slice(0, 3);
 
   return (
     <View style={styles.container}>

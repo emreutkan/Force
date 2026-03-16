@@ -7,7 +7,7 @@ import { parseLocalDate } from '@/utils/dateTime';
 import { useDateStore } from '@/state/userStore';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Alert, RefreshControl, ScrollView as RNScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ActiveSection from './components/ActiveSection';
@@ -59,14 +59,14 @@ export default function Home() {
   const hasActiveWorkout = todayStatus?.status === 'active';
   const { data: nextCoach } = useNextWorkoutCoach(todayStatus?.status === 'none');
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     // Components handle their own refresh via useFocusEffect
     // Just add a small delay for UX
     setTimeout(() => setRefreshing(false), 500);
-  };
+  }, []);
 
-  const handleDeleteWorkout = async (id: number) => {
+  const handleDeleteWorkout = useCallback(async (id: number) => {
     Alert.alert('Delete Workout', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -83,16 +83,16 @@ export default function Home() {
         },
       },
     ]);
-  };
+  }, [deleteWorkoutMutation, onRefresh]);
 
-  const handleStartWorkoutPress = () => {
+  const handleStartWorkoutPress = useCallback(() => {
     startButtonRef.current?.measure((x, y, w, h, px, py) => {
       setMenuLayout({ x: px, y: py + h + 8, width: w });
       setShowStartMenu(true);
     });
-  };
+  }, []);
 
-  const handleNewWorkout = () => {
+  const handleNewWorkout = useCallback(() => {
     if (hasActiveWorkout) {
       setShowStartMenu(false);
       Alert.alert(
@@ -103,14 +103,14 @@ export default function Home() {
     }
     setModalMode('create');
     setModalVisible(true);
-  };
+  }, [hasActiveWorkout]);
 
-  const handleLogPrevious = () => {
+  const handleLogPrevious = useCallback(() => {
     setModalMode('log');
     setModalVisible(true);
-  };
+  }, []);
 
-  const handleRestDay = async () => {
+  const handleRestDay = useCallback(async () => {
     try {
       await createWorkoutMutation.mutateAsync({ title: 'Rest Day', is_rest_day: true });
       onRefresh();
@@ -118,9 +118,9 @@ export default function Home() {
       logger.error('Error creating rest day', error);
       Alert.alert('Error', 'Failed to create rest day');
     }
-  };
+  }, [createWorkoutMutation, onRefresh]);
 
-  const fetchCalendar = async (year: number, month?: number) => {
+  const fetchCalendar = useCallback(async (year: number, month?: number) => {
     try {
       const result = await getCalendar(year, month);
       if (result?.calendar) {
@@ -129,9 +129,9 @@ export default function Home() {
     } catch (error) {
       logger.error('Error fetching calendar', error);
     }
-  };
+  }, []);
 
-  const fetchCalendarStats = async (year: number, month?: number) => {
+  const fetchCalendarStats = useCallback(async (year: number, month?: number) => {
     try {
       const result = await getCalendarStats({ year, month });
       if (result) {
@@ -140,9 +140,9 @@ export default function Home() {
     } catch (error) {
       logger.error('Error fetching calendar stats', error);
     }
-  };
+  }, []);
 
-  const handleCalendarDayClick = async (
+  const handleCalendarDayClick = useCallback(async (
     dateStr: string,
     dayData: CalendarDay | undefined | null
   ) => {
@@ -196,7 +196,7 @@ export default function Home() {
         router.push(`/(workouts)/${workout.id}`);
       }
     }
-  };
+  }, [setSelectedDate, refetchWorkouts, workoutsData, deleteWorkoutMutation, selectedYear, selectedMonth, fetchCalendar, fetchCalendarStats]);
 
   return (
     <View style={styles.container}>

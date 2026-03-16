@@ -12,7 +12,6 @@ import {
   EXERCISE_ADD_TO_WORKOUT_URL,
   EXERCISE_1RM_HISTORY_URL,
   EXERCISE_SET_HISTORY_URL,
-  EXERCISE_LAST_WORKOUT_URL,
 } from './types/exercise';
 import {
   ADD_SET_URL,
@@ -96,11 +95,6 @@ export const getExerciseSetHistory = async (
   if (pageSize != null) searchParams.page_size = pageSize;
   const url = EXERCISE_SET_HISTORY_URL.replace(':exercise_id', exerciseId.toString());
   return apiClient.get(url, { searchParams }).json();
-};
-
-export const getExerciseLastWorkout = async (exerciseId: number): Promise<unknown> => {
-  const url = EXERCISE_LAST_WORKOUT_URL.replace(':exercise_id', exerciseId.toString());
-  return apiClient.get(url).json();
 };
 
 export const getExerciseOverloadTrend = async (

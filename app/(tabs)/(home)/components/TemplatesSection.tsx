@@ -12,6 +12,17 @@ import { TemplatesSectionSkeleton } from './homeLoadingSkeleton';
 
 const FREE_TEMPLATE_LIMIT = 3;
 
+const keyExtractor = (item: TemplateWorkout) => item.id.toString();
+
+function EmptyTemplateCard() {
+  return (
+    <View style={styles.emptyCard}>
+      <Ionicons name="duplicate-outline" size={32} color={theme.colors.text.zinc800} />
+      <Text style={styles.emptyText}>NO TEMPLATES YET</Text>
+    </View>
+  );
+}
+
 export default function TemplatesSection() {
   const { data: user } = useUser();
   const isPro = user?.is_pro ?? false;
@@ -29,15 +40,15 @@ export default function TemplatesSection() {
     }, [refetch])
   );
 
-  const handleCreatePress = () => {
+  const handleCreatePress = useCallback(() => {
     if (!canCreateTemplate) {
       setShowUpgradeModal(true);
     } else {
       router.push('/(templates)/create');
     }
-  };
+  }, [canCreateTemplate]);
 
-  const handleTemplatePress = (template: TemplateWorkout) => {
+  const handleTemplatePress = useCallback((template: TemplateWorkout) => {
     Alert.alert(template.title.toUpperCase(), 'What would you like to do?', [
       {
         text: 'Start Workout',
@@ -74,7 +85,7 @@ export default function TemplatesSection() {
       },
       { text: 'Cancel', style: 'cancel' },
     ]);
-  };
+  }, [deleteTemplateMutation, startTemplateMutation]);
 
   if (templatesLoading) {
     return <TemplatesSectionSkeleton />;
@@ -109,7 +120,7 @@ export default function TemplatesSection() {
 
       <FlatList
         data={templates}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={keyExtractor}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.templateList}
@@ -147,12 +158,7 @@ export default function TemplatesSection() {
             </View>
           </Pressable>
         )}
-        ListEmptyComponent={
-          <View style={styles.emptyCard}>
-            <Ionicons name="duplicate-outline" size={32} color={theme.colors.text.zinc800} />
-            <Text style={styles.emptyText}>NO TEMPLATES YET</Text>
-          </View>
-        }
+        ListEmptyComponent={EmptyTemplateCard}
       />
 
       <UpgradeModal

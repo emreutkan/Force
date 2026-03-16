@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -6,87 +6,38 @@ import { theme, typographyStyles } from '@/constants/theme';
 import { usePrograms } from '@/hooks/useWorkoutProgram';
 import type { WorkoutProgram } from '@/api/types/program';
 
-export default function ProgramsSection() {
-  const { data: programs = [], isLoading } = usePrograms();
+const keyExtractor = (item: WorkoutProgram) => item.id.toString();
 
-  if (isLoading) return null;
-
+function AddProgramCard() {
   return (
-    <View style={styles.container}>
-      {/* Section header */}
-      <View style={styles.sectionHeader}>
-        <View style={styles.headerLeft}>
-          <View style={styles.headerIndicator} />
-          <Text style={styles.sectionTitle}>MY PROGRAMS</Text>
-        </View>
-        <Pressable
-          style={({ pressed }) => [
-            styles.manageBtn,
-            pressed && { transform: [{ scale: 0.96 }], opacity: 0.8 }
-          ]}
-          onPress={() => router.push('/(workout-program)/')}
-        >
-          <Ionicons name="settings-outline" size={13} color={theme.colors.status.active} />
-          <Text style={styles.manageBtnText}>MANAGE</Text>
-        </Pressable>
+    <Pressable
+      style={({ pressed }) => [
+        styles.addCard,
+        pressed && { transform: [{ scale: 0.96 }], opacity: 0.8 }
+      ]}
+      onPress={() => router.push('/(workout-program)/create/step1')}
+    >
+      <View style={styles.addCardIcon}>
+        <Ionicons name="add" size={22} color={theme.colors.status.active} />
       </View>
-
-      {programs.length === 0 ? (
-        /* Empty state — single card CTA */
-        <Pressable 
-          style={({ pressed }) => [
-            styles.emptyCard,
-            pressed && { transform: [{ scale: 0.985 }], opacity: 0.9 }
-          ]} 
-          onPress={() => router.push('/(workout-program)/create/step1')}
-        >
-          <View style={styles.emptyIconWrap}>
-            <Ionicons name="add" size={20} color={theme.colors.status.active} />
-          </View>
-          <View style={styles.emptyTextBlock}>
-            <Text style={styles.emptyTitle}>CREATE A PROGRAM</Text>
-            <Text style={styles.emptySubtitle}>Plan your training split</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={theme.colors.text.tertiary} />
-        </Pressable>
-      ) : (
-        <FlatList
-          data={programs}
-          keyExtractor={(item) => item.id.toString()}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          snapToInterval={220 + theme.spacing.m}
-          decelerationRate="fast"
-          renderItem={({ item }) => <ProgramCard program={item} />}
-          ListFooterComponent={
-            <Pressable
-              style={({ pressed }) => [
-                styles.addCard,
-                pressed && { transform: [{ scale: 0.96 }], opacity: 0.8 }
-              ]}
-              onPress={() => router.push('/(workout-program)/create/step1')}
-            >
-              <View style={styles.addCardIcon}>
-                <Ionicons name="add" size={22} color={theme.colors.status.active} />
-              </View>
-              <Text style={styles.addCardText}>NEW PROGRAM</Text>
-            </Pressable>
-          }
-        />
-      )}
-    </View>
+      <Text style={styles.addCardText}>NEW PROGRAM</Text>
+    </Pressable>
   );
 }
 
-function ProgramCard({ program }: { program: WorkoutProgram }) {
-  const workDays = program.days.filter((d) => !d.is_rest_day).length;
-  const restDays = program.days.filter((d) => d.is_rest_day).length;
+const ProgramCard = React.memo(function ProgramCard({ program }: { program: WorkoutProgram }) {
+  const { workDays, restDays } = useMemo(() => {
+    let work = 0, rest = 0;
+    for (const d of program.days) {
+      if (d.is_rest_day) rest++; else work++;
+    }
+    return { workDays: work, restDays: rest };
+  }, [program.days]);
 
   return (
     <Pressable
       style={({ pressed }) => [
-        styles.programCard, 
+        styles.programCard,
         program.is_active && styles.programCardActive,
         pressed && { transform: [{ scale: 0.98 }], opacity: 0.9 }
       ]}
@@ -135,6 +86,70 @@ function ProgramCard({ program }: { program: WorkoutProgram }) {
         </View>
       </View>
     </Pressable>
+  );
+});
+
+export default function ProgramsSection() {
+  const { data: programs = [], isLoading } = usePrograms();
+
+  const renderItem = useCallback(({ item }: { item: WorkoutProgram }) => (
+    <ProgramCard program={item} />
+  ), []);
+
+  if (isLoading) return null;
+
+  return (
+    <View style={styles.container}>
+      {/* Section header */}
+      <View style={styles.sectionHeader}>
+        <View style={styles.headerLeft}>
+          <View style={styles.headerIndicator} />
+          <Text style={styles.sectionTitle}>MY PROGRAMS</Text>
+        </View>
+        <Pressable
+          style={({ pressed }) => [
+            styles.manageBtn,
+            pressed && { transform: [{ scale: 0.96 }], opacity: 0.8 }
+          ]}
+          onPress={() => router.push('/(workout-program)/')}
+        >
+          <Ionicons name="settings-outline" size={13} color={theme.colors.status.active} />
+          <Text style={styles.manageBtnText}>MANAGE</Text>
+        </Pressable>
+      </View>
+
+      {programs.length === 0 ? (
+        /* Empty state — single card CTA */
+        <Pressable
+          style={({ pressed }) => [
+            styles.emptyCard,
+            pressed && { transform: [{ scale: 0.985 }], opacity: 0.9 }
+          ]}
+          onPress={() => router.push('/(workout-program)/create/step1')}
+        >
+          <View style={styles.emptyIconWrap}>
+            <Ionicons name="add" size={20} color={theme.colors.status.active} />
+          </View>
+          <View style={styles.emptyTextBlock}>
+            <Text style={styles.emptyTitle}>CREATE A PROGRAM</Text>
+            <Text style={styles.emptySubtitle}>Plan your training split</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={theme.colors.text.tertiary} />
+        </Pressable>
+      ) : (
+        <FlatList
+          data={programs}
+          keyExtractor={keyExtractor}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          snapToInterval={220 + theme.spacing.m}
+          decelerationRate="fast"
+          renderItem={renderItem}
+          ListFooterComponent={AddProgramCard}
+        />
+      )}
+    </View>
   );
 }
 

@@ -8,7 +8,7 @@ import type { StartTodayError } from '@/api/WorkoutProgram';
 import { ActiveSectionSkeleton } from './homeLoadingSkeleton';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, Pressable, View, LayoutAnimation, ActivityIndicator } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SwipeAction } from '@/components/shared/SwipeAction';
@@ -39,7 +39,7 @@ export default function ActiveSection({
   const startFromProgram = useStartTodayWorkout();
   const hasProgramToday = !!(programDay && !programDay.current_day.is_rest_day);
 
-  const handleStartFromProgram = () => {
+  const handleStartFromProgram = useCallback(() => {
     setIsExpanded(false);
     startFromProgram.mutate(undefined, {
       onSuccess: () => router.push('/(active-workout)'),
@@ -50,7 +50,7 @@ export default function ActiveSection({
         }
       },
     });
-  };
+  }, [startFromProgram]);
 
   // Derive data from the single checkToday response
   const status = todayStatus?.status ?? 'none';
